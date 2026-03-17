@@ -3,14 +3,28 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import type { Mesh } from 'three';
 import type { Moon } from '../../types/celestialBody';
+import { useTexturePath } from '../../utils/textures';
+
+// Map moon IDs to texture files
+const MOON_TEXTURE_PATH: Record<string, string> = {
+  moon: '/textures/2k/moon_diffuse.jpg',
+  io: '/textures/2k/io_diffuse.jpg',
+  europa: '/textures/2k/europa_diffuse.jpg',
+  ganymede: '/textures/2k/ganymede_diffuse.jpg',
+  callisto: '/textures/2k/callisto_diffuse.jpg',
+  titan: '/textures/2k/titan_diffuse.jpg',
+  enceladus: '/textures/2k/enceladus_diffuse.jpg',
+  mimas: '/textures/2k/mimas_diffuse.jpg',
+  triton: '/textures/2k/triton_diffuse.jpg',
+  charon: '/textures/2k/charon_diffuse.jpg',
+};
 
 function SpinningMoon({ moon }: { moon: Moon }) {
   const meshRef = useRef<Mesh>(null);
+  const texturePath = MOON_TEXTURE_PATH[moon.id] ?? '';
+  const diffuseMap = useTexturePath(texturePath);
 
-  // Tidally locked moons rotate once per orbit; others spin faster
   const speed = useMemo(() => {
-    // Most moons are tidally locked, so one rotation per orbital period
-    // Scale: one orbit in ~6s screen time → one rotation in ~6s
     return (Math.PI * 2) / 6;
   }, []);
 
@@ -20,38 +34,43 @@ function SpinningMoon({ moon }: { moon: Moon }) {
     }
   });
 
-  // Size scales with diameter, but clamped to look good in the mini scene
   const radius = useMemo(() => {
     return Math.max(0.6, Math.min(1.2, Math.log10(Math.max(moon.diameter, 10) / 100) * 0.5 + 0.8));
   }, [moon.diameter]);
 
-  // Moon color based on some basic characteristics
+  // Fallback color when no texture is available
   const color = useMemo(() => {
     const id = moon.id;
-    if (id === 'io') return '#c8b040';             // sulfur yellow
-    if (id === 'europa') return '#d4d0c8';          // bright ice
-    if (id === 'titan') return '#c4a060';            // hazy orange
-    if (id === 'enceladus') return '#e8e8f0';        // brilliant white
-    if (id === 'triton') return '#b0c8d0';           // pale blue-pink
-    if (id === 'moon') return '#b8b4a8';             // grey
-    if (id === 'charon') return '#a89888';            // tan
-    if (id === 'ganymede') return '#b8b0a0';          // light grey-brown
-    if (id === 'callisto') return '#888078';           // dark grey
-    if (id === 'iapetus') return '#a09080';            // two-toned (averaged)
-    return '#b0b0b0';                                  // default grey
+    if (id === 'io') return '#c8b040';
+    if (id === 'europa') return '#d4d0c8';
+    if (id === 'titan') return '#c4a060';
+    if (id === 'enceladus') return '#e8e8f0';
+    if (id === 'triton') return '#b0c8d0';
+    if (id === 'moon') return '#b8b4a8';
+    if (id === 'charon') return '#a89888';
+    if (id === 'ganymede') return '#b8b0a0';
+    if (id === 'callisto') return '#888078';
+    if (id === 'iapetus') return '#a09080';
+    return '#b0b0b0';
   }, [moon.id]);
 
   return (
-    <>
-      <mesh ref={meshRef}>
-        <sphereGeometry args={[radius, 32, 32]} />
+    <mesh ref={meshRef}>
+      <sphereGeometry args={[radius, 32, 32]} />
+      {diffuseMap ? (
+        <meshStandardMaterial
+          map={diffuseMap}
+          roughness={0.9}
+          metalness={0.05}
+        />
+      ) : (
         <meshStandardMaterial
           color={color}
           roughness={0.9}
           metalness={0.05}
         />
-      </mesh>
-    </>
+      )}
+    </mesh>
   );
 }
 

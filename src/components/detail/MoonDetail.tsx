@@ -81,51 +81,60 @@ export function MoonDetail({ moon, onClose, onBack }: MoonDetailProps) {
         </button>
       </div>
 
-      <div className="moon-detail__content">
+      <div className="moon-detail__layout">
         <MoonMiniScene moon={moon} />
 
-        <div className="moon-detail__identity">
-          <h2 className="moon-detail__name">{moon.name}</h2>
-          <span className="moon-detail__notable">{moon.notableFeature}</span>
-        </div>
+        <div className="moon-detail__col-left">
+          <div className="moon-detail__identity">
+            <h2 className="moon-detail__name">{moon.name}</h2>
+            <span className="moon-detail__notable">{moon.notableFeature}</span>
+          </div>
 
-        <p className="moon-detail__summary">{moon.summary}</p>
+          <p className="moon-detail__summary">{moon.summary}</p>
 
-        <div className="moon-detail__properties">
-          <div className="moon-detail__prop">
-            <span className="moon-detail__prop-label">Diameter</span>
-            <span className="moon-detail__prop-value">{moon.diameter.toLocaleString()} km</span>
-          </div>
-          <div className="moon-detail__prop">
-            <span className="moon-detail__prop-label">Gravity</span>
-            <span className="moon-detail__prop-value">{moon.gravity} m/s²</span>
-          </div>
-          <div className="moon-detail__prop">
-            <span className="moon-detail__prop-label">Temperature</span>
-            <span className="moon-detail__prop-value">{moon.meanTemperature}°C</span>
-          </div>
-          <div className="moon-detail__prop">
-            <span className="moon-detail__prop-label">Orbital Period</span>
-            <span className="moon-detail__prop-value">{moon.orbitalPeriod.toFixed(1)} days</span>
-          </div>
-        </div>
-
-        <div className="moon-detail__facts">
-          {moon.funFacts.map((fact, i) => (
-            <div key={i} className="moon-detail__fact">
-              <span className="moon-detail__fact-icon">
-                {['\u2726', '\u26A1', '\uD83D\uDD2D'][i % 3]}
-              </span>
-              <span className="moon-detail__fact-text">{fact}</span>
+          <div className="moon-detail__properties">
+            <div className="moon-detail__prop">
+              <span className="moon-detail__prop-label">Diameter</span>
+              <span className="moon-detail__prop-value">{moon.diameter.toLocaleString()} km</span>
             </div>
-          ))}
+            <div className="moon-detail__prop">
+              <span className="moon-detail__prop-label">Gravity</span>
+              <span className="moon-detail__prop-value">{moon.gravity} m/s²</span>
+            </div>
+            <div className="moon-detail__prop">
+              <span className="moon-detail__prop-label">Temperature</span>
+              <span className="moon-detail__prop-value">{moon.meanTemperature}°C</span>
+            </div>
+            <div className="moon-detail__prop">
+              <span className="moon-detail__prop-label">Orbital Period</span>
+              <span className="moon-detail__prop-value">{moon.orbitalPeriod.toFixed(1)} days</span>
+            </div>
+            <div className="moon-detail__prop">
+              <span className="moon-detail__prop-label">Distance from Planet</span>
+              <span className="moon-detail__prop-value">{moon.distanceFromPlanet.toLocaleString()} km</span>
+            </div>
+          </div>
         </div>
 
-        {moon.discoveredBy && (
-          <div className="moon-detail__meta">
-            Discovered by {moon.discoveredBy} ({moon.yearDiscovered})
+        <div className="moon-detail__col-right">
+          <div className="moon-detail__facts">
+            <span className="moon-detail__section-label">Fun Facts</span>
+            {moon.funFacts.map((fact, i) => (
+              <div key={i} className="moon-detail__fact">
+                <span className="moon-detail__fact-icon">
+                  {['\u2726', '\u26A1', '\uD83D\uDD2D'][i % 3]}
+                </span>
+                <span className="moon-detail__fact-text">{fact}</span>
+              </div>
+            ))}
           </div>
-        )}
+
+          {moon.discoveredBy && (
+            <div className="moon-detail__meta">
+              Discovered by {moon.discoveredBy} ({moon.yearDiscovered})
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

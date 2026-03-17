@@ -71,6 +71,45 @@ export function usePlanetTexture(planetId: string): Texture | null {
 }
 
 /**
+ * Load an arbitrary texture by path from public/.
+ * Returns null while loading or if the file doesn't exist.
+ */
+export function useTexturePath(path: string): Texture | null {
+  const [texture, setTexture] = useState<Texture | null>(() =>
+    textureCache.get(path) ?? null,
+  );
+
+  useEffect(() => {
+    if (textureCache.has(path)) {
+      setTexture(textureCache.get(path) ?? null);
+      return;
+    }
+
+    let cancelled = false;
+    loader.load(
+      path,
+      (tex) => {
+        if (cancelled) return;
+        tex.colorSpace = SRGBColorSpace;
+        textureCache.set(path, tex);
+        setTexture(tex);
+      },
+      undefined,
+      () => {
+        if (!cancelled) {
+          textureCache.set(path, null);
+          setTexture(null);
+        }
+      },
+    );
+
+    return () => { cancelled = true; };
+  }, [path]);
+
+  return texture;
+}
+
+/**
  * Procedural ring texture for Saturn / Uranus.
  * Creates a 1D radial gradient with gaps to simulate ring bands.
  */

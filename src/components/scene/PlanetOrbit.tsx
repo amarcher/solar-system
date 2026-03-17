@@ -9,9 +9,10 @@ interface PlanetOrbitProps {
   onClick?: () => void;
   /** If true, pause orbit animation (for reduced-motion or when focused) */
   paused?: boolean;
+  showLabel?: boolean;
 }
 
-export function PlanetOrbit({ planet, onClick, paused }: PlanetOrbitProps) {
+export function PlanetOrbit({ planet, onClick, paused, showLabel = true }: PlanetOrbitProps) {
   const groupRef = useRef<Group>(null);
   const angleRef = useRef(Math.random() * Math.PI * 2); // Random starting position
 
@@ -40,7 +41,7 @@ export function PlanetOrbit({ planet, onClick, paused }: PlanetOrbitProps) {
 
       {/* Planet group (orbiting) */}
       <group ref={groupRef}>
-        <PlanetMesh planet={planet} onClick={onClick} />
+        <PlanetMesh planet={planet} onClick={onClick} showLabel={showLabel} />
       </group>
     </>
   );
