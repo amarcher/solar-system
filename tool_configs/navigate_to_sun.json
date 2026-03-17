@@ -1,0 +1,12 @@
+{
+    "name": "navigate_to_sun",
+    "description": "Navigate the app to show the Sun's detail page with its interactive peelable layers (Corona, Chromosphere, Photosphere, Convective Zone, Radiative Zone, Core). Use when the child asks about the Sun or wants to explore it.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "description": "No parameters needed",
+        "properties": {}
+    }
+}
