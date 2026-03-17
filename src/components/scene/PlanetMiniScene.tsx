@@ -4,20 +4,8 @@ import { OrbitControls, Html } from '@react-three/drei';
 import type { Mesh, Group } from 'three';
 import type { Planet, Moon } from '../../types/celestialBody';
 import { getMoonsByPlanet } from '../../data/moons';
-import { usePlanetTexture, useRingTexture } from '../../utils/textures';
-import { Atmosphere } from './Atmosphere';
+import { usePlanetTexture, useTexturePath, useRingTexture } from '../../utils/textures';
 import { DoubleSide, RingGeometry } from 'three';
-
-/* ── Atmosphere configs (same as main scene) ──────────────────────── */
-const ATMOSPHERE: Record<string, { color: string; intensity: number; power: number }> = {
-  venus:   { color: '#ffe0a0', intensity: 0.9, power: 2.5 },
-  earth:   { color: '#6cb4ee', intensity: 0.7, power: 3.0 },
-  mars:    { color: '#d4a574', intensity: 0.35, power: 4.0 },
-  jupiter: { color: '#d4b896', intensity: 0.5, power: 3.5 },
-  saturn:  { color: '#e8d8b8', intensity: 0.4, power: 3.5 },
-  uranus:  { color: '#7de8e8', intensity: 0.5, power: 3.0 },
-  neptune: { color: '#5580ee', intensity: 0.6, power: 3.0 },
-};
 
 /* ── Mini planet (spinning at center) ─────────────────────────────── */
 
@@ -26,7 +14,6 @@ function MiniPlanet({ planet, radius }: { planet: Planet; radius: number }) {
   const diffuseMap = usePlanetTexture(planet.id);
   const isGasGiant = planet.category === 'gas-giant' || planet.category === 'ice-giant';
   const segments = isGasGiant ? 48 : 32;
-  const atmo = ATMOSPHERE[planet.id];
 
   const rotSpeed = useMemo(() => {
     const s = planet.rotationPeriod !== 0 ? 0.3 / Math.abs(planet.rotationPeriod / 24) : 0.1;
@@ -58,14 +45,6 @@ function MiniPlanet({ planet, radius }: { planet: Planet; radius: number }) {
         )}
       </mesh>
 
-      {atmo && (
-        <Atmosphere
-          radius={radius}
-          color={atmo.color}
-          intensity={atmo.intensity}
-          power={atmo.power}
-        />
-      )}
 
       {planet.hasRings && (planet.id === 'saturn' || planet.id === 'uranus') && (
         <MiniRings planetId={planet.id} planetRadius={radius} />
@@ -111,6 +90,19 @@ function MiniRings({ planetId, planetRadius }: { planetId: 'saturn' | 'uranus'; 
 
 /* ── Orbiting moon ────────────────────────────────────────────────── */
 
+const MOON_TEXTURE_PATH: Record<string, string> = {
+  moon: '/textures/2k/moon_diffuse.jpg',
+  io: '/textures/2k/io_diffuse.jpg',
+  europa: '/textures/2k/europa_diffuse.jpg',
+  ganymede: '/textures/2k/ganymede_diffuse.jpg',
+  callisto: '/textures/2k/callisto_diffuse.jpg',
+  titan: '/textures/2k/titan_diffuse.jpg',
+  enceladus: '/textures/2k/enceladus_diffuse.jpg',
+  mimas: '/textures/2k/mimas_diffuse.jpg',
+  triton: '/textures/2k/triton_diffuse.jpg',
+  charon: '/textures/2k/charon_diffuse.jpg',
+};
+
 function OrbitingMoon({
   moon,
   fastestPeriod,
@@ -122,6 +114,8 @@ function OrbitingMoon({
 }) {
   const groupRef = useRef<Group>(null);
   const angleRef = useRef(Math.random() * Math.PI * 2);
+  const texturePath = MOON_TEXTURE_PATH[moon.id] ?? '';
+  const diffuseMap = useTexturePath(texturePath);
 
   // Speed: fastest moon does one orbit in ~8s screen time; others proportionally slower
   const speed = useMemo(() => {
@@ -169,7 +163,11 @@ function OrbitingMoon({
         {/* Visible moon sphere */}
         <mesh onClick={(e) => { e.stopPropagation(); onClick(); }}>
           <sphereGeometry args={[moonRadius, 16, 16]} />
-          <meshStandardMaterial color="#b8b8c8" roughness={0.9} />
+          {diffuseMap ? (
+            <meshStandardMaterial map={diffuseMap} roughness={0.9} />
+          ) : (
+            <meshStandardMaterial color="#b8b8c8" roughness={0.9} />
+          )}
         </mesh>
 
         {/* Name label */}

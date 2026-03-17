@@ -20,8 +20,11 @@
 }
 
 .moon-detail__header {
-  position: relative;
-  z-index: 2;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 110;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -55,27 +58,39 @@
   outline-offset: 2px;
 }
 
-.moon-detail__content {
+/* ---- Layout: full-bleed scene + two columns ---- */
+
+.moon-detail__layout {
   position: relative;
   z-index: 1;
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 20px 48px;
-  max-width: 600px;
-  margin: 0 auto;
   width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
+  padding: 52px 0 48px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Full-bleed mini scene */
+.moon-detail__layout > .moon-detail__mini-scene {
+  flex: 0 0 100%;
+  margin-bottom: 24px;
 }
 
 .moon-detail__mini-scene {
+  position: relative;
   width: 100%;
-  height: 220px;
-  border-radius: 16px;
+  height: 45vh;
+  min-height: 280px;
+  max-height: 500px;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   animation: content-appear 0.35s cubic-bezier(0.2, 0, 0.2, 1) both 0.05s;
 }
 
@@ -86,6 +101,36 @@
 .moon-detail__mini-scene canvas:active {
   cursor: grabbing;
 }
+
+/* Two columns below the scene */
+
+.moon-detail__col-left,
+.moon-detail__col-right {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 20px;
+}
+
+@media (min-width: 900px) {
+  .moon-detail__layout {
+    gap: 40px;
+  }
+
+  .moon-detail__layout > .moon-detail__mini-scene {
+    margin-bottom: 16px;
+  }
+
+  .moon-detail__col-left,
+  .moon-detail__col-right {
+    flex: 0 1 500px;
+    padding: 0;
+  }
+}
+
+/* ---- Identity ---- */
 
 .moon-detail__identity {
   display: flex;
@@ -108,12 +153,16 @@
   font-style: italic;
 }
 
+/* ---- Summary ---- */
+
 .moon-detail__summary {
   font-size: 0.9rem;
   line-height: 1.6;
   color: #c8c8d8;
   animation: content-appear 0.35s cubic-bezier(0.2, 0, 0.2, 1) both 0.15s;
 }
+
+/* ---- Properties ---- */
 
 .moon-detail__properties {
   display: grid;
@@ -145,6 +194,19 @@
   font-weight: 600;
 }
 
+/* ---- Section labels ---- */
+
+.moon-detail__section-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.35);
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* ---- Fun facts ---- */
+
 .moon-detail__facts {
   display: flex;
   flex-direction: column;
@@ -173,6 +235,8 @@
   color: #c8c8d8;
 }
 
+/* ---- Meta ---- */
+
 .moon-detail__meta {
   font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.25);
@@ -180,12 +244,15 @@
   animation: content-appear 0.35s cubic-bezier(0.2, 0, 0.2, 1) both 0.3s;
 }
 
+/* ---- Reduced motion ---- */
+
 @media (prefers-reduced-motion: reduce) {
   .moon-detail__identity,
   .moon-detail__summary,
   .moon-detail__properties,
   .moon-detail__facts,
-  .moon-detail__meta {
+  .moon-detail__meta,
+  .moon-detail__mini-scene {
     animation: none;
     opacity: 1;
     transform: none;

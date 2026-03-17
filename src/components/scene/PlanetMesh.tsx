@@ -4,28 +4,18 @@ import { Html } from '@react-three/drei';
 import { DoubleSide, RingGeometry } from 'three';
 import type { Mesh } from 'three';
 import type { Planet } from '../../types/celestialBody';
-import { usePlanetTexture, useRingTexture } from '../../utils/textures';
-import { Atmosphere } from './Atmosphere';
-
-/** Per-planet atmosphere tuning */
-const ATMOSPHERE_CONFIG: Record<string, { color: string; intensity: number; power: number }> = {
-  venus:   { color: '#ffe0a0', intensity: 0.9, power: 2.5 },  // thick hazy atmosphere
-  earth:   { color: '#6cb4ee', intensity: 0.7, power: 3.0 },  // blue sky
-  mars:    { color: '#d4a574', intensity: 0.35, power: 4.0 },  // thin dusty
-  jupiter: { color: '#d4b896', intensity: 0.5, power: 3.5 },
-  saturn:  { color: '#e8d8b8', intensity: 0.4, power: 3.5 },
-  uranus:  { color: '#7de8e8', intensity: 0.5, power: 3.0 },
-  neptune: { color: '#5580ee', intensity: 0.6, power: 3.0 },
-};
-
+import { usePlanetTexture, useTexturePath, useRingTexture } from '../../utils/textures';
 interface PlanetMeshProps {
   planet: Planet;
   onClick?: () => void;
+  showLabel?: boolean;
 }
 
-export function PlanetMesh({ planet, onClick }: PlanetMeshProps) {
+export function PlanetMesh({ planet, onClick, showLabel = true }: PlanetMeshProps) {
   const meshRef = useRef<Mesh>(null);
+  const cloudRef = useRef<Mesh>(null);
   const diffuseMap = usePlanetTexture(planet.id);
+  const cloudMap = useTexturePath(planet.id === 'earth' ? '/textures/2k/earth_clouds.jpg' : '');
 
   useFrame((_, delta) => {
     if (meshRef.current) {
@@ -33,12 +23,14 @@ export function PlanetMesh({ planet, onClick }: PlanetMeshProps) {
       const direction = planet.rotationPeriod < 0 ? -1 : 1;
       meshRef.current.rotation.y += delta * speed * direction;
     }
+    // Clouds rotate slightly faster than the surface
+    if (cloudRef.current) {
+      cloudRef.current.rotation.y += delta * 0.02;
+    }
   });
 
   const isGasGiant = planet.category === 'gas-giant' || planet.category === 'ice-giant';
   const segments = isGasGiant ? 48 : 32;
-  const atmosphere = ATMOSPHERE_CONFIG[planet.id];
-  const hasAtmosphere = planet.atmosphereComposition !== 'None (exosphere only)';
 
   // Generous hit area — small planets get a large minimum so kids can catch them
   const hitRadius = Math.max(planet.visualRadius * 3, 1.0);
@@ -78,26 +70,17 @@ export function PlanetMesh({ planet, onClick }: PlanetMeshProps) {
         )}
       </mesh>
 
-      {/* Fresnel atmosphere glow */}
-      {hasAtmosphere && atmosphere && (
-        <group rotation-z={planet.axialTilt * (Math.PI / 180)}>
-          <Atmosphere
-            radius={planet.visualRadius}
-            color={atmosphere.color}
-            intensity={atmosphere.intensity}
-            power={atmosphere.power}
-          />
-        </group>
-      )}
-
-      {/* Fallback atmosphere for planets without specific config */}
-      {hasAtmosphere && !atmosphere && (
-        <mesh rotation-z={planet.axialTilt * (Math.PI / 180)}>
-          <sphereGeometry args={[planet.visualRadius * 1.08, 32, 32]} />
-          <meshBasicMaterial
-            color={planet.color}
+      {/* Earth cloud layer — slightly larger sphere rotating independently */}
+      {planet.id === 'earth' && cloudMap && (
+        <mesh
+          ref={cloudRef}
+          rotation-z={planet.axialTilt * (Math.PI / 180)}
+        >
+          <sphereGeometry args={[planet.visualRadius * 1.015, segments, segments]} />
+          <meshStandardMaterial
+            map={cloudMap}
             transparent
-            opacity={0.06}
+            opacity={0.45}
             depthWrite={false}
           />
         </mesh>
@@ -126,22 +109,24 @@ export function PlanetMesh({ planet, onClick }: PlanetMeshProps) {
       )}
 
       {/* Name label */}
-      <Html
-        position={[0, -(planet.visualRadius + 0.3), 0]}
-        center
-        style={{
-          color: 'rgba(255, 255, 255, 0.7)',
-          fontSize: '11px',
-          fontFamily: "'Space Grotesk', sans-serif",
-          whiteSpace: 'nowrap',
-          pointerEvents: 'none',
-          userSelect: 'none',
-          textShadow: '0 1px 6px rgba(0, 0, 0, 0.9)',
-          letterSpacing: '0.03em',
-        }}
-      >
-        {planet.name}
-      </Html>
+      {showLabel && (
+        <Html
+          position={[0, -(planet.visualRadius + 0.3), 0]}
+          center
+          style={{
+            color: 'rgba(255, 255, 255, 0.7)',
+            fontSize: '11px',
+            fontFamily: "'Space Grotesk', sans-serif",
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            userSelect: 'none',
+            textShadow: '0 1px 6px rgba(0, 0, 0, 0.9)',
+            letterSpacing: '0.03em',
+          }}
+        >
+          {planet.name}
+        </Html>
+      )}
     </group>
   );
 }

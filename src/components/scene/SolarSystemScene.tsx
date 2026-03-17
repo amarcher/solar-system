@@ -13,9 +13,10 @@ interface SolarSystemSceneProps {
   nav: NavigationState;
   onPlanetClick: (planetId: string) => void;
   onSunClick: () => void;
+  showLabels?: boolean;
 }
 
-export function SolarSystemScene({ planets, nav, onPlanetClick, onSunClick }: SolarSystemSceneProps) {
+export function SolarSystemScene({ planets, nav, onPlanetClick, onSunClick, showLabels = true }: SolarSystemSceneProps) {
   const isSystemView = nav.level === 'system';
 
   return (
@@ -26,8 +27,8 @@ export function SolarSystemScene({ planets, nav, onPlanetClick, onSunClick }: So
         aria-hidden="true"
       >
         <color attach="background" args={['#050510']} />
-        <ambientLight intensity={0.15} />
-        <pointLight position={[0, 0, 0]} intensity={3} color="#ffd080" decay={0.5} />
+        <ambientLight intensity={0.4} />
+        <pointLight position={[0, 0, 0]} intensity={4} color="#fff0dd" decay={0.3} />
 
         <StarField />
         <SunMesh onClick={onSunClick} />
@@ -38,6 +39,7 @@ export function SolarSystemScene({ planets, nav, onPlanetClick, onSunClick }: So
             key={planet.id}
             planet={planet}
             onClick={() => onPlanetClick(planet.id)}
+            showLabel={showLabels}
           />
         ))}
 
