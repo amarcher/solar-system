@@ -1,0 +1,167 @@
+.voice-agent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0;
+}
+
+.voice-agent__orb-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voice-agent__orb {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  font: inherit;
+  outline: 2px solid transparent;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 35%,
+    hsl(35, 90%, 65%) 0%,
+    hsl(25, 85%, 50%) 50%,
+    hsl(15, 80%, 35%) 100%
+  );
+  cursor: pointer;
+  border: none;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.2s;
+  box-shadow:
+    0 0 20px hsla(25, 85%, 50%, 0.3),
+    0 0 40px hsla(25, 85%, 50%, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voice-agent__orb:hover {
+  transform: scale(1.05);
+}
+
+.voice-agent__orb:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 3px;
+}
+
+.voice-agent__orb--connecting {
+  animation: orb-pulse 1.5s ease-in-out infinite;
+}
+
+.voice-agent__orb--listening {
+  animation: orb-breathe 3s ease-in-out infinite;
+}
+
+.voice-agent__orb--speaking {
+  animation: orb-speak 0.6s ease-in-out infinite;
+}
+
+/* Speaking wave rings */
+.voice-agent__wave {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid hsl(25, 85%, 50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.voice-agent__orb-container--speaking .voice-agent__wave:nth-child(2) {
+  animation: wave-expand 1.5s ease-out infinite;
+}
+
+.voice-agent__orb-container--speaking .voice-agent__wave:nth-child(3) {
+  animation: wave-expand 1.5s ease-out infinite 0.5s;
+}
+
+.voice-agent__orb-container--speaking .voice-agent__wave:nth-child(4) {
+  animation: wave-expand 1.5s ease-out infinite 1s;
+}
+
+.voice-agent__status {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.voice-agent__mic-icon {
+  width: 24px;
+  height: 24px;
+  fill: rgba(255, 255, 255, 0.9);
+}
+
+.voice-agent__error {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  max-width: 300px;
+  font-size: 0.75rem;
+  color: #f5a623;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.voice-agent__error:hover {
+  color: #ffc059;
+}
+
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+@keyframes orb-speak {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@keyframes wave-expand {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+@media (max-width: 560px) {
+  .voice-agent__orb {
+    width: 56px;
+    height: 56px;
+  }
+
+  .voice-agent__orb-container {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-agent__orb {
+    transition: none;
+  }
+
+  .voice-agent__orb--connecting,
+  .voice-agent__orb--listening,
+  .voice-agent__orb--speaking {
+    animation: none;
+  }
+
+  .voice-agent__orb-container--speaking .voice-agent__wave {
+    animation: none;
+  }
+}

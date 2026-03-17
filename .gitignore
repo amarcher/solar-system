@@ -1,0 +1,52 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment variables
+.env
+.env.local
+
+# ElevenLabs CLI — ID mapping files
+agents.json
+tools.json
+tests.json
+
+# Video generation
+scripts/generate-videos/output/staging/
+scripts/generate-videos/output/cost-summary.json
+scripts/generate-videos/output/manifest.json
+scripts/generate-videos/output/review.html
+
+# Public videos (served locally in dev, hosted on R2 in prod)
+public/videos/*.mp4
+
+# Claude worktrees
+.claude/worktrees/
+
+# Vercel
+.vercel/
+
+# ElevenLabs agent configs not related to this project
+test_configs/
+.env*.local
