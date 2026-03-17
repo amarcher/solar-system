@@ -50,3 +50,4 @@ public/videos/*.mp4
 # ElevenLabs agent configs not related to this project
 test_configs/
 .env*.local
+.vercel

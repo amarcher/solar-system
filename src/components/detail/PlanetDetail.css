@@ -156,11 +156,18 @@ html:active-view-transition-type(detail-close) {
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 60px 20px 48px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
+  padding: 40px 0 48px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Mini scene spans full width above columns */
+.detail__layout > .detail__mini-scene {
+  flex: 0 0 100%;
+  margin-bottom: 24px;
 }
 
 .detail__col-left,
@@ -170,21 +177,59 @@ html:active-view-transition-type(detail-close) {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 0 20px;
 }
 
 @media (min-width: 900px) {
   .detail__layout {
-    flex-direction: row;
-    align-items: flex-start;
-    padding: 40px;
+    padding-top: 40px;
     gap: 40px;
-    justify-content: center;
+  }
+
+  /* Mini scene still full-bleed, columns flow underneath */
+  .detail__layout > .detail__mini-scene {
+    margin-bottom: 16px;
   }
 
   .detail__col-left,
   .detail__col-right {
     flex: 0 1 500px;
+    padding: 0;
   }
+}
+
+/* ---- Mini 3D scene (full-bleed hero) ---- */
+
+.detail__mini-scene {
+  position: relative;
+  width: 100%;
+  height: 45vh;
+  min-height: 280px;
+  max-height: 500px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  animation: content-appear 0.35s cubic-bezier(0.2, 0, 0.2, 1) both 0.1s;
+}
+
+.detail__mini-scene canvas {
+  cursor: grab;
+}
+
+.detail__mini-scene canvas:active {
+  cursor: grabbing;
+}
+
+.detail__mini-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+  letter-spacing: 0.05em;
 }
 
 /* ---- Identity ---- */

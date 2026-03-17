@@ -1,0 +1,18 @@
+{
+    "name": "navigate_to_planet",
+    "description": "Navigate the app to show a planet's detail page. Use when the child asks to see a planet, learn about a planet, or says a planet name. The app will fly the camera to that planet and open its detail overlay with facts, properties, and moons.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "description": "The planet to navigate to",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "The planet name (e.g. 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Ceres')"
+            }
+        },
+        "required": ["name"]
+    }
+}

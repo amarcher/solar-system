@@ -3,6 +3,7 @@ import type { Planet } from '../../types/celestialBody';
 import type { Moon } from '../../types/celestialBody';
 import { categoryColors, categoryLabels } from '../../utils/colors';
 import { getMoonsByPlanet } from '../../data/moons';
+import { PlanetMiniScene } from '../scene/PlanetMiniScene';
 import './PlanetDetail.css';
 
 interface PlanetDetailProps {
@@ -84,6 +85,8 @@ export function PlanetDetail({ planet, onClose, onMoonClick }: PlanetDetailProps
       </button>
 
       <div className="detail__layout">
+        <PlanetMiniScene planet={planet} onMoonClick={onMoonClick} />
+
         <div className="detail__col-left">
           <div className="detail__identity detail__content">
             <span className="detail__order">#{planet.orderFromSun} from the Sun</span>

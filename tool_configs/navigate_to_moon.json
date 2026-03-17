@@ -1,0 +1,18 @@
+{
+    "name": "navigate_to_moon",
+    "description": "Navigate the app to show a moon's detail page. Use when the child asks about a specific moon by name. The app will open the moon's detail overlay with facts, properties, and a 3D view. Works from any screen — the app will find the moon's parent planet automatically.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "description": "The moon to navigate to",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "The moon name (e.g. 'The Moon', 'Europa', 'Titan', 'Io', 'Ganymede', 'Enceladus', 'Triton', 'Charon', 'Phobos', 'Miranda')"
+            }
+        },
+        "required": ["name"]
+    }
+}

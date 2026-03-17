@@ -1,0 +1,12 @@
+{
+    "name": "go_back",
+    "description": "Navigate back one level in the app. Moon detail goes to parent planet detail. Planet or Sun detail goes to solar system overview. Use when the child says 'go back', 'show me the solar system', or 'take me back'.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "description": "No parameters needed",
+        "properties": {}
+    }
+}

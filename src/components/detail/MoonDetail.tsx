@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Moon } from '../../types/celestialBody';
+import { MoonMiniScene } from '../scene/MoonMiniScene';
 import './MoonDetail.css';
 
 interface MoonDetailProps {
@@ -81,6 +82,8 @@ export function MoonDetail({ moon, onClose, onBack }: MoonDetailProps) {
       </div>
 
       <div className="moon-detail__content">
+        <MoonMiniScene moon={moon} />
+
         <div className="moon-detail__identity">
           <h2 className="moon-detail__name">{moon.name}</h2>
           <span className="moon-detail__notable">{moon.notableFeature}</span>
