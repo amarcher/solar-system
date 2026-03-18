@@ -67,6 +67,7 @@ body {
   right: 20px;
   z-index: 130;
   display: flex;
+  flex-direction: row-reverse;
   gap: 8px;
   align-items: center;
 }
