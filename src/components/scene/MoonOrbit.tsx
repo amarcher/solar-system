@@ -7,6 +7,25 @@ import type { Moon } from '../../types/celestialBody';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
 
+// Fallback colors for moons without textures, based on real surface appearance
+const MOON_COLORS: Record<string, string> = {
+  // Earth
+  moon: '#c8c8c0',
+  // Mars
+  phobos: '#8a7d6b', deimos: '#9e9282',
+  // Jupiter
+  io: '#d4b84a', europa: '#c4b699', ganymede: '#8a8478', callisto: '#5a5650', amalthea: '#b84030',
+  // Saturn
+  titan: '#d4a850', enceladus: '#f0f0f0', mimas: '#d0d0d0', rhea: '#b8b4a8',
+  dione: '#e0dcd0', tethys: '#e8e4d8', iapetus: '#6a4a30', hyperion: '#a89880',
+  // Uranus
+  titania: '#a8b0b8', oberon: '#8a7e72', miranda: '#b0b8c0', ariel: '#c8d0d8', umbriel: '#606058',
+  // Neptune
+  triton: '#c0b8a8', proteus: '#585858', nereid: '#787878',
+  // Pluto
+  charon: '#9a9088', nix: '#e0dcd8', hydra: '#d8d4d0',
+};
+
 interface MoonOrbitProps {
   moon: Moon;
   onClick?: () => void;
@@ -60,7 +79,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true }: MoonOrbitProps) {
           {diffuseMap ? (
             <meshStandardMaterial map={diffuseMap} roughness={0.9} metalness={0} />
           ) : (
-            <meshStandardMaterial color="#aaaaaa" roughness={0.9} metalness={0} />
+            <meshStandardMaterial color={MOON_COLORS[moon.id] || '#aaaaaa'} roughness={0.9} metalness={0} />
           )}
         </mesh>
 
