@@ -1,4 +1,5 @@
 import { Canvas } from '@react-three/fiber';
+import { NoToneMapping } from 'three';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { OrbitControls } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
@@ -22,13 +23,25 @@ export function SolarSystemScene({ planets, nav, onPlanetClick, onSunClick, show
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
       <Canvas
+        shadows
         camera={{ position: [0, 35, 50], fov: 50, near: 0.1, far: 500 }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: false, toneMapping: NoToneMapping }}
         aria-hidden="true"
       >
         <color attach="background" args={['#050510']} />
-        <ambientLight intensity={0.4} />
-        <pointLight position={[0, 0, 0]} intensity={4} color="#fff0dd" decay={0.3} />
+        <ambientLight intensity={0.15} />
+        <pointLight
+          position={[0, 0, 0]}
+          intensity={8}
+          color="#fff8ee"
+          decay={0}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-camera-near={0.5}
+          shadow-camera-far={60}
+          shadow-bias={-0.001}
+        />
 
         <StarField />
         <SunMesh onClick={onSunClick} />

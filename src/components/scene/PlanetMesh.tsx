@@ -1,7 +1,7 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { DoubleSide, RingGeometry } from 'three';
+import { Color, DoubleSide, RingGeometry } from 'three';
 import type { Mesh } from 'three';
 import type { Planet } from '../../types/celestialBody';
 import { usePlanetTexture, useTexturePath, useRingTexture } from '../../utils/textures';
@@ -32,6 +32,13 @@ export function PlanetMesh({ planet, onClick, showLabel = true }: PlanetMeshProp
   const isGasGiant = planet.category === 'gas-giant' || planet.category === 'ice-giant';
   const segments = isGasGiant ? 48 : 32;
 
+  // Blend planet color toward white for a subtle tint that preserves texture detail
+  const tintColor = useMemo(() => {
+    const c = new Color(planet.color);
+    c.lerp(new Color('#ffffff'), 0.55);
+    return c;
+  }, [planet.color]);
+
   // Generous hit area — small planets get a large minimum so kids can catch them
   const hitRadius = Math.max(planet.visualRadius * 3, 1.0);
 
@@ -51,6 +58,7 @@ export function PlanetMesh({ planet, onClick, showLabel = true }: PlanetMeshProp
       {/* Planet sphere */}
       <mesh
         ref={meshRef}
+        castShadow
         onClick={(e) => { e.stopPropagation(); onClick?.(); }}
         rotation-z={planet.axialTilt * (Math.PI / 180)}
       >
@@ -58,13 +66,14 @@ export function PlanetMesh({ planet, onClick, showLabel = true }: PlanetMeshProp
         {diffuseMap ? (
           <meshStandardMaterial
             map={diffuseMap}
-            roughness={isGasGiant ? 0.7 : 0.85}
+            color={tintColor}
+            roughness={isGasGiant ? 0.5 : 0.85}
             metalness={isGasGiant ? 0.0 : 0.1}
           />
         ) : (
           <meshStandardMaterial
             color={planet.color}
-            roughness={isGasGiant ? 0.7 : 0.85}
+            roughness={isGasGiant ? 0.5 : 0.85}
             metalness={isGasGiant ? 0.0 : 0.1}
           />
         )}
@@ -157,15 +166,18 @@ function ProceduralRings({ planet }: { planet: Planet }) {
 
   return (
     <mesh
+      receiveShadow
       rotation-x={Math.PI / 2}
       rotation-z={planet.axialTilt * (Math.PI / 180)}
       geometry={geometry}
     >
-      <meshBasicMaterial
+      <meshStandardMaterial
         map={ringTexture}
         transparent
         side={DoubleSide}
         depthWrite={false}
+        roughness={1}
+        metalness={0}
       />
     </mesh>
   );

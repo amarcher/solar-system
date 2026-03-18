@@ -17,6 +17,8 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
   const targetPos = useRef(SYSTEM_POSITION.clone());
   const targetLook = useRef(SYSTEM_TARGET.clone());
   const currentLook = useRef(SYSTEM_TARGET.clone());
+  const isAnimating = useRef(false);
+  const animProgress = useRef(1); // 1 = done, <1 = still animating
 
   useEffect(() => {
     if (nav.level === 'system') {
@@ -28,22 +30,40 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
     } else if (nav.level === 'planet' || nav.level === 'moon') {
       const planet = planets.find(p => p.id === nav.planetId);
       if (planet) {
-        // We'll position camera near the planet's orbit radius
-        // The actual planet position changes per frame, so we target the orbit
         const dist = planet.visualRadius * 5 + 2;
         targetPos.current.set(planet.orbitRadius, dist * 0.4, dist);
         targetLook.current.set(planet.orbitRadius, 0, 0);
       }
     }
+    // Start a fly-to animation whenever nav changes
+    isAnimating.current = true;
+    animProgress.current = 0;
   }, [nav, planets]);
 
   useFrame((_, delta) => {
+    if (!isAnimating.current) return;
+
     // Exponential ease-out lerp
     const lerpSpeed = 1 - Math.pow(0.001, delta);
 
     camera.position.lerp(targetPos.current, lerpSpeed);
     currentLook.current.lerp(targetLook.current, lerpSpeed);
     camera.lookAt(currentLook.current);
+
+    // Check if we're close enough to stop animating
+    animProgress.current += delta;
+    const distToTarget = camera.position.distanceTo(targetPos.current);
+    if (distToTarget < 0.05 && animProgress.current > 0.5) {
+      // Snap to final position and stop — let OrbitControls take over
+      if (nav.level === 'system') {
+        // Don't snap in system view — let the user's orbit position persist
+        isAnimating.current = false;
+      } else {
+        camera.position.copy(targetPos.current);
+        camera.lookAt(targetLook.current);
+        isAnimating.current = false;
+      }
+    }
   });
 
   return null;
