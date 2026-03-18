@@ -102,6 +102,39 @@ body {
   opacity: 1;
 }
 
+/* Cinema mode back navigation */
+.app__cinema-nav {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 130;
+}
+
+.app__cinema-nav-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 6px 16px 6px 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s, color 0.2s;
+}
+
+.app__cinema-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
 /* Floating voice agent orb */
 .app__voice-float {
   position: fixed;
