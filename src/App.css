@@ -60,39 +60,80 @@ body {
   margin-top: 6px;
 }
 
-/* Label toggle button */
-.app__label-toggle {
+/* Top-right toolbar (label toggle + cinema toggle) */
+.app__toolbar {
   position: fixed;
-  bottom: 28px;
-  right: 110px;
-  z-index: 120;
-  appearance: none;
-  -webkit-appearance: none;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px;
-  padding: 6px 12px 6px 8px;
-  color: rgba(255, 255, 255, 0.6);
-  font: inherit;
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  cursor: pointer;
+  top: 20px;
+  right: 20px;
+  z-index: 130;
   display: flex;
+  flex-direction: row-reverse;
+  gap: 8px;
   align-items: center;
-  gap: 5px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: background 0.15s, color 0.15s;
 }
 
-.app__label-toggle:hover {
-  background: rgba(255, 255, 255, 0.12);
+.app__toolbar-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s, color 0.2s, opacity 0.3s;
+}
+
+.app__toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
   color: #fff;
 }
 
-.app__label-toggle svg {
-  opacity: 0.7;
+.app__toolbar-btn--active {
+  opacity: 0.3;
+}
+
+.app__toolbar-btn--active:hover {
+  opacity: 1;
+}
+
+/* Cinema mode back navigation */
+.app__cinema-nav {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 130;
+}
+
+.app__cinema-nav-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 6px 16px 6px 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s, color 0.2s;
+}
+
+.app__cinema-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 
 /* Floating voice agent orb */
@@ -112,9 +153,9 @@ body {
     display: none;
   }
 
-  .app__label-toggle {
-    bottom: 16px;
-    right: 80px;
+  .app__toolbar {
+    top: 12px;
+    right: 12px;
   }
 
   .app__voice-float {

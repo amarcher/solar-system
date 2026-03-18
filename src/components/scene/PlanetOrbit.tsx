@@ -1,18 +1,23 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
-import type { Planet } from '../../types/celestialBody';
+import type { Moon, Planet } from '../../types/celestialBody';
 import { PlanetMesh } from './PlanetMesh';
+import { MoonOrbit } from './MoonOrbit';
+import { setPlanetPosition } from '../../utils/planetPositions';
 
 interface PlanetOrbitProps {
   planet: Planet;
+  moons?: Moon[];
   onClick?: () => void;
+  onMoonClick?: (moonId: string) => void;
   /** If true, pause orbit animation (for reduced-motion or when focused) */
   paused?: boolean;
   showLabel?: boolean;
+  showMoons?: boolean;
 }
 
-export function PlanetOrbit({ planet, onClick, paused, showLabel = true }: PlanetOrbitProps) {
+export function PlanetOrbit({ planet, moons = [], onClick, onMoonClick, paused, showLabel = true, showMoons = false }: PlanetOrbitProps) {
   const groupRef = useRef<Group>(null);
   const angleRef = useRef(Math.random() * Math.PI * 2); // Random starting position
 
@@ -21,8 +26,11 @@ export function PlanetOrbit({ planet, onClick, paused, showLabel = true }: Plane
       angleRef.current += delta * planet.orbitSpeed;
     }
     if (groupRef.current) {
-      groupRef.current.position.x = Math.cos(angleRef.current) * planet.orbitRadius;
-      groupRef.current.position.z = Math.sin(angleRef.current) * planet.orbitRadius;
+      const x = Math.cos(angleRef.current) * planet.orbitRadius;
+      const z = Math.sin(angleRef.current) * planet.orbitRadius;
+      groupRef.current.position.x = x;
+      groupRef.current.position.z = z;
+      setPlanetPosition(planet.id, x, 0, z);
     }
   });
 
@@ -42,6 +50,16 @@ export function PlanetOrbit({ planet, onClick, paused, showLabel = true }: Plane
       {/* Planet group (orbiting) */}
       <group ref={groupRef}>
         <PlanetMesh planet={planet} onClick={onClick} showLabel={showLabel} />
+
+        {/* Moons orbiting this planet */}
+        {showMoons && moons.map((moon) => (
+          <MoonOrbit
+            key={moon.id}
+            moon={moon}
+            onClick={() => onMoonClick?.(moon.id)}
+            showLabel={showLabel}
+          />
+        ))}
       </group>
     </>
   );

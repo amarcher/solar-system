@@ -2,7 +2,7 @@ import { Canvas } from '@react-three/fiber';
 import { NoToneMapping } from 'three';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { OrbitControls } from '@react-three/drei';
-import type { NavigationState, Planet } from '../../types/celestialBody';
+import type { Moon, NavigationState, Planet } from '../../types/celestialBody';
 import { StarField } from './StarField';
 import { SunMesh } from './Sun';
 import { PlanetOrbit } from './PlanetOrbit';
@@ -11,14 +11,17 @@ import { CameraRig } from './CameraRig';
 
 interface SolarSystemSceneProps {
   planets: Planet[];
+  moonsByPlanet: Record<string, Moon[]>;
   nav: NavigationState;
   onPlanetClick: (planetId: string) => void;
+  onMoonClick: (planetId: string, moonId: string) => void;
   onSunClick: () => void;
   showLabels?: boolean;
 }
 
-export function SolarSystemScene({ planets, nav, onPlanetClick, onSunClick, showLabels = true }: SolarSystemSceneProps) {
+export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true }: SolarSystemSceneProps) {
   const isSystemView = nav.level === 'system';
+  const focusedPlanetId = (nav.level === 'planet' || nav.level === 'moon') ? nav.planetId : null;
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
@@ -51,8 +54,11 @@ export function SolarSystemScene({ planets, nav, onPlanetClick, onSunClick, show
           <PlanetOrbit
             key={planet.id}
             planet={planet}
+            moons={moonsByPlanet[planet.id] || []}
             onClick={() => onPlanetClick(planet.id)}
+            onMoonClick={(moonId) => onMoonClick(planet.id, moonId)}
             showLabel={showLabels}
+            showMoons={focusedPlanetId === planet.id}
           />
         ))}
 
@@ -69,9 +75,9 @@ export function SolarSystemScene({ planets, nav, onPlanetClick, onSunClick, show
 
         <EffectComposer>
           <Bloom
-            intensity={1.2}
-            luminanceThreshold={0.6}
-            luminanceSmoothing={0.4}
+            intensity={1.5}
+            luminanceThreshold={0.5}
+            luminanceSmoothing={0.3}
             mipmapBlur
           />
         </EffectComposer>
