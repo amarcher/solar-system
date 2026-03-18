@@ -1,6 +1,5 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { BackSide } from 'three';
 import type { Mesh, ShaderMaterial } from 'three';
 
 /* ── Sun surface shader ─────────────────────────────────────────────── */
@@ -104,37 +103,6 @@ const fragmentShader = `
   }
 `;
 
-/* ── Corona shader (outer glow rendered on BackSide) ────────────────── */
-
-const coronaVertexShader = `
-  varying vec3 vNormal;
-  varying vec3 vViewDir;
-
-  void main() {
-    vNormal = normalize(normalMatrix * normal);
-    vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-    vViewDir = normalize(-mvPos.xyz);
-    gl_Position = projectionMatrix * mvPos;
-  }
-`;
-
-const coronaFragmentShader = `
-  uniform float uTime;
-  varying vec3 vNormal;
-  varying vec3 vViewDir;
-
-  void main() {
-    float fresnel = 1.0 - dot(vViewDir, vNormal);
-    fresnel = pow(fresnel, 2.0);
-
-    /* Animate corona opacity slightly */
-    float pulse = 0.85 + 0.15 * sin(uTime * 0.5);
-
-    vec3 color = mix(vec3(1.0, 0.6, 0.1), vec3(1.0, 0.85, 0.4), fresnel);
-    gl_FragColor = vec4(color, fresnel * 0.35 * pulse);
-  }
-`;
-
 /* ── Component ──────────────────────────────────────────────────────── */
 
 interface SunMeshProps {
@@ -144,21 +112,14 @@ interface SunMeshProps {
 export function SunMesh({ onClick }: SunMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const matRef = useRef<ShaderMaterial>(null);
-  const coronaMatRef = useRef<ShaderMaterial>(null);
 
   const surfaceUniforms = useMemo(() => ({
     uTime: { value: 0 },
   }), []);
 
-  const coronaUniforms = useMemo(() => ({
-    uTime: { value: 0 },
-  }), []);
-
   useFrame((_, delta) => {
-    const t = delta;
-    if (matRef.current) matRef.current.uniforms.uTime.value += t;
-    if (coronaMatRef.current) coronaMatRef.current.uniforms.uTime.value += t;
-    if (meshRef.current) meshRef.current.rotation.y += t * 0.05;
+    if (matRef.current) matRef.current.uniforms.uTime.value += delta;
+    if (meshRef.current) meshRef.current.rotation.y += delta * 0.05;
   });
 
   return (
@@ -167,7 +128,7 @@ export function SunMesh({ onClick }: SunMeshProps) {
       onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
       onPointerOut={() => { document.body.style.cursor = ''; }}
     >
-      {/* Sun surface */}
+      {/* Sun surface — Bloom post-processing creates the natural glow */}
       <mesh ref={meshRef}>
         <sphereGeometry args={[2.0, 64, 64]} />
         <shaderMaterial
@@ -175,31 +136,6 @@ export function SunMesh({ onClick }: SunMeshProps) {
           vertexShader={vertexShader}
           fragmentShader={fragmentShader}
           uniforms={surfaceUniforms}
-        />
-      </mesh>
-
-      {/* Corona glow — Fresnel on BackSide of larger sphere */}
-      <mesh>
-        <sphereGeometry args={[2.8, 48, 48]} />
-        <shaderMaterial
-          ref={coronaMatRef}
-          vertexShader={coronaVertexShader}
-          fragmentShader={coronaFragmentShader}
-          uniforms={coronaUniforms}
-          transparent
-          depthWrite={false}
-          side={BackSide}
-        />
-      </mesh>
-
-      {/* Soft additive inner glow */}
-      <mesh>
-        <sphereGeometry args={[2.15, 32, 32]} />
-        <meshBasicMaterial
-          color="#ffcc44"
-          transparent
-          opacity={0.05}
-          depthWrite={false}
         />
       </mesh>
     </group>

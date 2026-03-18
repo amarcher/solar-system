@@ -75,9 +75,9 @@ export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, o
 
         <EffectComposer>
           <Bloom
-            intensity={1.2}
-            luminanceThreshold={0.6}
-            luminanceSmoothing={0.4}
+            intensity={1.5}
+            luminanceThreshold={0.5}
+            luminanceSmoothing={0.3}
             mipmapBlur
           />
         </EffectComposer>
