@@ -2,7 +2,8 @@ import { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { NavigationState, Planet } from '../../types/celestialBody';
-import { getPlanetPosition } from '../../utils/planetPositions';
+import { getPlanetPosition, getMoonPosition } from '../../utils/planetPositions';
+import { getMoonById } from '../../data/moons';
 
 interface CameraRigProps {
   nav: NavigationState;
@@ -20,29 +21,48 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
   const isAnimating = useRef(false);
   const animProgress = useRef(1);
 
-  // Track which planet we're following (null = none)
   const trackingPlanetId = useRef<string | null>(null);
+  const trackingMoonId = useRef<string | null>(null);
 
   useEffect(() => {
     if (nav.level === 'system') {
       targetPos.current.copy(SYSTEM_POSITION);
       targetLook.current.copy(SYSTEM_TARGET);
       trackingPlanetId.current = null;
+      trackingMoonId.current = null;
     } else if (nav.level === 'sun') {
       targetPos.current.set(0, 2, 6);
       targetLook.current.set(0, 0, 0);
       trackingPlanetId.current = null;
-    } else if (nav.level === 'planet' || nav.level === 'moon') {
+      trackingMoonId.current = null;
+    } else if (nav.level === 'planet') {
       trackingPlanetId.current = nav.planetId;
-      // Initial target will be updated in useFrame from live position
+      trackingMoonId.current = null;
+    } else if (nav.level === 'moon') {
+      trackingPlanetId.current = nav.planetId;
+      trackingMoonId.current = nav.moonId;
     }
     isAnimating.current = true;
     animProgress.current = 0;
   }, [nav, planets]);
 
   useFrame((_, delta) => {
-    // If tracking a planet, continuously update targets from live position
-    if (trackingPlanetId.current) {
+    // Track moon if at moon level
+    if (trackingMoonId.current) {
+      const moonPos = getMoonPosition(trackingMoonId.current);
+      const moon = getMoonById(trackingMoonId.current);
+      if (moonPos && moon) {
+        const moonRadius = Math.max(moon.diameter / 8000, 0.06);
+        const dist = moonRadius * 8 + 0.5;
+        targetPos.current.set(
+          moonPos.x,
+          moonPos.y + dist * 0.3,
+          moonPos.z + dist,
+        );
+        targetLook.current.copy(moonPos);
+      }
+    } else if (trackingPlanetId.current) {
+      // Track planet
       const planet = planets.find(p => p.id === trackingPlanetId.current);
       const pos = getPlanetPosition(trackingPlanetId.current);
       if (planet && pos) {
@@ -56,7 +76,8 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
       }
     }
 
-    if (!isAnimating.current && !trackingPlanetId.current) return;
+    const isTracking = trackingPlanetId.current || trackingMoonId.current;
+    if (!isAnimating.current && !isTracking) return;
 
     const lerpSpeed = 1 - Math.pow(0.001, delta);
 
@@ -70,12 +91,11 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
     if (distToTarget < 0.05 && animProgress.current > 0.5) {
       if (nav.level === 'system') {
         isAnimating.current = false;
-      } else if (!trackingPlanetId.current) {
+      } else if (!isTracking) {
         camera.position.copy(targetPos.current);
         camera.lookAt(targetLook.current);
         isAnimating.current = false;
       }
-      // If tracking, never stop — keep following
     }
   });
 

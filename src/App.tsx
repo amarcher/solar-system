@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigation } from './hooks/useNavigation';
 import { useSolarConversation } from './hooks/useSolarConversation';
 import { planets } from './data/planets';
 import { getPlanetById } from './data/planets';
-import { getMoonById } from './data/moons';
+import { getMoonById, getMoonsByPlanet } from './data/moons';
 import { SolarSystemScene } from './components/scene/SolarSystemScene';
 import { PlanetDetail } from './components/detail/PlanetDetail';
 import { MoonDetail } from './components/detail/MoonDetail';
@@ -32,11 +32,24 @@ function App() {
     viewTransition(() => goToSun(), ['detail-open']);
   }, [goToSun]);
 
+  const moonsByPlanet = useMemo(() => {
+    const map: Record<string, ReturnType<typeof getMoonsByPlanet>> = {};
+    for (const p of planets) {
+      const m = getMoonsByPlanet(p.id);
+      if (m.length > 0) map[p.id] = m;
+    }
+    return map;
+  }, []);
+
   const handleMoonClick = useCallback((moonId: string) => {
     if (nav.level === 'planet') {
       viewTransition(() => goToMoon(nav.planetId, moonId), ['detail-open']);
     }
   }, [nav, goToMoon]);
+
+  const handleSceneMoonClick = useCallback((planetId: string, moonId: string) => {
+    viewTransition(() => goToMoon(planetId, moonId), ['detail-open']);
+  }, [goToMoon]);
 
   const handleClose = useCallback(() => {
     viewTransition(() => goToSystem(), ['detail-close']);
@@ -81,8 +94,10 @@ function App() {
 
       <SolarSystemScene
         planets={planets}
+        moonsByPlanet={moonsByPlanet}
         nav={nav}
         onPlanetClick={handlePlanetClick}
+        onMoonClick={handleSceneMoonClick}
         onSunClick={handleSunClick}
         showLabels={!cinemaMode && showLabels}
       />
