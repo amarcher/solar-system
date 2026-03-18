@@ -49,7 +49,7 @@ export function PlanetOrbit({ planet, moons = [], onClick, onMoonClick, paused, 
 
       {/* Planet group (orbiting) */}
       <group ref={groupRef}>
-        <PlanetMesh planet={planet} onClick={onClick} showLabel={showLabel} />
+        <PlanetMesh planet={planet} onClick={onClick} showLabel={showLabel} showMoons={showMoons} />
 
         {/* Moons orbiting this planet */}
         {showMoons && moons.map((moon) => (

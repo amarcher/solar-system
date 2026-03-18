@@ -9,9 +9,11 @@ interface PlanetMeshProps {
   planet: Planet;
   onClick?: () => void;
   showLabel?: boolean;
+  /** When true, moons are visible — shrink hit area so moon clicks get through */
+  showMoons?: boolean;
 }
 
-export function PlanetMesh({ planet, onClick, showLabel = true }: PlanetMeshProps) {
+export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = false }: PlanetMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const cloudRef = useRef<Mesh>(null);
   const diffuseMap = usePlanetTexture(planet.id);
@@ -39,21 +41,26 @@ export function PlanetMesh({ planet, onClick, showLabel = true }: PlanetMeshProp
     return c;
   }, [planet.color]);
 
-  // Generous hit area — small planets get a large minimum so kids can catch them
-  const hitRadius = Math.max(planet.visualRadius * 3, 1.0);
+  // When moons are visible, use the actual planet radius so we don't block moon clicks.
+  // In system view, use a generous hit area so small planets are easy to tap.
+  const hitRadius = showMoons
+    ? planet.visualRadius
+    : Math.max(planet.visualRadius * 3, 1.0);
 
   return (
     <group>
       {/* Invisible enlarged hit area for easier clicking/tapping */}
-      <mesh
-        onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-        onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
-        onPointerOut={() => { document.body.style.cursor = ''; }}
-        visible={false}
-      >
-        <sphereGeometry args={[hitRadius, 16, 16]} />
-        <meshBasicMaterial />
-      </mesh>
+      {!showMoons && (
+        <mesh
+          onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+          onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
+          onPointerOut={() => { document.body.style.cursor = ''; }}
+          visible={false}
+        >
+          <sphereGeometry args={[hitRadius, 16, 16]} />
+          <meshBasicMaterial />
+        </mesh>
+      )}
 
       {/* Planet sphere */}
       <mesh
