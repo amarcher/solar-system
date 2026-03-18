@@ -103,6 +103,42 @@ body {
   z-index: 120;
 }
 
+/* Cinema mode toggle */
+.app__cinema-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 130;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s, color 0.2s, opacity 0.3s;
+}
+
+.app__cinema-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.app__cinema-toggle--active {
+  opacity: 0.3;
+}
+
+.app__cinema-toggle--active:hover {
+  opacity: 1;
+}
+
 @media (max-width: 560px) {
   .app-header {
     padding: 8px 12px 2px;
