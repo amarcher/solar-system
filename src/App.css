@@ -60,55 +60,18 @@ body {
   margin-top: 6px;
 }
 
-/* Label toggle button */
-.app__label-toggle {
-  position: fixed;
-  bottom: 28px;
-  right: 110px;
-  z-index: 120;
-  appearance: none;
-  -webkit-appearance: none;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px;
-  padding: 6px 12px 6px 8px;
-  color: rgba(255, 255, 255, 0.6);
-  font: inherit;
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: background 0.15s, color 0.15s;
-}
-
-.app__label-toggle:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-}
-
-.app__label-toggle svg {
-  opacity: 0.7;
-}
-
-/* Floating voice agent orb */
-.app__voice-float {
-  position: fixed;
-  bottom: 28px;
-  right: 28px;
-  z-index: 120;
-}
-
-/* Cinema mode toggle */
-.app__cinema-toggle {
+/* Top-right toolbar (label toggle + cinema toggle) */
+.app__toolbar {
   position: fixed;
   top: 20px;
   right: 20px;
   z-index: 130;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.app__toolbar-btn {
   appearance: none;
   -webkit-appearance: none;
   background: rgba(0, 0, 0, 0.4);
@@ -126,17 +89,25 @@ body {
   transition: background 0.2s, color 0.2s, opacity 0.3s;
 }
 
-.app__cinema-toggle:hover {
+.app__toolbar-btn:hover {
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
 }
 
-.app__cinema-toggle--active {
+.app__toolbar-btn--active {
   opacity: 0.3;
 }
 
-.app__cinema-toggle--active:hover {
+.app__toolbar-btn--active:hover {
   opacity: 1;
+}
+
+/* Floating voice agent orb */
+.app__voice-float {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 120;
 }
 
 @media (max-width: 560px) {
@@ -148,9 +119,9 @@ body {
     display: none;
   }
 
-  .app__label-toggle {
-    bottom: 16px;
-    right: 80px;
+  .app__toolbar {
+    top: 12px;
+    right: 12px;
   }
 
   .app__voice-float {

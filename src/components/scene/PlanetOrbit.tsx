@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
 import type { Planet } from '../../types/celestialBody';
 import { PlanetMesh } from './PlanetMesh';
+import { setPlanetPosition } from '../../utils/planetPositions';
 
 interface PlanetOrbitProps {
   planet: Planet;
@@ -21,8 +22,11 @@ export function PlanetOrbit({ planet, onClick, paused, showLabel = true }: Plane
       angleRef.current += delta * planet.orbitSpeed;
     }
     if (groupRef.current) {
-      groupRef.current.position.x = Math.cos(angleRef.current) * planet.orbitRadius;
-      groupRef.current.position.z = Math.sin(angleRef.current) * planet.orbitRadius;
+      const x = Math.cos(angleRef.current) * planet.orbitRadius;
+      const z = Math.sin(angleRef.current) * planet.orbitRadius;
+      groupRef.current.position.x = x;
+      groupRef.current.position.z = z;
+      setPlanetPosition(planet.id, x, 0, z);
     }
   });
 
