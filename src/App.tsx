@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { useNavigation } from './hooks/useNavigation';
 import { useSolarConversation } from './hooks/useSolarConversation';
 import { planets } from './data/planets';
@@ -196,6 +197,8 @@ function App() {
           onBack={handleBack}
         />
       )}
+
+      <Analytics />
     </div>
   );
 }
