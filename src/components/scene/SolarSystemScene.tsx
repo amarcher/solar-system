@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { NoToneMapping, DirectionalLight } from 'three';
+import { ACESFilmicToneMapping, DirectionalLight } from 'three';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { OrbitControls } from '@react-three/drei';
 import type { Moon, NavigationState, Planet } from '../../types/celestialBody';
@@ -30,7 +30,7 @@ function FillLight({ active }: { active: boolean }) {
   return (
     <directionalLight
       ref={lightRef}
-      intensity={active ? 1.0 : 0}
+      intensity={active ? 0.6 : 0}
       color="#ffffff"
     />
   );
@@ -56,15 +56,15 @@ export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, o
       <Canvas
         shadows
         camera={{ position: [0, 35, 50], fov: 50, near: 0.1, far: 500 }}
-        gl={{ antialias: true, alpha: false, toneMapping: NoToneMapping }}
+        gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
         aria-hidden="true"
       >
         <color attach="background" args={['#050510']} />
-        <ambientLight intensity={isZoomedIn ? 0.25 : 0.15} />
+        <ambientLight intensity={isZoomedIn ? 0.3 : 0.15} />
         <FillLight active={isZoomedIn} />
         <pointLight
           position={[0, 0, 0]}
-          intensity={8}
+          intensity={3}
           color="#fff8ee"
           decay={0}
           castShadow
@@ -105,8 +105,8 @@ export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, o
         <EffectComposer>
           <Bloom
             intensity={1.5}
-            luminanceThreshold={0.5}
-            luminanceSmoothing={0.3}
+            luminanceThreshold={0.85}
+            luminanceSmoothing={0.2}
             mipmapBlur
           />
         </EffectComposer>

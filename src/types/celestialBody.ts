@@ -42,6 +42,7 @@ export interface Moon {
   summary: string;
   funFacts: string[];
   orbitRadius: number;           // scaled for mini-scene
+  retrograde?: boolean;          // true if moon orbits opposite to planet rotation
 }
 
 export interface SunData {

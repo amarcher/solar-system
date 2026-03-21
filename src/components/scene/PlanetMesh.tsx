@@ -34,18 +34,21 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
   const isGasGiant = planet.category === 'gas-giant' || planet.category === 'ice-giant';
   const segments = isGasGiant ? 48 : 32;
 
-  // Blend planet color toward white for a subtle tint that preserves texture detail
+  // Subtle tint: mostly white so the texture shows through,
+  // but enough planet color to give each body visual identity at small sizes.
   const tintColor = useMemo(() => {
     const c = new Color(planet.color);
-    c.lerp(new Color('#ffffff'), 0.55);
+    c.lerp(new Color('#ffffff'), diffuseMap ? 0.85 : 0.3);
     return c;
-  }, [planet.color]);
+  }, [planet.color, diffuseMap]);
 
   // When moons are visible, use the actual planet radius so we don't block moon clicks.
   // In system view, use a generous hit area so small planets are easy to tap.
   const hitRadius = showMoons
     ? planet.visualRadius
     : Math.max(planet.visualRadius * 3, 1.0);
+
+  const axialTiltRad = planet.axialTilt * (Math.PI / 180);
 
   return (
     <group>
@@ -62,69 +65,65 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
         </mesh>
       )}
 
-      {/* Planet sphere */}
-      <mesh
-        ref={meshRef}
-        castShadow
-        onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-        rotation-z={planet.axialTilt * (Math.PI / 180)}
-      >
-        <sphereGeometry args={[planet.visualRadius, segments, segments]} />
-        {diffuseMap ? (
-          <meshStandardMaterial
-            map={diffuseMap}
-            color={tintColor}
-            roughness={isGasGiant ? 0.5 : 0.85}
-            metalness={isGasGiant ? 0.0 : 0.1}
-          />
-        ) : (
-          <meshStandardMaterial
-            color={planet.color}
-            roughness={isGasGiant ? 0.5 : 0.85}
-            metalness={isGasGiant ? 0.0 : 0.1}
-          />
+      {/* Axial tilt group — everything inside spins around the tilted local Y axis */}
+      <group rotation-z={axialTiltRad}>
+        {/* Planet sphere */}
+        <mesh
+          ref={meshRef}
+          castShadow
+          onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+        >
+          <sphereGeometry args={[planet.visualRadius, segments, segments]} />
+          {diffuseMap ? (
+            <meshStandardMaterial
+              map={diffuseMap}
+              color={tintColor}
+              roughness={0.85}
+              metalness={0}
+            />
+          ) : (
+            <meshStandardMaterial
+              color={tintColor}
+              roughness={0.85}
+              metalness={0}
+            />
+          )}
+        </mesh>
+
+        {/* Earth cloud layer — slightly larger sphere rotating independently */}
+        {planet.id === 'earth' && cloudMap && (
+          <mesh ref={cloudRef}>
+            <sphereGeometry args={[planet.visualRadius * 1.015, segments, segments]} />
+            <meshStandardMaterial
+              map={cloudMap}
+              transparent
+              opacity={0.45}
+              depthWrite={false}
+            />
+          </mesh>
         )}
-      </mesh>
 
-      {/* Earth cloud layer — slightly larger sphere rotating independently */}
-      {planet.id === 'earth' && cloudMap && (
-        <mesh
-          ref={cloudRef}
-          rotation-z={planet.axialTilt * (Math.PI / 180)}
-        >
-          <sphereGeometry args={[planet.visualRadius * 1.015, segments, segments]} />
-          <meshStandardMaterial
-            map={cloudMap}
-            transparent
-            opacity={0.45}
-            depthWrite={false}
-          />
-        </mesh>
-      )}
+        {/* Rings */}
+        {planet.hasRings && (planet.id === 'saturn' || planet.id === 'uranus') && (
+          <ProceduralRings planet={planet} />
+        )}
 
-      {/* Rings */}
-      {planet.hasRings && (planet.id === 'saturn' || planet.id === 'uranus') && (
-        <ProceduralRings planet={planet} />
-      )}
+        {/* Rings for other ringed planets (Jupiter, Neptune — very faint) */}
+        {planet.hasRings && planet.id !== 'saturn' && planet.id !== 'uranus' && (
+          <mesh rotation-x={Math.PI / 2}>
+            <ringGeometry args={[planet.visualRadius * 1.4, planet.visualRadius * 2.0, 64]} />
+            <meshBasicMaterial
+              color={planet.color}
+              transparent
+              opacity={0.05}
+              side={DoubleSide}
+              depthWrite={false}
+            />
+          </mesh>
+        )}
+      </group>
 
-      {/* Rings for other ringed planets (Jupiter, Neptune — very faint) */}
-      {planet.hasRings && planet.id !== 'saturn' && planet.id !== 'uranus' && (
-        <mesh
-          rotation-x={Math.PI / 2}
-          rotation-z={planet.axialTilt * (Math.PI / 180)}
-        >
-          <ringGeometry args={[planet.visualRadius * 1.4, planet.visualRadius * 2.0, 64]} />
-          <meshBasicMaterial
-            color={planet.color}
-            transparent
-            opacity={0.05}
-            side={DoubleSide}
-            depthWrite={false}
-          />
-        </mesh>
-      )}
-
-      {/* Name label */}
+      {/* Name label — outside tilt group so it stays upright */}
       {showLabel && (
         <Html
           position={[0, -(planet.visualRadius + 0.3), 0]}
@@ -175,7 +174,6 @@ function ProceduralRings({ planet }: { planet: Planet }) {
     <mesh
       receiveShadow
       rotation-x={Math.PI / 2}
-      rotation-z={planet.axialTilt * (Math.PI / 180)}
       geometry={geometry}
     >
       <meshStandardMaterial
