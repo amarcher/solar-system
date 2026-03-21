@@ -1,0 +1,18 @@
+{
+    "name": "peel_sun_layer",
+    "description": "Peel back the Sun's layers to reveal a specific layer in the interactive visualization. Use when the child asks to see inside the Sun, or asks about a specific layer like the core, chromosphere, etc. Only works when the Sun detail page is open (navigate there first with navigate_to_sun if needed).",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "description": "The layer to reveal",
+        "properties": {
+            "layer_name": {
+                "type": "string",
+                "description": "Name of the Sun layer to peel to. One of: Corona, Chromosphere, Photosphere, Convective Zone, Radiative Zone, Core"
+            }
+        },
+        "required": ["layer_name"]
+    }
+}

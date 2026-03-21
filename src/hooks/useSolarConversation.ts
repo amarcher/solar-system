@@ -11,6 +11,7 @@ interface ConversationCallbacks {
   onNavigateMoon: (planetId: string, moonId: string) => void;
   onNavigateSun: () => void;
   onGoBack: () => void;
+  onPeelSunLayer: (layerIndex: number) => void;
 }
 
 export type VoiceStatus = 'off' | 'connecting' | 'connected' | 'error';
@@ -88,7 +89,7 @@ function buildSunContext(): string {
   ].join('\n');
 }
 
-export function useSolarConversation({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onGoBack }: ConversationCallbacks) {
+export function useSolarConversation({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onGoBack, onPeelSunLayer }: ConversationCallbacks) {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
   const [sessionStarted, setSessionStarted] = useState(false);
   const [micError, setMicError] = useState<MicError>(null);
@@ -129,6 +130,17 @@ export function useSolarConversation({ onNavigatePlanet, onNavigateMoon, onNavig
       go_back: () => {
         onGoBack();
         return 'Went back';
+      },
+      peel_sun_layer: (params: { layer_name: string }) => {
+        const idx = sun.layers.findIndex(l =>
+          l.name.toLowerCase() === params.layer_name.toLowerCase()
+        );
+        if (idx === -1) {
+          return `No layer found matching "${params.layer_name}". Available layers: ${sun.layers.map(l => l.name).join(', ')}`;
+        }
+        onPeelSunLayer(idx);
+        const layer = sun.layers[idx];
+        return `Peeled to ${layer.name} layer (${layer.temperature}). ${layer.description.slice(0, 120)}...`;
       },
     },
     onConnect: () => {
@@ -235,6 +247,28 @@ export function useSolarConversation({ onNavigatePlanet, onNavigateMoon, onNavig
     }
   }, [agentId, conversation]);
 
+  const notifyLayerChange = useCallback((layerIndex: number) => {
+    if (!agentId || conversation.status !== 'connected') return;
+    const layer = sun.layers[layerIndex];
+    const peeledLayers = sun.layers.slice(0, layerIndex).map(l => l.name);
+    const deeperLayers = sun.layers.slice(layerIndex + 1).map(l => l.name);
+    conversation.sendContextualUpdate(
+      [
+        `[SUN LAYER PEELED] The child just peeled to the ${layer.name} layer!`,
+        peeledLayers.length > 0
+          ? `They've peeled past: ${peeledLayers.join(', ')}.`
+          : `This is the outermost layer.`,
+        `Now viewing: ${layer.name} — ${layer.temperature}.`,
+        layer.description,
+        deeperLayers.length > 0
+          ? `Deeper layers they can still explore: ${deeperLayers.join(', ')}.`
+          : `This is the innermost layer — the core! They've peeled all the way down!`,
+        '',
+        `React with excitement about what they just revealed! Share a cool fact about this layer.`,
+      ].join('\n')
+    );
+  }, [agentId, conversation]);
+
   const notifyNavClosed = useCallback(() => {
     if (!agentId || conversation.status !== 'connected') return;
     currentNavRef.current = null;
@@ -268,6 +302,7 @@ export function useSolarConversation({ onNavigatePlanet, onNavigateMoon, onNavig
     clearMicError,
     notifyNavChange,
     notifyNavClosed,
+    notifyLayerChange,
     toggle,
     agentId,
   };

@@ -24,6 +24,7 @@ function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goBack } = useNavigation();
   const [showLabels, setShowLabels] = useState(true);
   const [cinemaMode, setCinemaMode] = useState(false);
+  const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
 
   const handlePlanetClick = useCallback((planetId: string) => {
     viewTransition(() => goToPlanet(planetId), ['detail-open']);
@@ -68,6 +69,13 @@ function App() {
     },
     onNavigateSun: handleSunClick,
     onGoBack: handleBack,
+    onPeelSunLayer: (layerIndex: number) => {
+      // If not already on Sun detail, navigate there first
+      if (nav.level !== 'sun') {
+        handleSunClick();
+      }
+      setSunLayerOverride(layerIndex);
+    },
   });
 
   useEffect(() => {
@@ -179,7 +187,14 @@ function App() {
       )}
 
       {!cinemaMode && nav.level === 'sun' && (
-        <SunDetail onClose={handleClose} />
+        <SunDetail
+          onClose={handleClose}
+          onLayerChange={(layerIndex) => {
+            setSunLayerOverride(null);
+            voice.notifyLayerChange(layerIndex);
+          }}
+          activeLayerOverride={sunLayerOverride}
+        />
       )}
 
       {!cinemaMode && nav.level === 'planet' && currentPlanet && (
