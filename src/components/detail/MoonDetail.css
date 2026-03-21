@@ -5,17 +5,6 @@
   color: #e8e8f0;
   display: flex;
   flex-direction: column;
-}
-
-.moon-detail__bg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse at 30% 30%, hsla(220, 40%, 25%, 0.2) 0%, transparent 55%),
-    linear-gradient(180deg, hsla(220, 20%, 8%, 0.94) 0%, hsla(220, 18%, 5%, 0.97) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   pointer-events: none;
 }
 
@@ -29,12 +18,17 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
+  pointer-events: none;
+}
+
+.moon-detail__header > * {
+  pointer-events: auto;
 }
 
 .moon-detail__back {
   appearance: none;
   -webkit-appearance: none;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   padding: 6px 14px 6px 10px;
@@ -45,6 +39,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition: background 0.15s, color 0.15s;
 }
 
@@ -58,75 +54,93 @@
   outline-offset: 2px;
 }
 
-/* ---- Layout: full-bleed scene + two columns ---- */
+/* ---- Layout ---- */
 
 .moon-detail__layout {
   position: relative;
   z-index: 1;
   width: 100%;
   height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-content: flex-start;
-  padding: 52px 0 48px;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+/* ---- Panels ---- */
+
+.moon-detail__panel {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
-/* Full-bleed mini scene */
-.moon-detail__layout > .moon-detail__mini-scene {
-  flex: 0 0 100%;
-  margin-bottom: 24px;
+/* ---- Mobile: bottom sheet ---- */
+
+@media (max-width: 899px) {
+  .moon-detail__layout {
+    justify-content: flex-end;
+    overflow-y: auto;
+    max-height: 65vh;
+    margin-top: auto;
+    border-radius: 20px 20px 0 0;
+    background:
+      linear-gradient(
+        180deg,
+        hsla(220, 20%, 8%, 0.88) 0%,
+        hsla(220, 18%, 5%, 0.94) 100%
+      );
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    pointer-events: auto;
+  }
+
+  .moon-detail__panel {
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    overflow-y: visible;
+  }
 }
 
-.moon-detail__mini-scene {
-  position: relative;
-  width: 100%;
-  height: 45vh;
-  min-height: 280px;
-  max-height: 500px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.3);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  animation: content-appear 0.35s cubic-bezier(0.2, 0, 0.2, 1) both 0.05s;
-}
-
-.moon-detail__mini-scene canvas {
-  cursor: grab;
-}
-
-.moon-detail__mini-scene canvas:active {
-  cursor: grabbing;
-}
-
-/* Two columns below the scene */
-
-.moon-detail__col-left,
-.moon-detail__col-right {
-  width: 100%;
-  max-width: 600px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 0 20px;
-}
+/* ---- Desktop: side panels ---- */
 
 @media (min-width: 900px) {
   .moon-detail__layout {
-    gap: 40px;
+    flex-direction: row;
+    align-items: stretch;
   }
 
-  .moon-detail__layout > .moon-detail__mini-scene {
-    margin-bottom: 16px;
+  .moon-detail__panel {
+    width: 340px;
+    max-width: 30vw;
+    height: 100%;
+    padding: 60px 24px 48px;
+    background:
+      linear-gradient(
+        180deg,
+        hsla(220, 20%, 8%, 0.85) 0%,
+        hsla(220, 18%, 5%, 0.90) 100%
+      );
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
 
-  .moon-detail__col-left,
-  .moon-detail__col-right {
-    flex: 0 1 500px;
-    padding: 0;
+  .moon-detail__panel--left {
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: inset -20px 0 40px -20px hsla(220, 40%, 50%, 0.1);
+  }
+
+  .moon-detail__panel--right {
+    margin-left: auto;
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: inset 20px 0 40px -20px hsla(220, 40%, 50%, 0.1);
   }
 }
 
@@ -251,8 +265,7 @@
   .moon-detail__summary,
   .moon-detail__properties,
   .moon-detail__facts,
-  .moon-detail__meta,
-  .moon-detail__mini-scene {
+  .moon-detail__meta {
     animation: none;
     opacity: 1;
     transform: none;

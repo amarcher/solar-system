@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import type { Moon } from '../../types/celestialBody';
-import { MoonMiniScene } from '../scene/MoonMiniScene';
 import './MoonDetail.css';
 
 interface MoonDetailProps {
@@ -65,8 +64,6 @@ export function MoonDetail({ moon, onClose, onBack }: MoonDetailProps) {
       aria-modal="true"
       aria-label={`Details for ${moon.name}`}
     >
-      <div className="moon-detail__bg" />
-
       <div className="moon-detail__header">
         <button className="moon-detail__back" onClick={onBack} type="button" aria-label="Back to planet">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -82,9 +79,7 @@ export function MoonDetail({ moon, onClose, onBack }: MoonDetailProps) {
       </div>
 
       <div className="moon-detail__layout">
-        <MoonMiniScene moon={moon} />
-
-        <div className="moon-detail__col-left">
+        <div className="moon-detail__panel moon-detail__panel--left">
           <div className="moon-detail__identity">
             <h2 className="moon-detail__name">{moon.name}</h2>
             <span className="moon-detail__notable">{moon.notableFeature}</span>
@@ -116,7 +111,7 @@ export function MoonDetail({ moon, onClose, onBack }: MoonDetailProps) {
           </div>
         </div>
 
-        <div className="moon-detail__col-right">
+        <div className="moon-detail__panel moon-detail__panel--right">
           <div className="moon-detail__facts">
             <span className="moon-detail__section-label">Fun Facts</span>
             {moon.funFacts.map((fact, i) => (
