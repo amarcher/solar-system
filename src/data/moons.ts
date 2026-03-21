@@ -473,6 +473,7 @@ export const moons: Moon[] = [
       "Triton has the coldest measured surface temperature of any solid body in the solar system: about -235°C.",
     ],
     orbitRadius: 2.2,
+    retrograde: true,
   },
   {
     id: 'proteus',

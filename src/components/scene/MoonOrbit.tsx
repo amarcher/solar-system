@@ -1,7 +1,7 @@
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { Vector3 } from 'three';
+import { Color, Vector3 } from 'three';
 import type { Group } from 'three';
 import type { Moon } from '../../types/celestialBody';
 import { usePlanetTexture } from '../../utils/textures';
@@ -36,17 +36,26 @@ export function MoonOrbit({ moon, onClick, showLabel = true }: MoonOrbitProps) {
   const groupRef = useRef<Group>(null);
   const angleRef = useRef(Math.random() * Math.PI * 2);
   const diffuseMap = usePlanetTexture(moon.id);
+  const moonColor = MOON_COLORS[moon.id] || '#aaaaaa';
+
+  // Subtle tint so textured moons retain their characteristic color at small sizes
+  const tintColor = useMemo(() => {
+    const c = new Color(moonColor);
+    c.lerp(new Color('#ffffff'), diffuseMap ? 0.7 : 0.0);
+    return c;
+  }, [moonColor, diffuseMap]);
 
   // Derive a visual radius from real diameter, clamped for visibility
   const visualRadius = Math.max(moon.diameter / 8000, 0.06);
 
   // Orbit speed inversely proportional to orbital period
   const orbitSpeed = moon.orbitalPeriod > 0 ? 0.5 / moon.orbitalPeriod : 0.3;
+  const orbitDirection = moon.retrograde ? -1 : 1;
 
   const worldPos = useRef(new Vector3());
 
   useFrame((_, delta) => {
-    angleRef.current += delta * orbitSpeed;
+    angleRef.current += delta * orbitSpeed * orbitDirection;
     if (groupRef.current) {
       groupRef.current.position.x = Math.cos(angleRef.current) * moon.orbitRadius;
       groupRef.current.position.z = Math.sin(angleRef.current) * moon.orbitRadius;
@@ -76,11 +85,12 @@ export function MoonOrbit({ moon, onClick, showLabel = true }: MoonOrbitProps) {
           onPointerOut={() => { document.body.style.cursor = ''; }}
         >
           <sphereGeometry args={[visualRadius, 24, 24]} />
-          {diffuseMap ? (
-            <meshStandardMaterial map={diffuseMap} roughness={0.9} metalness={0} />
-          ) : (
-            <meshStandardMaterial color={MOON_COLORS[moon.id] || '#aaaaaa'} roughness={0.9} metalness={0} />
-          )}
+          <meshStandardMaterial
+            map={diffuseMap ?? undefined}
+            color={tintColor}
+            roughness={0.9}
+            metalness={0}
+          />
         </mesh>
 
         {/* Enlarged invisible hit area */}
