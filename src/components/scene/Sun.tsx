@@ -1,5 +1,6 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import type { Mesh, ShaderMaterial } from 'three';
 
 /* ── Sun surface shader ─────────────────────────────────────────────── */
@@ -107,9 +108,10 @@ const fragmentShader = `
 
 interface SunMeshProps {
   onClick?: () => void;
+  showLabel?: boolean;
 }
 
-export function SunMesh({ onClick }: SunMeshProps) {
+export function SunMesh({ onClick, showLabel = true }: SunMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const matRef = useRef<ShaderMaterial>(null);
 
@@ -138,6 +140,33 @@ export function SunMesh({ onClick }: SunMeshProps) {
           uniforms={surfaceUniforms}
         />
       </mesh>
+
+      {showLabel && (
+        <Html
+          position={[0, -2.5, 0]}
+          center
+          style={{ pointerEvents: 'none' }}
+        >
+          <div
+            onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+            style={{
+              color: 'rgba(255, 215, 0, 0.8)',
+              fontSize: '12px',
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              userSelect: 'none',
+              textShadow: '0 1px 6px rgba(0, 0, 0, 0.9)',
+              letterSpacing: '0.03em',
+              cursor: 'pointer',
+              pointerEvents: 'auto',
+              padding: '4px 8px',
+            }}
+          >
+            Sun
+          </div>
+        </Html>
+      )}
     </group>
   );
 }

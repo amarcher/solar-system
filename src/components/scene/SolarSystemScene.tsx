@@ -76,7 +76,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, o
         />
 
         <StarField />
-        <SunMesh onClick={onSunClick} />
+        <SunMesh onClick={onSunClick} showLabel={showLabels} />
         <AsteroidBelt />
 
         {planets.map((planet) => (

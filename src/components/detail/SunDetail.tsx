@@ -4,12 +4,26 @@ import './SunDetail.css';
 
 interface SunDetailProps {
   onClose: () => void;
+  onLayerChange?: (layerIndex: number) => void;
+  activeLayerOverride?: number | null;
 }
 
-export function SunDetail({ onClose }: SunDetailProps) {
+export function SunDetail({ onClose, onLayerChange, activeLayerOverride }: SunDetailProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [activeLayer, setActiveLayer] = useState(0);
+
+  // Allow voice agent to control the active layer
+  useEffect(() => {
+    if (activeLayerOverride != null && activeLayerOverride !== activeLayer) {
+      setActiveLayer(activeLayerOverride);
+    }
+  }, [activeLayerOverride]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleLayerClick = (i: number) => {
+    setActiveLayer(i);
+    onLayerChange?.(i);
+  };
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -96,10 +110,10 @@ export function SunDetail({ onClose }: SunDetailProps) {
                       width: `${size}%`,
                       height: `${size}%`,
                       backgroundColor: layer.color,
-                      opacity: i <= activeLayer ? 1 : 0.25,
-                      zIndex: sun.layers.length - i,
+                      opacity: i < activeLayer ? 0.15 : 1,
+                      zIndex: i + 1,
                     }}
-                    onClick={() => setActiveLayer(i)}
+                    onClick={() => handleLayerClick(i)}
                     aria-label={`${layer.name} layer`}
                     type="button"
                   />
