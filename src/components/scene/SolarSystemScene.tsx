@@ -12,7 +12,7 @@ import { CameraRig } from './CameraRig';
 
 /**
  * Camera-relative fill light that activates when zoomed into a planet/moon.
- * Mimics the directional light in PlanetMiniScene so close-up views look consistent.
+ * Provides fill lighting when zoomed into a planet/moon.
  */
 function FillLight({ active }: { active: boolean }) {
   const lightRef = useRef<DirectionalLight>(null);

@@ -3,7 +3,6 @@ import type { Planet } from '../../types/celestialBody';
 import type { Moon } from '../../types/celestialBody';
 import { categoryColors, categoryLabels } from '../../utils/colors';
 import { getMoonsByPlanet } from '../../data/moons';
-import { PlanetMiniScene } from '../scene/PlanetMiniScene';
 import './PlanetDetail.css';
 
 interface PlanetDetailProps {
@@ -76,8 +75,6 @@ export function PlanetDetail({ planet, onClose, onMoonClick }: PlanetDetailProps
       aria-label={`Details for ${planet.name}`}
       style={{ '--cat-color': catColor } as React.CSSProperties}
     >
-      <div className="detail__bg" />
-
       <button ref={closeRef} className="detail__close" onClick={onClose} aria-label="Close">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
           <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
@@ -85,9 +82,7 @@ export function PlanetDetail({ planet, onClose, onMoonClick }: PlanetDetailProps
       </button>
 
       <div className="detail__layout">
-        <PlanetMiniScene planet={planet} onMoonClick={onMoonClick} />
-
-        <div className="detail__col-left">
+        <div className="detail__panel detail__panel--left">
           <div className="detail__identity detail__content">
             <span className="detail__order">#{planet.orderFromSun} from the Sun</span>
             <span className="detail__name">{planet.name}</span>
@@ -117,7 +112,7 @@ export function PlanetDetail({ planet, onClose, onMoonClick }: PlanetDetailProps
           )}
         </div>
 
-        <div className="detail__col-right">
+        <div className="detail__panel detail__panel--right">
           <div className="detail__facts detail__content">
             <span className="detail__section-label">Fun Facts</span>
             {planet.funFacts.map((fact, i) => (
