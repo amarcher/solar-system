@@ -34,11 +34,11 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
   const isGasGiant = planet.category === 'gas-giant' || planet.category === 'ice-giant';
   const segments = isGasGiant ? 48 : 32;
 
-  // Subtle tint: mostly white so the texture shows through,
-  // but enough planet color to give each body visual identity at small sizes.
+  // Darken the planet color to prevent washout under the intense point light.
+  // The texture provides detail; the darkened color absorbs excess light.
   const tintColor = useMemo(() => {
     const c = new Color(planet.color);
-    c.lerp(new Color('#ffffff'), diffuseMap ? 0.85 : 0.3);
+    if (diffuseMap) c.multiplyScalar(0.55);
     return c;
   }, [planet.color, diffuseMap]);
 
