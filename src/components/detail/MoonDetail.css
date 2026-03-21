@@ -144,6 +144,19 @@
   }
 }
 
+/* ---- Content fade + scale ---- */
+
+@keyframes content-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 /* ---- Identity ---- */
 
 .moon-detail__identity {
