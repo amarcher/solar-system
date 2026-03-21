@@ -38,10 +38,11 @@ export function MoonOrbit({ moon, onClick, showLabel = true }: MoonOrbitProps) {
   const diffuseMap = usePlanetTexture(moon.id);
   const moonColor = MOON_COLORS[moon.id] || '#aaaaaa';
 
-  // Subtle tint so textured moons retain their characteristic color at small sizes
+  // Darken the moon color to prevent washout under the intense point light.
+  // Textured moons need a darker tint so the lit side doesn't clip to white.
   const tintColor = useMemo(() => {
     const c = new Color(moonColor);
-    c.lerp(new Color('#ffffff'), diffuseMap ? 0.7 : 0.0);
+    if (diffuseMap) c.multiplyScalar(0.25);
     return c;
   }, [moonColor, diffuseMap]);
 
