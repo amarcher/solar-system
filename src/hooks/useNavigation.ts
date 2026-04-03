@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { NavigationState } from '../types/celestialBody';
+import { trackPlanetView, trackMoonView, trackSunView, trackExplorationMilestone } from '../utils/analytics';
 
 export function useNavigation() {
   const [nav, setNav] = useState<NavigationState>({ level: 'system' });
@@ -10,14 +11,18 @@ export function useNavigation() {
 
   const goToSun = useCallback(() => {
     setNav({ level: 'sun' });
+    trackSunView();
   }, []);
 
   const goToPlanet = useCallback((planetId: string) => {
     setNav({ level: 'planet', planetId });
+    trackPlanetView(planetId);
+    trackExplorationMilestone(planetId);
   }, []);
 
   const goToMoon = useCallback((planetId: string, moonId: string) => {
     setNav({ level: 'moon', planetId, moonId });
+    trackMoonView(planetId, moonId);
   }, []);
 
   const goBack = useCallback(() => {
