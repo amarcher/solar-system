@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useNavigation } from './hooks/useNavigation';
 import { useSolarConversation } from './hooks/useSolarConversation';
 import { planets } from './data/planets';
@@ -96,7 +97,6 @@ function App() {
     <div className={`app${cinemaMode ? ' app--cinema' : ''}`}>
       {!cinemaMode && (
         <header className="app-header">
-          <h1 className="app-title">Solar System Explorer</h1>
           <p className="app-subtitle">Click any planet to explore</p>
         </header>
       )}
@@ -214,6 +214,7 @@ function App() {
       )}
 
       <Analytics />
+      <SpeedInsights />
     </div>
   );
 }
