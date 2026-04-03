@@ -97,7 +97,12 @@ function App() {
     <div className={`app${cinemaMode ? ' app--cinema' : ''}`}>
       {!cinemaMode && (
         <header className="app-header">
-          <p className="app-subtitle">Click any planet to explore</p>
+          <p className="app-subtitle">
+            {nav.level === 'planet' ? 'Click any moon to explore' :
+             nav.level === 'moon' ? `Exploring ${currentMoon?.name ?? 'moon'}` :
+             nav.level === 'sun' ? 'Exploring the Sun' :
+             'Click any planet to explore'}
+          </p>
         </header>
       )}
 
