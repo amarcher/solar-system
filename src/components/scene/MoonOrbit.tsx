@@ -38,12 +38,14 @@ export function MoonOrbit({ moon, onClick, showLabel = true }: MoonOrbitProps) {
   const diffuseMap = usePlanetTexture(moon.id);
   const moonColor = MOON_COLORS[moon.id] || '#aaaaaa';
 
-  // Darken the moon color to prevent washout under the intense point light.
-  // Textured moons need a darker tint so the lit side doesn't clip to white.
+  // When textured, use a near-white color with a subtle moon color cast.
   const tintColor = useMemo(() => {
-    const c = new Color(moonColor);
-    if (diffuseMap) c.multiplyScalar(0.25);
-    return c;
+    if (diffuseMap) {
+      const c = new Color('#ffffff');
+      c.lerp(new Color(moonColor), 0.2);
+      return c;
+    }
+    return new Color(moonColor);
   }, [moonColor, diffuseMap]);
 
   // Derive a visual radius from real diameter, clamped for visibility
@@ -89,7 +91,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true }: MoonOrbitProps) {
           <meshStandardMaterial
             map={diffuseMap ?? undefined}
             color={tintColor}
-            roughness={0.9}
+            roughness={0.75}
             metalness={0}
           />
         </mesh>
