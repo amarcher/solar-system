@@ -34,25 +34,18 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
   const isGasGiant = planet.category === 'gas-giant' || planet.category === 'ice-giant';
   const segments = isGasGiant ? 48 : 32;
 
-  // Blend the planet's characteristic color with the texture map.
-  // multiplyScalar(0.75) preserves the color cast (Earth=blue, Mars=red)
-  // while letting texture detail show through without washout.
+  // When textured, use a near-white color with a subtle planet color cast.
+  // Lerp 15% toward planet.color so the texture drives appearance while
+  // retaining a hint of the characteristic hue. Full planet.color was
+  // crushing texture detail (e.g. Earth's blue killed continent greens).
   const tintColor = useMemo(() => {
-    const c = new Color(planet.color);
-    if (diffuseMap) c.multiplyScalar(0.75);
-    return c;
-  }, [planet.color, diffuseMap]);
-
-  // Imperatively set the texture map — bypasses R3F prop reconciliation
-  useFrame(() => {
-    if (meshRef.current?.material && diffuseMap) {
-      const mat = meshRef.current.material as any;
-      if (mat.map !== diffuseMap) {
-        mat.map = diffuseMap;
-        mat.needsUpdate = true;
-      }
+    if (diffuseMap) {
+      const c = new Color('#ffffff');
+      c.lerp(new Color(planet.color), 0.15);
+      return c;
     }
-  });
+    return new Color(planet.color);
+  }, [planet.color, diffuseMap]);
 
   // When moons are visible, use the actual planet radius so we don't block moon clicks.
   // In system view, use a generous hit area so small planets are easy to tap.
@@ -101,7 +94,7 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
             <meshStandardMaterial
               map={cloudMap}
               transparent
-              opacity={0.45}
+              opacity={0.25}
               depthWrite={false}
             />
           </mesh>
