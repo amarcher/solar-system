@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { Color, DoubleSide, RingGeometry } from 'three';
@@ -46,6 +46,16 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
     }
     return new Color(planet.color);
   }, [planet.color, diffuseMap]);
+
+  // R3F doesn't always detect map changing from undefined → Texture on re-render.
+  // Imperatively apply the texture when it finishes loading.
+  useEffect(() => {
+    if (meshRef.current?.material && diffuseMap) {
+      const mat = meshRef.current.material as any;
+      mat.map = diffuseMap;
+      mat.needsUpdate = true;
+    }
+  }, [diffuseMap]);
 
   // When moons are visible, use the actual planet radius so we don't block moon clicks.
   // In system view, use a generous hit area so small planets are easy to tap.
