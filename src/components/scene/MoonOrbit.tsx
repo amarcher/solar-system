@@ -48,8 +48,10 @@ export function MoonOrbit({ moon, onClick, showLabel = true }: MoonOrbitProps) {
     return new Color(moonColor);
   }, [moonColor, diffuseMap]);
 
-  // Derive a visual radius from real diameter, clamped for visibility
-  const visualRadius = Math.max(moon.diameter / 8000, 0.06);
+  // Derive a visual radius from real diameter, clamped for visibility.
+  // Divisor of 25000 keeps moons visually smaller than their parent planet
+  // while still large enough to see and click.
+  const visualRadius = Math.max(moon.diameter / 25000, 0.04);
 
   // Orbit speed inversely proportional to orbital period
   const orbitSpeed = moon.orbitalPeriod > 0 ? 0.5 / moon.orbitalPeriod : 0.3;
