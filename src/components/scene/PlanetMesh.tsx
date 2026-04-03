@@ -35,12 +35,22 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
   const segments = isGasGiant ? 48 : 32;
 
   // Darken the planet color to prevent washout under the intense point light.
-  // The texture provides detail; the darkened color absorbs excess light.
   const tintColor = useMemo(() => {
     const c = new Color(planet.color);
     if (diffuseMap) c.multiplyScalar(0.55);
     return c;
   }, [planet.color, diffuseMap]);
+
+  // Imperatively set the texture map — bypasses R3F prop reconciliation
+  useFrame(() => {
+    if (meshRef.current?.material && diffuseMap) {
+      const mat = meshRef.current.material as any;
+      if (mat.map !== diffuseMap) {
+        mat.map = diffuseMap;
+        mat.needsUpdate = true;
+      }
+    }
+  });
 
   // When moons are visible, use the actual planet radius so we don't block moon clicks.
   // In system view, use a generous hit area so small planets are easy to tap.
@@ -74,20 +84,12 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
           onClick={(e) => { e.stopPropagation(); onClick?.(); }}
         >
           <sphereGeometry args={[planet.visualRadius, segments, segments]} />
-          {diffuseMap ? (
-            <meshStandardMaterial
-              map={diffuseMap}
-              color={tintColor}
-              roughness={0.85}
-              metalness={0}
-            />
-          ) : (
-            <meshStandardMaterial
-              color={tintColor}
-              roughness={0.85}
-              metalness={0}
-            />
-          )}
+          <meshStandardMaterial
+            map={diffuseMap ?? undefined}
+            color={tintColor}
+            roughness={0.85}
+            metalness={0}
+          />
         </mesh>
 
         {/* Earth cloud layer — slightly larger sphere rotating independently */}
