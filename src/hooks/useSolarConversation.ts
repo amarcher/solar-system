@@ -3,6 +3,7 @@ import { useConversation } from '@elevenlabs/react';
 import type { Planet, Moon, NavigationState } from '../types/celestialBody';
 import { planets } from '../data/planets';
 import { getMoonsByPlanet, getMoonById } from '../data/moons';
+import { trackVoiceAgentActivated } from '../utils/analytics';
 import { categoryLabels } from '../utils/colors';
 import { sun } from '../data/sun';
 
@@ -216,6 +217,7 @@ export function useSolarConversation({ onNavigatePlanet, onNavigateMoon, onNavig
     }
 
     setSessionStarted(true);
+    trackVoiceAgentActivated();
 
     try {
       await conversation.startSession({
