@@ -34,10 +34,12 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
   const isGasGiant = planet.category === 'gas-giant' || planet.category === 'ice-giant';
   const segments = isGasGiant ? 48 : 32;
 
-  // Darken the planet color to prevent washout under the intense point light.
+  // Blend the planet's characteristic color with the texture map.
+  // multiplyScalar(0.75) preserves the color cast (Earth=blue, Mars=red)
+  // while letting texture detail show through without washout.
   const tintColor = useMemo(() => {
     const c = new Color(planet.color);
-    if (diffuseMap) c.multiplyScalar(0.55);
+    if (diffuseMap) c.multiplyScalar(0.75);
     return c;
   }, [planet.color, diffuseMap]);
 
@@ -87,7 +89,7 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
           <meshStandardMaterial
             map={diffuseMap ?? undefined}
             color={tintColor}
-            roughness={0.85}
+            roughness={0.7}
             metalness={0}
           />
         </mesh>

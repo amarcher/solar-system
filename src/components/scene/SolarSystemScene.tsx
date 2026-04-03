@@ -30,7 +30,7 @@ function FillLight({ active }: { active: boolean }) {
   return (
     <directionalLight
       ref={lightRef}
-      intensity={active ? 1.0 : 0}
+      intensity={active ? 0.3 : 0}
       color="#ffffff"
     />
   );
@@ -60,11 +60,11 @@ export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, o
         aria-hidden="true"
       >
         <color attach="background" args={['#050510']} />
-        <ambientLight intensity={isZoomedIn ? 0.25 : 0.15} />
+        <ambientLight intensity={isZoomedIn ? 0.2 : 0.1} />
         <FillLight active={isZoomedIn} />
         <pointLight
           position={[0, 0, 0]}
-          intensity={8}
+          intensity={1.0}
           color="#fff8ee"
           decay={0}
           castShadow
@@ -104,8 +104,8 @@ export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, o
 
         <EffectComposer>
           <Bloom
-            intensity={1.5}
-            luminanceThreshold={0.8}
+            intensity={1.2}
+            luminanceThreshold={0.85}
             luminanceSmoothing={0.3}
             mipmapBlur
           />
