@@ -178,6 +178,9 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
         pendingNavRef.current = null;
       }
     },
+    onDisconnect: (details: unknown) => {
+      console.warn('[VoiceAgent] disconnected:', details);
+    },
     onError: (error: unknown) => {
       console.error('[VoiceAgent] session error:', error);
     },
