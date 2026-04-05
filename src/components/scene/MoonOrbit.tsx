@@ -145,7 +145,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true }: MoonOrbitProps) {
 
   // Orbit speed inversely proportional to orbital period
   const orbitSpeed = moon.orbitalPeriod > 0 ? 0.5 / moon.orbitalPeriod : 0.3;
-  const orbitDirection = moon.retrograde ? -1 : 1;
+  const orbitDirection = moon.retrograde ? 1 : -1;
 
   const worldPos = useRef(new Vector3());
 

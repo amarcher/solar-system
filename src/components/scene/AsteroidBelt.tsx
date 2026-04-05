@@ -6,7 +6,6 @@ import { TextureLoader } from 'three';
 
 const ASTEROID_COUNT = 600;
 const VARIANTS = 3;
-const PER_VARIANT = Math.ceil(ASTEROID_COUNT / VARIANTS);
 // Belt sits between Mars (~13) and Jupiter (~20)
 const INNER_RADIUS = 14.5;
 const OUTER_RADIUS = 18.5;
