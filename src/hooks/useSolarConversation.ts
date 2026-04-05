@@ -226,7 +226,7 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     if (!agentId) return;
 
     if (sessionStarted) {
-      await conversation.endSession().catch(() => {});
+      conversation.endSession();
       setSessionStarted(false);
       return;
     }
@@ -328,7 +328,7 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   useEffect(() => {
     return () => {
       if (sessionStarted) {
-        conversation.endSession().catch(() => {});
+        conversation.endSession();
       }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
