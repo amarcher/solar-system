@@ -3,7 +3,7 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ACESFilmicToneMapping, DirectionalLight } from 'three';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import type { Moon, NavigationState, Planet } from '../../types/celestialBody';
-import { StarField } from './StarField';
+import { CelestialBackdrop } from './CelestialBackdrop';
 import { SunMesh } from './Sun';
 import { PlanetOrbit } from './PlanetOrbit';
 import { AsteroidBelt } from './AsteroidBelt';
@@ -57,7 +57,6 @@ export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, o
         gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.75 }}
         aria-hidden="true"
       >
-        <color attach="background" args={['#050510']} />
         <ambientLight intensity={isZoomedIn ? 0.2 : 0.1} />
         <FillLight active={isZoomedIn} />
         <pointLight
@@ -73,28 +72,32 @@ export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, o
           shadow-bias={-0.001}
         />
 
-        <StarField />
-        <SunMesh onClick={onSunClick} showLabel={showLabels} />
+        <CelestialBackdrop />
+        <SunMesh onClick={onSunClick} showLabel={showLabels && !isZoomedIn} />
         <AsteroidBelt />
 
-        {planets.map((planet) => (
-          <PlanetOrbit
-            key={planet.id}
-            planet={planet}
-            moons={moonsByPlanet[planet.id] || []}
-            onClick={() => onPlanetClick(planet.id)}
-            onMoonClick={(moonId) => onMoonClick(planet.id, moonId)}
-            showLabel={showLabels}
-            showMoons={focusedPlanetId === planet.id}
-          />
-        ))}
+        {planets.map((planet) => {
+          const isFocused = focusedPlanetId === planet.id;
+          return (
+            <PlanetOrbit
+              key={planet.id}
+              planet={planet}
+              moons={moonsByPlanet[planet.id] || []}
+              onClick={() => onPlanetClick(planet.id)}
+              onMoonClick={(moonId) => onMoonClick(planet.id, moonId)}
+              showLabel={showLabels && (!isZoomedIn || isFocused)}
+              showMoonLabels={showLabels && isFocused}
+              showMoons={isFocused}
+            />
+          );
+        })}
 
         <CameraRig nav={nav} planets={planets} />
 
         <EffectComposer>
           <Bloom
             intensity={1.2}
-            luminanceThreshold={0.85}
+            luminanceThreshold={0.9}
             luminanceSmoothing={0.3}
             mipmapBlur
           />

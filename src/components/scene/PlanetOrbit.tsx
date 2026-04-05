@@ -14,10 +14,11 @@ interface PlanetOrbitProps {
   /** If true, pause orbit animation (for reduced-motion or when focused) */
   paused?: boolean;
   showLabel?: boolean;
+  showMoonLabels?: boolean;
   showMoons?: boolean;
 }
 
-export function PlanetOrbit({ planet, moons = [], onClick, onMoonClick, paused, showLabel = true, showMoons = false }: PlanetOrbitProps) {
+export function PlanetOrbit({ planet, moons = [], onClick, onMoonClick, paused, showLabel = true, showMoonLabels = true, showMoons = false }: PlanetOrbitProps) {
   const groupRef = useRef<Group>(null);
   const angleRef = useRef(Math.random() * Math.PI * 2); // Random starting position
 
@@ -57,7 +58,7 @@ export function PlanetOrbit({ planet, moons = [], onClick, onMoonClick, paused, 
             key={moon.id}
             moon={moon}
             onClick={() => onMoonClick?.(moon.id)}
-            showLabel={showLabel}
+            showLabel={showMoonLabels}
           />
         ))}
       </group>
