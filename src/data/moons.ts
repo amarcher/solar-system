@@ -45,6 +45,7 @@ export const moons: Moon[] = [
       'Its giant Stickney Crater is nearly half the width of Phobos itself.',
     ],
     orbitRadius: 1.6,
+    shape: 'irregular',
   },
   {
     id: 'deimos',
@@ -66,6 +67,7 @@ export const moons: Moon[] = [
       'Deimos and Phobos were named after the sons of Ares (the Greek god of war) — their names mean "dread" and "fear".',
     ],
     orbitRadius: 2.2,
+    shape: 'irregular',
   },
 
   // ─── Jupiter ──────────────────────────────────────────────────────────────
@@ -173,6 +175,7 @@ export const moons: Moon[] = [
       "Amalthea's two largest craters are named Pan and Gaea, both roughly 90 km across.",
     ],
     orbitRadius: 1.5,
+    shape: 'irregular',
   },
 
   // ─── Saturn ───────────────────────────────────────────────────────────────
@@ -343,6 +346,7 @@ export const moons: Moon[] = [
       "Hyperion's odd reddish colour is thought to come from organic compounds called tholins deposited from Saturn's outer environment.",
     ],
     orbitRadius: 3.0,
+    shape: 'irregular',
   },
 
   // ─── Uranus ───────────────────────────────────────────────────────────────
@@ -495,6 +499,7 @@ export const moons: Moon[] = [
       "Its largest crater, Pharos, is about 250 km across, nearly half the width of the moon itself.",
     ],
     orbitRadius: 1.6,
+    shape: 'irregular',
   },
   {
     id: 'nereid',
@@ -560,6 +565,7 @@ export const moons: Moon[] = [
       "The rotation of Nix is chaotic, meaning it tumbles and spins in ways that cannot be predicted far into the future.",
     ],
     orbitRadius: 2.5,
+    shape: 'irregular',
   },
   {
     id: 'hydra',
@@ -581,6 +587,7 @@ export const moons: Moon[] = [
       "Hydra also tumbles chaotically, like its sibling Nix — the gravitational tugs from Pluto, Charon, Nix, and Kerberos all contribute to its unpredictable spin.",
     ],
     orbitRadius: 3.3,
+    shape: 'irregular',
   },
 ];
 

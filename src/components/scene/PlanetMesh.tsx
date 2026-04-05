@@ -25,9 +25,11 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
       const direction = planet.rotationPeriod < 0 ? -1 : 1;
       meshRef.current.rotation.y += delta * speed * direction;
     }
-    // Clouds rotate slightly faster than the surface
+    // Clouds rotate with the surface plus a slight drift
     if (cloudRef.current) {
-      cloudRef.current.rotation.y += delta * 0.02;
+      const speed = planet.rotationPeriod !== 0 ? 0.3 / Math.abs(planet.rotationPeriod / 24) : 0.1;
+      const direction = planet.rotationPeriod < 0 ? -1 : 1;
+      cloudRef.current.rotation.y += delta * speed * direction + delta * 0.008;
     }
   });
 

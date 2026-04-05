@@ -43,6 +43,7 @@ export interface Moon {
   funFacts: string[];
   orbitRadius: number;           // scaled for mini-scene
   retrograde?: boolean;          // true if moon orbits opposite to planet rotation
+  shape?: 'irregular';           // omit for spherical; 'irregular' = potato-shaped
 }
 
 export interface SunData {
