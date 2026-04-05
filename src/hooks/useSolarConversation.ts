@@ -8,6 +8,7 @@ import { categoryLabels } from '../utils/colors';
 import { sun } from '../data/sun';
 
 interface ConversationCallbacks {
+  currentNav: NavigationState;
   onNavigatePlanet: (planetId: string) => void;
   onNavigateMoon: (planetId: string, moonId: string) => void;
   onNavigateSun: () => void;
@@ -90,12 +91,38 @@ function buildSunContext(): string {
   ].join('\n');
 }
 
-export function useSolarConversation({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onGoBack, onPeelSunLayer }: ConversationCallbacks) {
+function buildFirstMessage(nav: NavigationState): string | undefined {
+  switch (nav.level) {
+    case 'sun':
+      return `Hi there! I'm Stella, your space guide! Wow, you're checking out the Sun — the biggest, most powerful thing in our whole solar system! Did you know you can peel back its layers to see what's inside? Try clicking on a layer, or ask me anything about our amazing star!`;
+    case 'planet': {
+      const planet = planets.find(p => p.id === nav.planetId);
+      if (!planet) return undefined;
+      const moons = getMoonsByPlanet(planet.id);
+      const moonHint = moons.length > 0
+        ? ` You can also check out ${moons.length === 1 ? 'its moon' : `its ${moons.length} moons`}!`
+        : '';
+      return `Hi there! I'm Stella, your space guide! Oh cool, you're already exploring ${planet.name}! That's a ${categoryLabels[planet.category]} — one of the most fascinating worlds in our solar system.${moonHint} Ask me anything about ${planet.name}, or I can take you somewhere else!`;
+    }
+    case 'moon': {
+      const planet = planets.find(p => p.id === nav.planetId);
+      const moon = getMoonById(nav.moonId);
+      if (!planet || !moon) return undefined;
+      return `Hi there! I'm Stella, your space guide! Ooh, you found ${moon.name} — a moon of ${planet.name}! ${moon.notableFeature}. Ask me anything about this amazing moon, or I can take you to explore something else!`;
+    }
+    default:
+      return undefined;
+  }
+}
+
+export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateMoon, onNavigateSun, onGoBack, onPeelSunLayer }: ConversationCallbacks) {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
   const [sessionStarted, setSessionStarted] = useState(false);
   const [micError, setMicError] = useState<MicError>(null);
   const pendingNavRef = useRef<NavigationState | null>(null);
   const currentNavRef = useRef<string | null>(null);
+  const latestNavRef = useRef<NavigationState>(currentNav);
+  latestNavRef.current = currentNav;
   const inputVolumeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const conversation = useConversation({
@@ -219,10 +246,24 @@ export function useSolarConversation({ onNavigatePlanet, onNavigateMoon, onNavig
     setSessionStarted(true);
     trackVoiceAgentActivated();
 
+    // If the user is already focused on something, queue context for onConnect
+    // and override the first message to match what they're looking at
+    const navAtStart = latestNavRef.current;
+    if (navAtStart.level !== 'system') {
+      pendingNavRef.current = navAtStart;
+    }
+
+    const firstMessage = buildFirstMessage(navAtStart);
+
     try {
       await conversation.startSession({
         agentId,
         connectionType: 'websocket',
+        ...(firstMessage && {
+          overrides: {
+            agent: { firstMessage },
+          },
+        }),
       });
     } catch (err) {
       console.error('[VoiceAgent] startSession failed:', err);

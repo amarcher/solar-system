@@ -64,6 +64,7 @@ function App() {
   }, [goBack]);
 
   const voice = useSolarConversation({
+    currentNav: nav,
     onNavigatePlanet: handlePlanetClick,
     onNavigateMoon: (planetId, moonId) => {
       viewTransition(() => goToMoon(planetId, moonId), ['detail-open']);
