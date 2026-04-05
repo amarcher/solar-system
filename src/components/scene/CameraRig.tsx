@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -18,22 +18,17 @@ const SYSTEM_TARGET = new THREE.Vector3(0, 0, 0);
 export function CameraRig({ nav, planets }: CameraRigProps) {
   const { camera } = useThree();
   const controlsRef = useRef<OrbitControlsImpl>(null);
-
   const targetPos = useRef(SYSTEM_POSITION.clone());
   const targetLook = useRef(SYSTEM_TARGET.clone());
-  const prevTargetLook = useRef(SYSTEM_TARGET.clone());
+  const isAnimating = useRef(false);
+  const animProgress = useRef(1);
 
   const trackingPlanetId = useRef<string | null>(null);
   const trackingMoonId = useRef<string | null>(null);
 
-  // Phase: 'flying' during the fly-in animation, 'settled' once the user can orbit
-  const phase = useRef<'flying' | 'settled'>('settled');
-  const animProgress = useRef(1);
-
-  const resetFlyIn = useCallback(() => {
-    phase.current = 'flying';
-    animProgress.current = 0;
-  }, []);
+  // Store the user's orbit offset so we can preserve it while tracking
+  const orbitOffset = useRef(new THREE.Vector3());
+  const settled = useRef(false);
 
   useEffect(() => {
     if (nav.level === 'system') {
@@ -53,21 +48,25 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
       trackingPlanetId.current = nav.planetId;
       trackingMoonId.current = nav.moonId;
     }
-    resetFlyIn();
+    isAnimating.current = true;
+    animProgress.current = 0;
+    settled.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- planets is a stable list; only react to nav changes
-  }, [nav, resetFlyIn]);
+  }, [nav]);
 
   useFrame((_, delta) => {
     const controls = controlsRef.current;
     if (!controls) return;
 
-    // --- Update target positions for tracked bodies ---
+    const isTracking = !!(trackingPlanetId.current || trackingMoonId.current);
+
+    // Compute the current target center (the object we're focused on)
     if (trackingMoonId.current) {
       const moonPos = getMoonPosition(trackingMoonId.current);
       const moon = getMoonById(trackingMoonId.current);
       if (moonPos && moon) {
         targetLook.current.copy(moonPos);
-        if (phase.current === 'flying') {
+        if (!settled.current) {
           const moonRadius = Math.max(moon.diameter / 8000, 0.06);
           const dist = moonRadius * 8 + 0.5;
           targetPos.current.set(
@@ -82,7 +81,7 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
       const pos = getPlanetPosition(trackingPlanetId.current);
       if (planet && pos) {
         targetLook.current.copy(pos);
-        if (phase.current === 'flying') {
+        if (!settled.current) {
           const dist = planet.visualRadius * 5 + 2;
           targetPos.current.set(
             pos.x,
@@ -93,36 +92,28 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
       }
     }
 
-    if (phase.current === 'flying') {
-      // Disable user interaction during fly-in
-      controls.enabled = false;
-
+    if (isAnimating.current) {
+      // Fly-in: lerp camera and controls target to destination
       const lerpSpeed = 1 - Math.pow(0.001, delta);
 
       camera.position.lerp(targetPos.current, lerpSpeed);
       controls.target.lerp(targetLook.current, lerpSpeed);
-      camera.lookAt(controls.target);
+      controls.update();
 
       animProgress.current += delta;
       const distToTarget = camera.position.distanceTo(targetPos.current);
       if (distToTarget < 0.05 && animProgress.current > 0.5) {
-        phase.current = 'settled';
-        controls.enabled = true;
-        // Snapshot so we can compute deltas for tracking
-        prevTargetLook.current.copy(targetLook.current);
+        isAnimating.current = false;
+        settled.current = true;
+        // Snapshot the offset so OrbitControls preserves the user's view angle
+        orbitOffset.current.copy(camera.position).sub(controls.target);
       }
-    } else {
-      // Settled: user can orbit freely via OrbitControls.
-      // We just shift the controls target (and camera) to follow the orbiting body.
-      const isTracking = !!(trackingPlanetId.current || trackingMoonId.current);
-      if (isTracking) {
-        const delta3 = new THREE.Vector3().subVectors(targetLook.current, prevTargetLook.current);
-        if (delta3.lengthSq() > 0.000001) {
-          controls.target.add(delta3);
-          camera.position.add(delta3);
-        }
-        prevTargetLook.current.copy(targetLook.current);
-      }
+    } else if (isTracking && settled.current) {
+      // After fly-in: keep the controls target following the orbiting body,
+      // but let OrbitControls handle the camera position (user can drag)
+      const lerpSpeed = 1 - Math.pow(0.0001, delta);
+      controls.target.lerp(targetLook.current, lerpSpeed);
+      controls.update();
     }
   });
 
