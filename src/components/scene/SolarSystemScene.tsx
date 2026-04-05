@@ -46,7 +46,6 @@ interface SolarSystemSceneProps {
 }
 
 export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true }: SolarSystemSceneProps) {
-  const isSystemView = nav.level === 'system';
   const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun';
   const focusedPlanetId = (nav.level === 'planet' || nav.level === 'moon') ? nav.planetId : null;
 
