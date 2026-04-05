@@ -2,7 +2,6 @@ import { useRef } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ACESFilmicToneMapping, DirectionalLight } from 'three';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { OrbitControls } from '@react-three/drei';
 import type { Moon, NavigationState, Planet } from '../../types/celestialBody';
 import { StarField } from './StarField';
 import { SunMesh } from './Sun';
@@ -92,15 +91,6 @@ export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, o
         ))}
 
         <CameraRig nav={nav} planets={planets} />
-
-        {isSystemView && (
-          <OrbitControls
-            enablePan={false}
-            minDistance={15}
-            maxDistance={100}
-            maxPolarAngle={Math.PI * 0.85}
-          />
-        )}
 
         <EffectComposer>
           <Bloom
