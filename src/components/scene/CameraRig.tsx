@@ -69,10 +69,9 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
     const controls = controlsRef.current;
     if (!controls) return;
 
-    // Count time since fly-in started
+    // After fly-in animation settles, reduce smooth time for responsive tracking
     if (!settled.current && flyInDone.current) {
       flyInTime.current += delta;
-      // Wait for the fly-in animation to mostly complete before tracking
       if (flyInTime.current > 1.2) {
         settled.current = true;
         controls.smoothTime = 0.25;
@@ -84,19 +83,16 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
       const moonPos = getMoonPosition(trackingMoonId.current);
       const moon = getMoonById(trackingMoonId.current);
       if (moonPos && moon) {
-        if (!settled.current && !flyInDone.current) {
+        if (!flyInDone.current) {
           const moonRadius = Math.max(moon.diameter / 8000, 0.06);
           const dist = moonRadius * 8 + 0.5;
           controls.smoothTime = 1.0;
-          controls.setLookAt(
-            moonPos.x, moonPos.y + dist * 0.3, moonPos.z + dist,
-            moonPos.x, moonPos.y, moonPos.z,
-            true,
-          );
+          controls.moveTo(moonPos.x, moonPos.y, moonPos.z, true);
+          controls.dollyTo(dist, true);
           flyInDone.current = true;
           flyInTime.current = 0;
-        } else if (settled.current) {
-          // Smoothly track the orbiting moon
+        } else {
+          // Continuously track the orbiting moon
           controls.moveTo(moonPos.x, moonPos.y, moonPos.z, true);
         }
       }
@@ -104,18 +100,15 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
       const planet = planets.find(p => p.id === trackingPlanetId.current);
       const pos = getPlanetPosition(trackingPlanetId.current);
       if (planet && pos) {
-        if (!settled.current && !flyInDone.current) {
+        if (!flyInDone.current) {
           const dist = planet.visualRadius * 5 + 2;
           controls.smoothTime = 1.0;
-          controls.setLookAt(
-            pos.x, pos.y + dist * 0.3, pos.z + dist,
-            pos.x, pos.y, pos.z,
-            true,
-          );
+          controls.moveTo(pos.x, pos.y, pos.z, true);
+          controls.dollyTo(dist, true);
           flyInDone.current = true;
           flyInTime.current = 0;
-        } else if (settled.current) {
-          // Smoothly track the orbiting planet
+        } else {
+          // Continuously track the orbiting planet
           controls.moveTo(pos.x, pos.y, pos.z, true);
         }
       }
