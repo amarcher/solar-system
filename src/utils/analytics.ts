@@ -24,24 +24,28 @@ export function trackPlanetView(planetId: string) {
   if (!initialized) return;
   posthog.capture('planet_viewed', { planet_id: planetId });
   fbq('track', 'ViewContent', { content_name: planetId, content_type: 'planet' });
+  gtag('event', 'planet_viewed', { planet_id: planetId });
 }
 
 export function trackMoonView(planetId: string, moonId: string) {
   if (!initialized) return;
   posthog.capture('moon_viewed', { planet_id: planetId, moon_id: moonId });
   fbq('track', 'ViewContent', { content_name: moonId, content_type: 'moon' });
+  gtag('event', 'moon_viewed', { planet_id: planetId, moon_id: moonId });
 }
 
 export function trackSunView() {
   if (!initialized) return;
   posthog.capture('sun_viewed');
   fbq('track', 'ViewContent', { content_name: 'sun', content_type: 'sun' });
+  gtag('event', 'sun_viewed');
 }
 
 export function trackVoiceAgentActivated() {
   if (!initialized) return;
   posthog.capture('voice_agent_activated');
   fbq('track', 'Lead');
+  gtag('event', 'voice_agent_activated');
 }
 
 // Track engagement milestone: user explored N planets in this session
@@ -54,16 +58,24 @@ export function trackExplorationMilestone(planetId: string) {
   if (count === 3) {
     posthog.capture('exploration_milestone', { planets_count: 3 });
     fbq('track', 'CompleteRegistration');
+    gtag('event', 'exploration_milestone', { planets_count: 3 });
   }
 }
 
-// ---------- Meta Pixel Helpers ----------
+// ---------- GA4 Helpers ----------
 
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void;
+    gtag?: (...args: unknown[]) => void;
   }
 }
+
+function gtag(...args: unknown[]) {
+  window.gtag?.(...args);
+}
+
+// ---------- Meta Pixel Helpers ----------
 
 function fbq(...args: unknown[]) {
   window.fbq?.(...args);
