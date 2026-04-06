@@ -92,6 +92,44 @@ body {
   opacity: 1;
 }
 
+.app__toolbar-btn--voice-on {
+  color: hsl(35, 90%, 60%);
+  border-color: hsla(35, 90%, 60%, 0.3);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.app__toolbar-btn--voice-on:hover {
+  color: hsl(35, 90%, 70%);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* Voice error toast */
+.app__voice-error {
+  appearance: none;
+  -webkit-appearance: none;
+  position: fixed;
+  bottom: 70px;
+  left: 20px;
+  z-index: 130;
+  max-width: 300px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font: inherit;
+  font-size: 0.75rem;
+  color: #f5a623;
+  text-align: left;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.app__voice-error:hover {
+  color: #ffc059;
+}
+
 /* Cinema mode back navigation */
 .app__cinema-nav {
   position: fixed;
@@ -125,13 +163,7 @@ body {
   color: #fff;
 }
 
-/* Floating voice agent orb */
-.app__voice-float {
-  position: fixed;
-  bottom: 28px;
-  right: 28px;
-  z-index: 120;
-}
+/* (voice agent moved to toolbar) */
 
 @media (max-width: 560px) {
   .app-header {
@@ -147,9 +179,9 @@ body {
     left: 12px;
   }
 
-  .app__voice-float {
-    bottom: 16px;
-    right: 16px;
+  .app__voice-error {
+    bottom: 56px;
+    left: 12px;
   }
 }
 
