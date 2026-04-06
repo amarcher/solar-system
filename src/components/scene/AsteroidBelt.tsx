@@ -3,6 +3,7 @@ import { useFrame, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { InstancedMesh } from 'three';
 import { TextureLoader } from 'three';
+import { texturePath } from '../../utils/textures';
 
 const ASTEROID_COUNT = 600;
 const VARIANTS = 3;
@@ -42,9 +43,9 @@ interface AsteroidData {
 }
 
 const TEXTURE_PATHS = [
-  '/textures/asteroids/rock_01.jpg',
-  '/textures/asteroids/rock_02.jpg',
-  '/textures/asteroids/rock_03.jpg',
+  texturePath('/textures/asteroids/rock_01.jpg'),
+  texturePath('/textures/asteroids/rock_02.jpg'),
+  texturePath('/textures/asteroids/rock_03.jpg'),
 ];
 
 function AsteroidGroup({ variant, asteroids }: { variant: number; asteroids: AsteroidData[] }) {

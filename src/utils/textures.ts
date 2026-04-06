@@ -4,7 +4,12 @@ import { TextureLoader, Texture, SRGBColorSpace, CanvasTexture, RepeatWrapping }
 const loader = new TextureLoader();
 const textureCache = new Map<string, Texture | null>();
 
-const CDN_URL = import.meta.env.VITE_TEXTURE_CDN_URL as string | undefined;
+export const CDN_URL = import.meta.env.VITE_TEXTURE_CDN_URL as string | undefined;
+
+/** Resolve a texture path, preferring CDN when configured. */
+export function texturePath(path: string): string {
+  return CDN_URL ? `${CDN_URL}${path}` : path;
+}
 
 /**
  * Load a planet's diffuse texture. Tries bundled 2k first,
