@@ -37,6 +37,9 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
     if (nav.level === 'system') {
       trackingPlanetId.current = null;
       trackingMoonId.current = null;
+      // Normalize azimuth to prevent unwinding accumulated orbit rotations
+      const TWO_PI = Math.PI * 2;
+      controls.azimuthAngle = ((controls.azimuthAngle % TWO_PI) + TWO_PI) % TWO_PI;
       controls.smoothTime = 1.0;
       controls.setLookAt(
         SYSTEM_POSITION.x, SYSTEM_POSITION.y, SYSTEM_POSITION.z,
@@ -48,6 +51,8 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
     } else if (nav.level === 'sun') {
       trackingPlanetId.current = null;
       trackingMoonId.current = null;
+      const TWO_PI = Math.PI * 2;
+      controls.azimuthAngle = ((controls.azimuthAngle % TWO_PI) + TWO_PI) % TWO_PI;
       controls.smoothTime = 1.0;
       controls.setLookAt(0, 2, 6, 0, 0, 0, true);
       settled.current = true;

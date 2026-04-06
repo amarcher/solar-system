@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useNavigation } from './hooks/useNavigation';
@@ -10,7 +10,6 @@ import { SolarSystemScene } from './components/scene/SolarSystemScene';
 import { PlanetDetail } from './components/detail/PlanetDetail';
 import { MoonDetail } from './components/detail/MoonDetail';
 import { SunDetail } from './components/detail/SunDetail';
-import { VoiceAgent } from './components/ui/VoiceAgent';
 import './App.css';
 
 function viewTransition(update: () => void, types: string[]) {
@@ -21,11 +20,20 @@ function viewTransition(update: () => void, types: string[]) {
   (document as any).startViewTransition({ update, types });
 }
 
+const mobileQuery = window.matchMedia('(max-width: 899px)');
+function subscribeToMobile(cb: () => void) {
+  mobileQuery.addEventListener('change', cb);
+  return () => mobileQuery.removeEventListener('change', cb);
+}
+function getIsMobile() { return mobileQuery.matches; }
+
 function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goBack } = useNavigation();
   const [showLabels, setShowLabels] = useState(true);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
+  const isMobile = useSyncExternalStore(subscribeToMobile, getIsMobile);
+  const hideDetails = cinemaMode || isMobile;
 
   const handlePlanetClick = useCallback((planetId: string) => {
     viewTransition(() => goToPlanet(planetId), ['detail-open']);
@@ -114,35 +122,34 @@ function App() {
         onPlanetClick={handlePlanetClick}
         onMoonClick={handleSceneMoonClick}
         onSunClick={handleSunClick}
-        showLabels={!cinemaMode && showLabels}
+        showLabels={showLabels}
       />
 
-      {voice.agentId && (
-        <div className="app__voice-float">
-          <VoiceAgent
-            status={voice.status}
-            isSpeaking={voice.isSpeaking}
-            onToggle={voice.toggle}
-            micError={voice.micError}
-            onDismissError={voice.clearMicError}
-          />
-        </div>
-      )}
-
       <div className="app__toolbar">
-        {!cinemaMode && (
+        {voice.agentId && (
           <button
-            className="app__toolbar-btn"
-            onClick={() => setShowLabels(v => !v)}
+            className={`app__toolbar-btn${voice.status !== 'off' ? ' app__toolbar-btn--voice-on' : ''}`}
+            onClick={voice.toggle}
             type="button"
-            aria-label={showLabels ? 'Hide labels' : 'Show labels'}
-            title={showLabels ? 'Hide labels' : 'Show labels'}
+            aria-label={voice.status === 'off' ? 'Talk to Stella' : 'Stop Stella'}
+            title={voice.status === 'off' ? 'Talk to Stella' : 'Stop Stella'}
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-              <path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z" />
+            <svg viewBox="0 0 24 24" width="18" height="18" fill={voice.status !== 'off' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+              <path d="M12 1C12 1 14 8 16 10C18 12 23 12 23 12C23 12 18 12 16 14C14 16 12 23 12 23C12 23 10 16 8 14C6 12 1 12 1 12C1 12 6 12 8 10C10 8 12 1 12 1Z" />
             </svg>
           </button>
         )}
+        <button
+          className="app__toolbar-btn"
+          onClick={() => setShowLabels(v => !v)}
+          type="button"
+          aria-label={showLabels ? 'Hide labels' : 'Show labels'}
+          title={showLabels ? 'Hide labels' : 'Show labels'}
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z" />
+          </svg>
+        </button>
         <button
           className={`app__toolbar-btn${cinemaMode ? ' app__toolbar-btn--active' : ''}`}
           onClick={() => setCinemaMode(v => !v)}
@@ -170,7 +177,21 @@ function App() {
         </button>
       </div>
 
-      {cinemaMode && nav.level !== 'system' && (
+      {voice.micError && (
+        <button
+          className="app__voice-error"
+          onClick={voice.clearMicError}
+          type="button"
+          aria-label="Dismiss microphone error"
+        >
+          {voice.micError === 'timeout' ? 'Microphone not responding. Try quitting audio apps, then restart your browser.' :
+           voice.micError === 'not-allowed' ? 'Microphone access denied. Please allow mic access in browser settings.' :
+           voice.micError === 'no-input' ? 'No audio input detected. Check your mic in System Settings.' :
+           "Couldn't access your microphone. Check that one is connected."}
+        </button>
+      )}
+
+      {hideDetails && nav.level !== 'system' && (
         <div className="app__cinema-nav">
           <button
             className="app__cinema-nav-btn"
@@ -192,7 +213,7 @@ function App() {
         </div>
       )}
 
-      {!cinemaMode && nav.level === 'sun' && (
+      {!hideDetails && nav.level === 'sun' && (
         <SunDetail
           onClose={handleClose}
           onLayerChange={(layerIndex) => {
@@ -203,7 +224,7 @@ function App() {
         />
       )}
 
-      {!cinemaMode && nav.level === 'planet' && currentPlanet && (
+      {!hideDetails && nav.level === 'planet' && currentPlanet && (
         <PlanetDetail
           planet={currentPlanet}
           onClose={handleClose}
@@ -211,7 +232,7 @@ function App() {
         />
       )}
 
-      {!cinemaMode && nav.level === 'moon' && currentPlanet && currentMoon && (
+      {!hideDetails && nav.level === 'moon' && currentPlanet && currentMoon && (
         <MoonDetail
           moon={currentMoon}
           onClose={handleClose}
