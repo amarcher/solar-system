@@ -2,13 +2,16 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
 import type { Moon, Planet } from '../../types/celestialBody';
+import type { Mission } from '../../types/mission';
 import { PlanetMesh } from './PlanetMesh';
 import { MoonOrbit } from './MoonOrbit';
+import { MissionTrajectory } from './MissionTrajectory';
 import { setPlanetPosition } from '../../utils/planetPositions';
 
 interface PlanetOrbitProps {
   planet: Planet;
   moons?: Moon[];
+  missions?: Mission[];
   onClick?: () => void;
   onMoonClick?: (moonId: string) => void;
   /** If true, pause orbit animation (for reduced-motion or when focused) */
@@ -18,7 +21,7 @@ interface PlanetOrbitProps {
   showMoons?: boolean;
 }
 
-export function PlanetOrbit({ planet, moons = [], onClick, onMoonClick, paused, showLabel = true, showMoonLabels = true, showMoons = false }: PlanetOrbitProps) {
+export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoonClick, paused, showLabel = true, showMoonLabels = true, showMoons = false }: PlanetOrbitProps) {
   const groupRef = useRef<Group>(null);
   const angleRef = useRef(Math.random() * Math.PI * 2); // Random starting position
 
@@ -50,7 +53,7 @@ export function PlanetOrbit({ planet, moons = [], onClick, onMoonClick, paused, 
 
       {/* Planet group (orbiting) */}
       <group ref={groupRef}>
-        <PlanetMesh planet={planet} onClick={onClick} showLabel={showLabel} showMoons={showMoons} />
+        <PlanetMesh planet={planet} onClick={onClick} showLabel={showLabel} showMoons={showMoons} paused={paused} />
 
         {/* Moons orbiting this planet */}
         {showMoons && moons.map((moon) => (
@@ -59,7 +62,13 @@ export function PlanetOrbit({ planet, moons = [], onClick, onMoonClick, paused, 
             moon={moon}
             onClick={() => onMoonClick?.(moon.id)}
             showLabel={showMoonLabels}
+            paused={paused}
           />
+        ))}
+
+        {/* Missions in flight from this planet */}
+        {missions.map((mission) => (
+          <MissionTrajectory key={mission.id} mission={mission} />
         ))}
       </group>
     </>

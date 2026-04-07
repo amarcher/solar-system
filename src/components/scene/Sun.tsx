@@ -109,9 +109,10 @@ const fragmentShader = `
 interface SunMeshProps {
   onClick?: () => void;
   showLabel?: boolean;
+  paused?: boolean;
 }
 
-export function SunMesh({ onClick, showLabel = true }: SunMeshProps) {
+export function SunMesh({ onClick, showLabel = true, paused = false }: SunMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const matRef = useRef<ShaderMaterial>(null);
 
@@ -120,6 +121,7 @@ export function SunMesh({ onClick, showLabel = true }: SunMeshProps) {
   }), []);
 
   useFrame((_, delta) => {
+    if (paused) return;
     if (matRef.current) matRef.current.uniforms.uTime.value += delta;
     if (meshRef.current) meshRef.current.rotation.y += delta * 0.05;
   });

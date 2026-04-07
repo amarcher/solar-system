@@ -1,8 +1,9 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ACESFilmicToneMapping, DirectionalLight } from 'three';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import type { Moon, NavigationState, Planet } from '../../types/celestialBody';
+import type { Mission } from '../../types/mission';
 import { CelestialBackdrop } from './CelestialBackdrop';
 import { SunMesh } from './Sun';
 import { PlanetOrbit } from './PlanetOrbit';
@@ -38,6 +39,7 @@ function FillLight({ active }: { active: boolean }) {
 interface SolarSystemSceneProps {
   planets: Planet[];
   moonsByPlanet: Record<string, Moon[]>;
+  missions?: Mission[];
   nav: NavigationState;
   onPlanetClick: (planetId: string) => void;
   onMoonClick: (planetId: string, moonId: string) => void;
@@ -45,15 +47,27 @@ interface SolarSystemSceneProps {
   showLabels?: boolean;
 }
 
-export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true }: SolarSystemSceneProps) {
-  const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun';
+export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true }: SolarSystemSceneProps) {
+  const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun' || nav.level === 'mission';
   const focusedPlanetId = (nav.level === 'planet' || nav.level === 'moon') ? nav.planetId : null;
+  const paused = nav.level === 'mission';
+
+  // Group missions by their frame planet so each PlanetOrbit gets only its own.
+  const missionsByPlanet = useMemo(() => {
+    const map: Record<string, Mission[]> = {};
+    for (const m of missions) {
+      if (m.frame.kind === 'planet-local') {
+        (map[m.frame.planetId] ??= []).push(m);
+      }
+    }
+    return map;
+  }, [missions]);
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
       <Canvas
         shadows
-        camera={{ position: [0, 35, 50], fov: 50, near: 0.1, far: 500 }}
+        camera={{ position: [0, 35, 50], fov: 50, near: 0.001, far: 500 }}
         gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.75 }}
         aria-hidden="true"
       >
@@ -73,21 +87,32 @@ export function SolarSystemScene({ planets, moonsByPlanet, nav, onPlanetClick, o
         />
 
         <CelestialBackdrop />
-        <SunMesh onClick={onSunClick} showLabel={showLabels && !isZoomedIn} />
-        <AsteroidBelt />
+        <SunMesh onClick={onSunClick} showLabel={showLabels && !isZoomedIn} paused={paused} />
+        <AsteroidBelt paused={paused} />
 
         {planets.map((planet) => {
           const isFocused = focusedPlanetId === planet.id;
+          const planetMissions = missionsByPlanet[planet.id];
+          // Only render mission trajectories for the active mission's host
+          // planet, and only when the mission view is open.
+          const planetHostsActiveMission = nav.level === 'mission'
+            && planetMissions?.some((m) => m.id === nav.missionId);
+          const visibleMissions = planetHostsActiveMission ? planetMissions : undefined;
+          // Force-render moons for the mission's host planet so the Moon is
+          // visible alongside the trajectory.
+          const showThisPlanetMoons = isFocused || !!planetHostsActiveMission;
           return (
             <PlanetOrbit
               key={planet.id}
               planet={planet}
               moons={moonsByPlanet[planet.id] || []}
+              missions={visibleMissions}
               onClick={() => onPlanetClick(planet.id)}
               onMoonClick={(moonId) => onMoonClick(planet.id, moonId)}
+              paused={paused}
               showLabel={showLabels && (!isZoomedIn || isFocused)}
               showMoonLabels={showLabels && isFocused}
-              showMoons={isFocused}
+              showMoons={showThisPlanetMoons}
             />
           );
         })}

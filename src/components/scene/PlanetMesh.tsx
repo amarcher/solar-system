@@ -11,15 +11,17 @@ interface PlanetMeshProps {
   showLabel?: boolean;
   /** When true, moons are visible — shrink hit area so moon clicks get through */
   showMoons?: boolean;
+  paused?: boolean;
 }
 
-export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = false }: PlanetMeshProps) {
+export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = false, paused = false }: PlanetMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const cloudRef = useRef<Mesh>(null);
   const diffuseMap = usePlanetTexture(planet.id);
   const cloudMap = useTexturePath(planet.id === 'earth' ? '/textures/2k/earth_clouds.jpg' : '');
 
   useFrame((_, delta) => {
+    if (paused) return;
     if (meshRef.current) {
       const speed = planet.rotationPeriod !== 0 ? 0.3 / Math.abs(planet.rotationPeriod / 24) : 0.1;
       const direction = planet.rotationPeriod < 0 ? -1 : 1;

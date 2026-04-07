@@ -48,7 +48,7 @@ const TEXTURE_PATHS = [
   texturePath('/textures/asteroids/rock_03.jpg'),
 ];
 
-function AsteroidGroup({ variant, asteroids }: { variant: number; asteroids: AsteroidData[] }) {
+function AsteroidGroup({ variant, asteroids, paused }: { variant: number; asteroids: AsteroidData[]; paused?: boolean }) {
   const meshRef = useRef<InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const geometry = useMemo(() => createRockGeometry(variant * 17 + 42), [variant]);
@@ -66,11 +66,12 @@ function AsteroidGroup({ variant, asteroids }: { variant: number; asteroids: Ast
 
   useFrame((_, delta) => {
     if (!meshRef.current) return;
+    const dt = paused ? 0 : delta;
     for (let i = 0; i < asteroids.length; i++) {
       const a = asteroids[i];
-      a.angle += delta * a.speed;
-      a.rotX += delta * a.spinSpeed * 0.3;
-      a.rotY += delta * a.spinSpeed;
+      a.angle += dt * a.speed;
+      a.rotX += dt * a.spinSpeed * 0.3;
+      a.rotY += dt * a.spinSpeed;
       dummy.position.set(
         Math.cos(a.angle) * a.radius,
         a.y,
@@ -90,7 +91,7 @@ function AsteroidGroup({ variant, asteroids }: { variant: number; asteroids: Ast
   );
 }
 
-export function AsteroidBelt() {
+export function AsteroidBelt({ paused }: { paused?: boolean } = {}) {
   const allAsteroids = useMemo(() => {
     const groups: AsteroidData[][] = Array.from({ length: VARIANTS }, () => []);
     for (let i = 0; i < ASTEROID_COUNT; i++) {
@@ -112,7 +113,7 @@ export function AsteroidBelt() {
   return (
     <>
       {allAsteroids.map((asteroids, i) => (
-        <AsteroidGroup key={i} variant={i} asteroids={asteroids} />
+        <AsteroidGroup key={i} variant={i} asteroids={asteroids} paused={paused} />
       ))}
     </>
   );

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConversation } from '@elevenlabs/react';
 import type { Planet, Moon, NavigationState } from '../types/celestialBody';
+import type { Mission } from '../types/mission';
 import { planets } from '../data/planets';
 import { getMoonsByPlanet, getMoonById } from '../data/moons';
+import { missions, getMissionById } from '../data/missions';
 import { trackVoiceAgentActivated } from '../utils/analytics';
 import { categoryLabels } from '../utils/colors';
 import { sun } from '../data/sun';
@@ -12,6 +14,7 @@ interface ConversationCallbacks {
   onNavigatePlanet: (planetId: string) => void;
   onNavigateMoon: (planetId: string, moonId: string) => void;
   onNavigateSun: () => void;
+  onTrackMission: (missionId: string) => void;
   onGoBack: () => void;
   onPeelSunLayer: (layerIndex: number) => void;
 }
@@ -70,6 +73,59 @@ function buildMoonContext(moon: Moon, planet: Planet): string {
   ].filter(Boolean).join('\n');
 }
 
+function buildMissionContext(mission: Mission): string {
+  const launch = Date.parse(mission.launchDate);
+  const end = Date.parse(mission.endDate);
+  const now = Date.now();
+  const totalDays = Math.max(1, Math.round((end - launch) / 86_400_000));
+  const elapsedMs = Math.max(0, now - launch);
+  const elapsedDays = Math.min(totalDays, Math.floor(elapsedMs / 86_400_000) + 1);
+  const progress = Math.max(0, Math.min(1, (now - launch) / (end - launch)));
+  const isComplete = now > end;
+
+  // Phase boundaries match src/data/missions/artemis2.ts
+  let phase: string;
+  if (isComplete) phase = 'mission complete (trajectory replaying)';
+  else if (progress < 0.10) phase = 'parking orbit around Earth (pre-TLI burn)';
+  else if (progress < 0.45) phase = 'outbound coast toward the Moon';
+  else if (progress < 0.55) phase = 'lunar flyby (closest approach to the Moon)';
+  else if (progress < 0.97) phase = 'return coast back to Earth';
+  else phase = 'reentry — coming home!';
+
+  return [
+    `[MISSION TRACKER OPENED] The child just opened the live ${mission.name} tracker.`,
+    '',
+    `[WHAT THEY SEE]`,
+    `- The whole solar system is FROZEN in place`,
+    `- The camera has flown out from the solar system to the spacecraft itself`,
+    `- A glowing orange line shows the spacecraft's planned trajectory through space`,
+    `- They can see Earth, the Moon, and the spacecraft along its path`,
+    `- The trajectory shows: a small parking orbit around Earth, then a long curving arc out past the Moon and back`,
+    `- They can drag to pan around the spacecraft and zoom in/out`,
+    '',
+    `[MISSION DETAILS]`,
+    `- Name: ${mission.name} (${mission.agency})`,
+    `- Launched: April 1, 2026 at 6:35 PM Eastern Time from Kennedy Space Center, Florida`,
+    `- Mission length: ${totalDays} days`,
+    `- Current status: ${isComplete ? 'COMPLETE' : `Day ${elapsedDays} of ${totalDays}`}`,
+    `- Current phase: ${phase}`,
+    '',
+    `[ABOUT THE MISSION]`,
+    mission.summary,
+    '',
+    `[FUN FACTS]`,
+    ...mission.funFacts.map((f, i) => `${i + 1}. ${f}`),
+    '',
+    `[REAL PHYSICS DETAILS — for older kids or parents who ask]`,
+    `- Artemis II uses a "free-return" trajectory: the spacecraft launches into a highly elliptical Earth orbit (perigee 563 km, apogee 70,000 km), completes nearly one full revolution, then fires a single Trans-Lunar Injection burn at perigee that adds just 380 m/s but stretches the orbit out to lunar distance.`,
+    `- The Moon's gravity then deflects the path back toward Earth — no second burn needed. Perilune (closest approach to the Moon) is about 6,500 km from the lunar surface.`,
+    `- The spacecraft slows to almost a standstill at the apex of the arc (about 0.2 km/s at 393,000 km from Earth), then Earth's gravity pulls it back home. Real free-returns are "lazy U-turns," not Hollywood slingshots.`,
+    `- Crew: four astronauts including the first woman and first person of color to journey beyond low Earth orbit.`,
+    '',
+    `Get excited! This is the first time humans have flown to the Moon since 1972 — over 50 years! Encourage the child to explore the trajectory, and answer their questions about where the rocket is right now.`,
+  ].join('\n');
+}
+
 function buildSunContext(): string {
   return [
     `[SUN CLICK] The child just clicked on the Sun!`,
@@ -110,12 +166,17 @@ function buildFirstMessage(nav: NavigationState): string | undefined {
       if (!planet || !moon) return undefined;
       return `Hi there! I'm Stella, your space guide! Ooh, you found ${moon.name} — a moon of ${planet.name}! ${moon.notableFeature}. Ask me anything about this amazing moon, or I can take you to explore something else!`;
     }
+    case 'mission': {
+      const mission = getMissionById(nav.missionId);
+      if (!mission) return undefined;
+      return `Hi there! I'm Stella, your space guide! Whoa — you found the secret mission tracker! That's ${mission.name}, a real NASA mission flying to the Moon RIGHT NOW with four astronauts on board! Want me to tell you where the rocket is?`;
+    }
     default:
       return undefined;
   }
 }
 
-export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateMoon, onNavigateSun, onGoBack, onPeelSunLayer }: ConversationCallbacks) {
+export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer }: ConversationCallbacks) {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
   const [sessionStarted, setSessionStarted] = useState(false);
   const [micError, setMicError] = useState<MicError>(null);
@@ -155,16 +216,28 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
         onNavigateSun();
         return 'Navigated to the Sun';
       },
+      track_mission: (params: { name?: string }) => {
+        const query = (params.name ?? 'artemis').toLowerCase();
+        const match = missions.find(m =>
+          m.name.toLowerCase().includes(query) ||
+          m.id.toLowerCase().includes(query) ||
+          query.includes(m.name.toLowerCase()) ||
+          query.includes(m.id.toLowerCase())
+        ) ?? missions[0];
+        if (!match) return 'No active missions to track right now.';
+        onTrackMission(match.id);
+        return `Opened the live ${match.name} mission tracker. The solar system is paused and the camera is flying out to the spacecraft.`;
+      },
       go_back: () => {
         onGoBack();
         return 'Went back';
       },
-      peel_sun_layer: (params: { layer_name: string }) => {
+      peel_sun_layer: (params: { layer: string }) => {
         const idx = sun.layers.findIndex(l =>
-          l.name.toLowerCase() === params.layer_name.toLowerCase()
+          l.name.toLowerCase() === params.layer.toLowerCase()
         );
         if (idx === -1) {
-          return `No layer found matching "${params.layer_name}". Available layers: ${sun.layers.map(l => l.name).join(', ')}`;
+          return `No layer found matching "${params.layer}". Available layers: ${sun.layers.map(l => l.name).join(', ')}`;
         }
         onPeelSunLayer(idx);
         const layer = sun.layers[idx];
@@ -366,6 +439,10 @@ function buildContextForNav(nav: NavigationState): string | null {
       const planet = planets.find(p => p.id === nav.planetId);
       const moon = getMoonById(nav.moonId);
       return planet && moon ? buildMoonContext(moon, planet) : null;
+    }
+    case 'mission': {
+      const mission = getMissionById(nav.missionId);
+      return mission ? buildMissionContext(mission) : null;
     }
     default:
       return null;

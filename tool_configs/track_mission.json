@@ -1,0 +1,17 @@
+{
+    "name": "track_mission",
+    "description": "Open the live NASA mission tracker — a hidden easter egg view that freezes the solar system, flies the camera out to the spacecraft, and shows its trajectory through space. Currently the only active mission is Artemis II, NASA's crewed lunar flyby mission launched April 1, 2026. Use this tool whenever a child asks about Artemis, the rocket, the astronauts going to the Moon, the current mission, or where a spacecraft is right now. The child can pan and zoom around the spacecraft once it's open.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "description": "Which mission to track",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "Name of the mission to track. Currently only 'Artemis II' is supported. Defaults to Artemis II if not specified."
+            }
+        }
+    }
+}

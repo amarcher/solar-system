@@ -6,6 +6,7 @@ import { useSolarConversation } from './hooks/useSolarConversation';
 import { planets } from './data/planets';
 import { getPlanetById } from './data/planets';
 import { getMoonById, getMoonsByPlanet } from './data/moons';
+import { missions, getMissionById } from './data/missions';
 import { SolarSystemScene } from './components/scene/SolarSystemScene';
 import { PlanetDetail } from './components/detail/PlanetDetail';
 import { MoonDetail } from './components/detail/MoonDetail';
@@ -28,7 +29,7 @@ function subscribeToMobile(cb: () => void) {
 function getIsMobile() { return mobileQuery.matches; }
 
 function App() {
-  const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goBack } = useNavigation();
+  const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
   const [showLabels, setShowLabels] = useState(true);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
@@ -71,6 +72,14 @@ function App() {
     viewTransition(() => goBack(), ['detail-close']);
   }, [goBack]);
 
+  const handleMissionToggle = useCallback(() => {
+    if (nav.level === 'mission') {
+      viewTransition(() => goToSystem(), ['detail-close']);
+    } else {
+      viewTransition(() => goToMission('artemis-2'), ['detail-open']);
+    }
+  }, [nav.level, goToSystem, goToMission]);
+
   const voice = useSolarConversation({
     currentNav: nav,
     onNavigatePlanet: handlePlanetClick,
@@ -78,6 +87,9 @@ function App() {
       viewTransition(() => goToMoon(planetId, moonId), ['detail-open']);
     },
     onNavigateSun: handleSunClick,
+    onTrackMission: (missionId: string) => {
+      viewTransition(() => goToMission(missionId), ['detail-open']);
+    },
     onGoBack: handleBack,
     onPeelSunLayer: (layerIndex: number) => {
       // If not already on Sun detail, navigate there first
@@ -101,6 +113,20 @@ function App() {
   const currentMoon = nav.level === 'moon'
     ? getMoonById(nav.moonId)
     : undefined;
+  const currentMission = nav.level === 'mission'
+    ? getMissionById(nav.missionId)
+    : undefined;
+
+  // Mission progress (for HUD card)
+  const missionProgress = useMemo(() => {
+    if (!currentMission) return null;
+    const launch = Date.parse(currentMission.launchDate);
+    const end = Date.parse(currentMission.endDate);
+    const totalDays = Math.max(1, Math.round((end - launch) / 86_400_000));
+    const elapsedDays = Math.max(0, Math.min(totalDays, Math.floor((Date.now() - launch) / 86_400_000) + 1));
+    const isComplete = Date.now() > end;
+    return { totalDays, elapsedDays, isComplete };
+  }, [currentMission]);
 
   return (
     <div className={`app${cinemaMode ? ' app--cinema' : ''}`}>
@@ -118,6 +144,7 @@ function App() {
       <SolarSystemScene
         planets={planets}
         moonsByPlanet={moonsByPlanet}
+        missions={missions}
         nav={nav}
         onPlanetClick={handlePlanetClick}
         onMoonClick={handleSceneMoonClick}
@@ -148,6 +175,20 @@ function App() {
         >
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
             <path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z" />
+          </svg>
+        </button>
+        <button
+          className={`app__toolbar-btn${nav.level === 'mission' ? ' app__toolbar-btn--mission-on' : ''}`}
+          onClick={handleMissionToggle}
+          type="button"
+          aria-label={nav.level === 'mission' ? 'Exit mission tracker' : 'Track Artemis II mission'}
+          title={nav.level === 'mission' ? 'Exit mission tracker' : 'Track Artemis II mission'}
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+            <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
           </svg>
         </button>
         <button
@@ -208,9 +249,38 @@ function App() {
                 ? currentPlanet.name
                 : nav.level === 'sun'
                   ? 'Sun'
-                  : 'Back'}
+                  : nav.level === 'mission' && currentMission
+                    ? currentMission.name
+                    : 'Back'}
           </button>
         </div>
+      )}
+
+      {nav.level === 'mission' && currentMission && missionProgress && (
+        <aside className="app__mission-hud" aria-label={`${currentMission.name} mission tracker`}>
+          <div className="app__mission-hud-header">
+            <span className="app__mission-hud-agency">NASA · LIVE</span>
+            <button
+              className="app__mission-hud-close"
+              onClick={handleClose}
+              type="button"
+              aria-label="Exit mission tracker"
+            >
+              ×
+            </button>
+          </div>
+          <h2 className="app__mission-hud-title">{currentMission.name}</h2>
+          <p className="app__mission-hud-progress">
+            {missionProgress.isComplete
+              ? `Mission complete · replaying ${missionProgress.totalDays}-day flight`
+              : `Day ${missionProgress.elapsedDays} of ${missionProgress.totalDays}`}
+          </p>
+          <p className="app__mission-hud-summary">{currentMission.summary}</p>
+          <p className="app__mission-hud-fact">
+            <span className="app__mission-hud-fact-label">Did you know?</span>{' '}
+            {currentMission.funFacts[0]}
+          </p>
+        </aside>
       )}
 
       {!hideDetails && nav.level === 'sun' && (

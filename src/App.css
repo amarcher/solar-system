@@ -103,6 +103,113 @@ body {
   background: rgba(0, 0, 0, 0.6);
 }
 
+.app__toolbar-btn--mission-on {
+  color: hsl(20, 95%, 62%);
+  border-color: hsla(20, 95%, 62%, 0.4);
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 12px hsla(20, 95%, 62%, 0.25);
+}
+
+.app__toolbar-btn--mission-on:hover {
+  color: hsl(20, 95%, 72%);
+}
+
+/* Mission tracker HUD card */
+.app__mission-hud {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 140;
+  width: 300px;
+  max-width: calc(100vw - 40px);
+  padding: 16px 18px 18px;
+  background: rgba(8, 6, 14, 0.78);
+  border: 1px solid hsla(20, 95%, 62%, 0.35);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.92);
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 24px hsla(20, 95%, 62%, 0.12);
+}
+
+.app__mission-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.app__mission-hud-agency {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: hsl(20, 95%, 65%);
+}
+
+.app__mission-hud-close {
+  appearance: none;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.app__mission-hud-close:hover {
+  color: #fff;
+}
+
+.app__mission-hud-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  letter-spacing: 0.01em;
+}
+
+.app__mission-hud-progress {
+  font-size: 0.78rem;
+  color: hsl(20, 95%, 72%);
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+
+.app__mission-hud-summary {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 12px;
+}
+
+.app__mission-hud-fact {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app__mission-hud-fact-label {
+  color: hsl(20, 95%, 70%);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .app__mission-hud {
+    top: auto;
+    bottom: 70px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+  }
+}
+
 /* Voice error toast */
 .app__voice-error {
   appearance: none;
