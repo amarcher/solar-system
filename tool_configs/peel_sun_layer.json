@@ -8,11 +8,11 @@
         "type": "object",
         "description": "The layer to reveal",
         "properties": {
-            "layer_name": {
+            "layer": {
                 "type": "string",
                 "description": "Name of the Sun layer to peel to. One of: Corona, Chromosphere, Photosphere, Convective Zone, Radiative Zone, Core"
             }
         },
-        "required": ["layer_name"]
+        "required": ["layer"]
     }
 }

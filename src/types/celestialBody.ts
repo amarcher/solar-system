@@ -71,4 +71,5 @@ export type NavigationState =
   | { level: 'system' }
   | { level: 'sun' }
   | { level: 'planet'; planetId: string }
-  | { level: 'moon'; planetId: string; moonId: string };
+  | { level: 'moon'; planetId: string; moonId: string }
+  | { level: 'mission'; missionId: string };

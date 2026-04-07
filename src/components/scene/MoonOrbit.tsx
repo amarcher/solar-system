@@ -105,9 +105,10 @@ interface MoonOrbitProps {
   moon: Moon;
   onClick?: () => void;
   showLabel?: boolean;
+  paused?: boolean;
 }
 
-export function MoonOrbit({ moon, onClick, showLabel = true }: MoonOrbitProps) {
+export function MoonOrbit({ moon, onClick, showLabel = true, paused = false }: MoonOrbitProps) {
   const groupRef = useRef<Group>(null);
   const moonMeshRef = useRef<Mesh>(null);
   const angleRef = useRef(Math.random() * Math.PI * 2);
@@ -150,7 +151,9 @@ export function MoonOrbit({ moon, onClick, showLabel = true }: MoonOrbitProps) {
   const worldPos = useRef(new Vector3());
 
   useFrame((_, delta) => {
-    angleRef.current += delta * orbitSpeed * orbitDirection;
+    if (!paused) {
+      angleRef.current += delta * orbitSpeed * orbitDirection;
+    }
     if (groupRef.current) {
       groupRef.current.position.x = Math.cos(angleRef.current) * moon.orbitRadius;
       groupRef.current.position.z = Math.sin(angleRef.current) * moon.orbitRadius;
@@ -159,7 +162,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true }: MoonOrbitProps) {
       setMoonPosition(moon.id, worldPos.current.x, worldPos.current.y, worldPos.current.z);
     }
     // Slow tumble for irregular moons
-    if (moon.shape === 'irregular' && moonMeshRef.current) {
+    if (!paused && moon.shape === 'irregular' && moonMeshRef.current) {
       moonMeshRef.current.rotation.x += delta * 0.15;
       moonMeshRef.current.rotation.y += delta * 0.25;
     }

@@ -25,6 +25,10 @@ export function useNavigation() {
     trackMoonView(planetId, moonId);
   }, []);
 
+  const goToMission = useCallback((missionId: string) => {
+    setNav({ level: 'mission', missionId });
+  }, []);
+
   const goBack = useCallback(() => {
     setNav((prev) => {
       switch (prev.level) {
@@ -32,6 +36,7 @@ export function useNavigation() {
           return { level: 'planet', planetId: prev.planetId };
         case 'planet':
         case 'sun':
+        case 'mission':
           return { level: 'system' };
         default:
           return prev;
@@ -39,5 +44,5 @@ export function useNavigation() {
     });
   }, []);
 
-  return { nav, goToSystem, goToSun, goToPlanet, goToMoon, goBack };
+  return { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack };
 }
