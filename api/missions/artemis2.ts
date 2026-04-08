@@ -21,7 +21,12 @@
 
 const KM_PER_SCENE_UNIT = 384_400 / 2.0;
 
-const LAUNCH_ISO = '2026-04-01T22:35:00Z';
+// JPL Horizons only has ephemeris starting ~3h after launch (once Orion
+// was being tracked by DSN). Query from 02:00 UTC on Apr 2 onwards —
+// slightly after the "Apr 2 01:58:32" earliest-available cutoff — so we
+// don't get a "No ephemeris prior to..." error. The pre-TLI parking
+// orbit phase (first ~3h) still comes from the bundled fallback.
+const HORIZONS_START_ISO = '2026-04-02T02:00:00Z';
 const SPLASHDOWN_ISO = '2026-04-11T17:00:00Z';
 
 /** JPL NAIF/SPK ID for Artemis II (Orion "Integrity"). */
@@ -93,7 +98,7 @@ export default async function handler(_req: unknown, res: any) {
     CENTER: "'500@399'", // Earth geocenter
     MAKE_EPHEM: 'YES',
     EPHEM_TYPE: 'VECTORS',
-    START_TIME: `'${LAUNCH_ISO.replace('T', ' ').replace('Z', '')}'`,
+    START_TIME: `'${HORIZONS_START_ISO.replace('T', ' ').replace('Z', '')}'`,
     STOP_TIME: `'${SPLASHDOWN_ISO.replace('T', ' ').replace('Z', '')}'`,
     STEP_SIZE: "'2 h'",
     OUT_UNITS: 'KM-S',
