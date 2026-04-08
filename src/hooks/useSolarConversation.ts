@@ -184,11 +184,17 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   const latestNavRef = useRef<NavigationState>(currentNav);
   latestNavRef.current = currentNav;
   const inputVolumeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // True while a start attempt is in-flight but the SDK hasn't yet reported
-  // a 'connecting' or 'connected' status. Prevents double-start races and
-  // keeps the toolbar button showing a "connecting" state during the mic
-  // prompt + websocket handshake. Uses state (not ref) so the UI re-renders.
-  const [startInFlight, setStartInFlight] = useState(false);
+  // Optimistic session-active flag driven by user intent (toggle clicks).
+  // We used to derive this purely from `conversation.status`, but the SDK's
+  // status transitions are async and take 1–2s to propagate — meaning the
+  // toolbar button visibly lagged behind every click. Now we flip this
+  // state synchronously on click and sync DOWN from the SDK only for
+  // external disconnects (see the `useEffect` below that watches status).
+  const [sessionStarted, setSessionStarted] = useState(false);
+  // Tracks whether the SDK has ever reached 'connected' during the current
+  // session. Used to distinguish an initial 'disconnected' (pre-click) from
+  // a post-connection drop — only the latter should reset sessionStarted.
+  const hasConnectedRef = useRef(false);
 
   const conversation = useConversation({
     clientTools: {
@@ -299,23 +305,23 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     };
   }, [conversation.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // The SDK's status is the single source of truth for whether a session
-  // is active. Our old local `sessionStarted` state could drift from it
-  // (external disconnect, rapid clicks, HMR) and lead to a toggle that
-  // silently did nothing (or worse, spawned a second overlapping session).
-  const isActive =
-    conversation.status === 'connected' ||
-    conversation.status === 'connecting' ||
-    startInFlight;
-
   const toggle = useCallback(async () => {
     if (!agentId) return;
 
-    if (isActive) {
+    if (sessionStarted) {
+      // Optimistic: flip UI off immediately, then ask the SDK to actually
+      // close the connection. Audio may take a second or two to fully stop
+      // but the user gets instant feedback.
       conversation.endSession();
-      setStartInFlight(false);
+      setSessionStarted(false);
+      hasConnectedRef.current = false;
       return;
     }
+
+    // Optimistic: flip UI on synchronously BEFORE the mic prompt so the
+    // button shows "connecting" the moment the user clicks. We'll roll
+    // back if mic permission fails.
+    setSessionStarted(true);
 
     try {
       const micPromise = navigator.mediaDevices.getUserMedia({ audio: true });
@@ -329,12 +335,9 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       if (error.name === 'TimeoutError') setMicError('timeout');
       else if (error.name === 'NotAllowedError') setMicError('not-allowed');
       else setMicError('device');
+      setSessionStarted(false); // roll back optimistic UI
       return;
     }
-
-    // Guard against double-clicks while the SDK hasn't yet reported 'connecting'
-    if (startInFlight) return;
-    setStartInFlight(true);
 
     trackVoiceAgentActivated();
 
@@ -351,7 +354,7 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       // Note: the ElevenLabs SDK's startSession is fire-and-forget (returns
       // void), so awaiting it is a no-op. The catch only fires on synchronous
       // throws during setup. Session status transitions are observed via
-      // `conversation.status` (see `isActive` above).
+      // `conversation.status` and the sync-down effect below.
       await conversation.startSession({
         agentId,
         connectionType: 'websocket',
@@ -363,9 +366,9 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       });
     } catch (err) {
       console.error('[VoiceAgent] startSession failed:', err);
-      setStartInFlight(false);
+      setSessionStarted(false);
     }
-  }, [agentId, isActive, conversation]);
+  }, [agentId, sessionStarted, conversation]);
 
   const clearMicError = useCallback(() => setMicError(null), []);
 
@@ -417,12 +420,25 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     );
   }, [agentId, conversation]);
 
-  // Clear the start-in-flight guard once the SDK reports a real status
+  // Sync DOWN from the SDK: if an external event disconnects the session
+  // (network drop, agent-side timeout, error) we need to reset sessionStarted
+  // so the button goes back to "Talk to Stella". We only treat a
+  // 'disconnected' status as an external drop AFTER we've seen 'connected'
+  // during this session — otherwise the initial page-load 'disconnected'
+  // would clear sessionStarted before the user even clicks.
   useEffect(() => {
-    if (conversation.status === 'connecting' || conversation.status === 'connected') {
-      setStartInFlight(false);
+    if (conversation.status === 'connected') {
+      hasConnectedRef.current = true;
     }
-  }, [conversation.status]);
+    if (
+      conversation.status === 'disconnected' &&
+      hasConnectedRef.current &&
+      sessionStarted
+    ) {
+      setSessionStarted(false);
+      hasConnectedRef.current = false;
+    }
+  }, [conversation.status, sessionStarted]);
 
   // Cleanup — tear down any active session on unmount
   useEffect(() => {
@@ -431,11 +447,13 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Derived UI status, always from the SDK (source of truth)
+  // Derived UI status: optimistic on user intent, but upgrades to 'connected'
+  // when the SDK confirms. During the mic prompt + handshake window, the
+  // button shows 'connecting' so the user gets instant click feedback.
   let status: VoiceStatus = 'off';
-  if (conversation.status === 'connected') status = 'connected';
-  else if (conversation.status === 'connecting' || startInFlight) status = 'connecting';
-  else status = 'off';
+  if (sessionStarted) {
+    status = conversation.status === 'connected' ? 'connected' : 'connecting';
+  }
 
   return {
     status,
