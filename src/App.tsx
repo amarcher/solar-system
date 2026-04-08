@@ -33,8 +33,15 @@ function App() {
   const [showLabels, setShowLabels] = useState(true);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
+  const [missionHudDismissed, setMissionHudDismissed] = useState(false);
   const isMobile = useSyncExternalStore(subscribeToMobile, getIsMobile);
   const hideDetails = cinemaMode || isMobile;
+
+  // Reset the mission HUD dismissed state whenever the user (re-)enters
+  // mission view, so the info card shows fresh on each visit.
+  useEffect(() => {
+    if (nav.level !== 'mission') setMissionHudDismissed(false);
+  }, [nav.level]);
 
   const handlePlanetClick = useCallback((planetId: string) => {
     viewTransition(() => goToPlanet(planetId), ['detail-open']);
@@ -256,15 +263,15 @@ function App() {
         </div>
       )}
 
-      {nav.level === 'mission' && currentMission && missionProgress && (
+      {nav.level === 'mission' && currentMission && missionProgress && !missionHudDismissed && (
         <aside className="app__mission-hud" aria-label={`${currentMission.name} mission tracker`}>
           <div className="app__mission-hud-header">
             <span className="app__mission-hud-agency">NASA · LIVE</span>
             <button
               className="app__mission-hud-close"
-              onClick={handleClose}
+              onClick={() => setMissionHudDismissed(true)}
               type="button"
-              aria-label="Exit mission tracker"
+              aria-label="Hide mission details"
             >
               ×
             </button>
