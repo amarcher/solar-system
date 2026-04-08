@@ -6,14 +6,25 @@ const textureCache = new Map<string, Texture | null>();
 
 export const CDN_URL = import.meta.env.VITE_TEXTURE_CDN_URL as string | undefined;
 
+/**
+ * Opt-in flag to fetch 8K planet diffuse maps from the CDN in the background
+ * and upgrade the bundled 2K textures. Leave unset until the 8K textures are
+ * actually uploaded to the CDN — otherwise every planet 404s on page load.
+ *
+ * To enable: set VITE_TEXTURE_CDN_HIRES=true and upload the files to
+ *   {VITE_TEXTURE_CDN_URL}/textures/8k/{planetId}_diffuse.jpg
+ */
+const CDN_HIRES_ENABLED =
+  (import.meta.env.VITE_TEXTURE_CDN_HIRES as string | undefined)?.toLowerCase() === 'true';
+
 /** Resolve a texture path, preferring CDN when configured. */
 export function texturePath(path: string): string {
   return CDN_URL ? `${CDN_URL}${path}` : path;
 }
 
 /**
- * Load a planet's diffuse texture. Tries bundled 2k first,
- * then optionally upgrades to high-res from CDN.
+ * Load a planet's diffuse texture. Always loads the bundled 2K first, then
+ * optionally upgrades to 8K from the CDN if `VITE_TEXTURE_CDN_HIRES=true`.
  * Returns null if no texture file exists (falls back to solid color).
  */
 export function usePlanetTexture(planetId: string): Texture | null {
@@ -41,8 +52,10 @@ export function usePlanetTexture(planetId: string): Texture | null {
         setTexture(tex);
         setLoaded(true);
 
-        // If CDN is configured, upgrade to high-res in the background
-        if (CDN_URL) {
+        // Optional background upgrade to 8K. Gated behind an explicit
+        // opt-in so we don't 404-spam the console when the hi-res bucket
+        // is empty. See CDN_HIRES_ENABLED docblock above.
+        if (CDN_URL && CDN_HIRES_ENABLED) {
           const hiResPath = `${CDN_URL}/textures/8k/${planetId}_diffuse.jpg`;
           loader.load(
             hiResPath,
