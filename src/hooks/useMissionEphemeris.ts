@@ -53,19 +53,29 @@ export function useMissionEphemeris(mission: Mission): MissionEphemerisPoint[] {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         // Vercel serverless functions only run under `vercel dev` or in
         // production. Plain `vite dev` serves the raw .ts source file with
-        // a non-JSON content type — we should silently fall back to the
-        // bundled ephemeris in that case rather than logging a parse error.
+        // a non-JSON content type — silently fall back to the bundled
+        // ephemeris in that case.
         const ct = r.headers.get('content-type') ?? '';
         if (!ct.includes('application/json')) {
           return null;
         }
-        return (await r.json()) as { ephemeris: MissionEphemerisPoint[] };
+        return (await r.json()) as {
+          ephemeris: MissionEphemerisPoint[] | null;
+          error?: string;
+        };
       })
       .then((data) => {
         if (cancelled || !data) return;
         if (Array.isArray(data.ephemeris) && data.ephemeris.length > 0) {
+          console.log(`[mission ${mission.id}] live ephemeris loaded (${data.ephemeris.length} points)`);
           setEphemeris(data.ephemeris);
           writeCache(mission.id, data.ephemeris);
+        } else if (data.error) {
+          // Explicit server-side fallback signal (route returned 200 with
+          // ephemeris: null) — the server already decided to use the
+          // bundled data. Log at info level, not warn; this is the
+          // expected degraded path, not an error.
+          console.info(`[mission ${mission.id}] server returned bundled fallback:`, data.error);
         }
       })
       .catch((err) => {

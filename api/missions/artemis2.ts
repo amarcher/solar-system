@@ -1,24 +1,31 @@
 /**
  * Vercel serverless route: live Artemis II ephemeris.
  *
- * Proxies JPL Horizons (https://ssd-api.jpl.nasa.gov/horizons.api) which
- * doesn't allow CORS from browsers. Parses the vector ephemeris response and
- * converts km → scene units (Moon at 384,400 km → scene radius 2.0). Cached
- * at the edge for 6 hours since the trajectory only changes when NASA
- * publishes a new solution.
+ * Proxies JPL Horizons (https://ssd.jpl.nasa.gov/api/horizons.api) which
+ * doesn't allow CORS from browsers. Parses the vector ephemeris response
+ * and converts km → scene units (Moon at 384,400 km → scene radius 2.0).
+ * Cached at the edge for 6 hours; spacecraft position shifts slowly enough
+ * that a 6-hour stale reading is visually indistinguishable from live.
  *
- * On any failure (Horizons down, body not yet tracked, parse error) returns
- * 502 so the frontend gracefully falls back to the bundled static ephemeris.
+ * Spacecraft lookup is by NAIF ID `-1024` (the canonical SPK ID that JPL
+ * has assigned to Artemis II / Orion "Integrity"). Verified against the
+ * live Horizons system — returns real ephemeris with the actual TLI burn
+ * delta-v, perilune timing, and trajectory correction maneuvers baked in.
  *
- * Note: as of writing, the canonical Horizons SPK ID for Artemis II may not
- * yet be assigned. The COMMAND value below is a best-effort lookup string;
- * adjust to a numeric SPK ID once NASA publishes one.
+ * On any failure (Horizons down, parse error, malformed response) returns
+ * HTTP 200 with `{ ephemeris: null, error: '...' }`. The client
+ * (`useMissionEphemeris`) treats a null ephemeris as "fall back to the
+ * bundled static ephemeris" — same behavior as before, just without the
+ * upstream 502 leaking through Cloudflare as a scary error page.
  */
 
 const KM_PER_SCENE_UNIT = 384_400 / 2.0;
 
 const LAUNCH_ISO = '2026-04-01T22:35:00Z';
 const SPLASHDOWN_ISO = '2026-04-11T17:00:00Z';
+
+/** JPL NAIF/SPK ID for Artemis II (Orion "Integrity"). */
+const ARTEMIS_II_NAIF_ID = '-1024';
 
 interface EphemerisPoint {
   t: string;
@@ -30,10 +37,8 @@ interface EphemerisPoint {
 /**
  * Parse the SOE/EOE-delimited vector block of a Horizons text response.
  * Each record looks like:
- *   2459580.500000000 = A.D. 2026-Apr-01 00:00:00.0000 TDB
- *    X = ... Y = ... Z = ...
- *    VX= ... VY= ... VZ= ...
- *    LT= ... RG= ... RR= ...
+ *   2461138.500000000 = A.D. 2026-Apr-08 00:00:00.0000 TDB
+ *    X =-1.143055314414975E+05 Y =-3.482197817499958E+05 Z =-3.798797662550198E+04
  */
 function parseHorizonsVectors(text: string): EphemerisPoint[] {
   const points: EphemerisPoint[] = [];
@@ -41,7 +46,6 @@ function parseHorizonsVectors(text: string): EphemerisPoint[] {
   const eoe = text.indexOf('$$EOE');
   if (soe === -1 || eoe === -1) return points;
   const block = text.slice(soe + 5, eoe);
-  // Split into records on the JD-prefixed date line
   const records = block.split(/\n(?=\d{7}\.\d+\s*=)/);
   for (const rec of records) {
     const dateMatch = rec.match(/A\.D\.\s+(\d{4})-([A-Za-z]{3})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
@@ -62,9 +66,10 @@ function parseHorizonsVectors(text: string): EphemerisPoint[] {
 
     points.push({
       t: isoT,
-      // Horizons uses ecliptic-of-date (X,Y,Z); our scene uses (X, Y up, Z).
-      // Map Horizons (X,Y,Z) → scene (X, Z, -Y) so the orbital plane lies
-      // in the scene's XZ plane (matching how moons render).
+      // Horizons vectors are Earth-centered J2000 ecliptic (X, Y, Z in km).
+      // Our scene has Y as "up" and the orbital plane in XZ, so we map
+      // Horizons (X, Y, Z) → scene (X, Z, -Y). The Moon orbits at scene
+      // radius 2.0 ≈ 384,400 km, so divide by KM_PER_SCENE_UNIT.
       x: xKm / KM_PER_SCENE_UNIT,
       y: zKm / KM_PER_SCENE_UNIT,
       z: -yKm / KM_PER_SCENE_UNIT,
@@ -73,19 +78,19 @@ function parseHorizonsVectors(text: string): EphemerisPoint[] {
   return points;
 }
 
+/** Graceful error response — HTTP 200 with null ephemeris. Client will use bundled fallback. */
+function fallback(res: any, error: string, extra?: Record<string, unknown>) {
+  res.status(200).json({ missionId: 'artemis-2', ephemeris: null, error, ...extra });
+}
+
 export default async function handler(_req: unknown, res: any) {
   res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=86400');
   res.setHeader('Content-Type', 'application/json');
 
-  // Build Horizons query.
-  // CENTER='@399' = Earth (geocenter). COMMAND= the spacecraft lookup.
-  // Many crewed/recent NASA missions are addressable by their name once
-  // Horizons ingests them; for missions Horizons doesn't yet track, this
-  // call will return an error body and we surface 502 → frontend fallback.
   const params = new URLSearchParams({
-    format: 'text',
-    COMMAND: "'ARTEMIS II'",
-    CENTER: "'500@399'",
+    format: 'json',
+    COMMAND: `'${ARTEMIS_II_NAIF_ID}'`,
+    CENTER: "'500@399'", // Earth geocenter
     MAKE_EPHEM: 'YES',
     EPHEM_TYPE: 'VECTORS',
     START_TIME: `'${LAUNCH_ISO.replace('T', ' ').replace('Z', '')}'`,
@@ -99,22 +104,23 @@ export default async function handler(_req: unknown, res: any) {
   });
 
   try {
-    const upstream = await fetch(`https://ssd-api.jpl.nasa.gov/horizons.api?${params.toString()}`, {
-      headers: { Accept: 'text/plain' },
+    const upstream = await fetch(`https://ssd.jpl.nasa.gov/api/horizons.api?${params.toString()}`, {
+      headers: { Accept: 'application/json' },
     });
     if (!upstream.ok) {
-      res.status(502).json({ error: 'horizons_unavailable', status: upstream.status });
-      return;
+      return fallback(res, 'horizons_http_error', { status: upstream.status });
     }
-    const body = await upstream.json() as { result?: string };
+    const body = await upstream.json() as { result?: string; error?: string };
+    if (body?.error) {
+      return fallback(res, 'horizons_api_error', { message: body.error });
+    }
     const text = body?.result ?? '';
     const ephemeris = parseHorizonsVectors(text);
     if (ephemeris.length === 0) {
-      res.status(502).json({ error: 'horizons_no_data' });
-      return;
+      return fallback(res, 'horizons_no_data');
     }
     res.status(200).json({ missionId: 'artemis-2', ephemeris });
   } catch (err) {
-    res.status(502).json({ error: 'horizons_fetch_failed', message: String(err) });
+    return fallback(res, 'horizons_fetch_failed', { message: String(err) });
   }
 }
