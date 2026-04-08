@@ -4,21 +4,52 @@ import type { Mission, MissionEphemerisPoint } from '../../types/mission';
  * Artemis II — NASA's first crewed lunar flyby since Apollo 17.
  *
  * Launched April 1, 2026 at 22:35 UTC from Kennedy Space Center on a ~10-day
- * free-return trajectory around the Moon. This file ships a procedurally
- * generated *fallback* ephemeris matching the published mission profile.
- * The live `/api/missions/artemis2` route serves real JPL Horizons data when
- * available; the app falls back to this when offline or if Horizons is down.
+ * free-return trajectory around the Moon. This file generates a procedural
+ * ephemeris matching the published mission profile, calibrated so its phase
+ * boundaries (TLI, perilune, splashdown) line up with real JPL Horizons event
+ * timestamps. We render against the app's artistically-scaled scene (Moon at
+ * scene radius 2.0, ~5x its real-distance ratio) rather than the raw ~384,400
+ * km Horizons coordinates, because real-scale Artemis lives entirely inside a
+ * pixel and a half on the screen — see the PR description for the four
+ * approaches we considered before settling on this one.
  *
- * Coordinate system: Earth-centered, scene units. The Moon orbits at scene
- * radius 2.0 (matching `moons.ts` for the Moon entry), so 1 scene unit ≈
- * 192,200 km. The trajectory lies in the y=0 plane (Earth-Moon orbital plane
- * approximation, matching how moons render in the app).
+ * Coordinate system: Earth-centered, scene units. The trajectory lies in the
+ * y=0 plane (Earth-Moon orbital plane approximation). 1 scene unit ≈ 192,200
+ * km, but only the relative geometry matters here — the actual km figure
+ * never appears in the math.
+ *
+ * Calibration source: JPL Horizons NAIF ID -1024 (Orion "Integrity"), pulled
+ * for the window 2026-04-02 02:00 UTC → 2026-04-10 23:00 UTC. Real mission
+ * event timestamps used as phase boundaries:
+ *
+ *   Launch     2026-04-01 22:35:00 UTC   (T+0)
+ *   TLI burn   2026-04-02 23:49:00 UTC   (T+25h14m, ~10.76% of mission)
+ *   Perilune   2026-04-06 23:01:00 UTC   (T+5d 0h 26m, ~51.37% of mission)
+ *   Splashdown 2026-04-11 17:00:00 UTC   (T+9d 18h 25m, mission end)
+ *
+ * The procedural model places "apogee" of the post-TLI ellipse at the
+ * perilune wall-clock time (in our model the spacecraft is at max distance
+ * from Earth when it's closest to the Moon — true to within a few percent for
+ * a free-return trajectory). Because the Moon catches up to the spacecraft
+ * during outbound, perilune sits at ~45.5% of the way through phase 2 rather
+ * than the geometric midpoint — phase 2 uses a non-uniform theta mapping to
+ * make the wall clock match.
  */
 
 const LAUNCH_ISO = '2026-04-01T22:35:00Z';
 const SPLASHDOWN_ISO = '2026-04-11T17:00:00Z';
+const TLI_ISO = '2026-04-02T23:49:00Z';
+const PERILUNE_ISO = '2026-04-06T23:01:00Z';
+
 const LAUNCH_MS = Date.parse(LAUNCH_ISO);
 const DURATION_MS = Date.parse(SPLASHDOWN_ISO) - LAUNCH_MS;
+
+/** Fraction of mission duration at which the TLI burn fires. */
+const T_TLI = (Date.parse(TLI_ISO) - LAUNCH_MS) / DURATION_MS; // ≈ 0.1076
+/** Fraction of mission duration at perilune (closest approach to Moon). */
+const T_PERILUNE = (Date.parse(PERILUNE_ISO) - LAUNCH_MS) / DURATION_MS; // ≈ 0.5137
+/** Where in *phase 2* (post-TLI) perilune lands, as a fraction. */
+const U_PERILUNE_IN_PHASE_2 = (T_PERILUNE - T_TLI) / (1 - T_TLI); // ≈ 0.4551
 
 /**
  * Position on a Kepler ellipse with the focus at the origin.
@@ -50,55 +81,55 @@ function ellipsePoint(
  * align with the Moon's actual current direction when the user opens the
  * mission view.
  *
- * Physics-faithful structure (matching the published mission profile):
+ * Phase 1 — High Earth parking orbit. One revolution of an elliptical orbit
+ *   (perigee on the −X side, apogee partway toward the Moon). Real mission:
+ *   perigee 563 km, apogee 70,000 km, ~25 hours.
  *
- *   Phase 1 — High Earth parking orbit. One full revolution of an
- *     elliptical orbit (perigee on the −X side, apogee partway toward
- *     the Moon). In reality: perigee 563 km, apogee 70,000 km, ~23 hours.
+ * Phase 2 — Trans-Lunar Injection burn at perigee. The perigee stays put;
+ *   the apogee stretches all the way out past the Moon. The spacecraft then
+ *   traces this much larger ellipse — outbound through the −Z half, "lazy
+ *   U-turn" at apogee (which sits just past the Moon), and return through
+ *   the +Z half. One full revolution, ending back at perigee for re-entry.
  *
- *   Phase 2 — Trans-Lunar Injection burn at perigee. The perigee stays
- *     put; the apogee stretches all the way out past the Moon. The
- *     spacecraft then traces this much larger ellipse — outbound through
- *     the −Z half, "lazy U-turn" at apogee (which sits just past the
- *     Moon), and return through the +Z half. One full revolution of
- *     the post-TLI orbit, ending back at perigee.
+ * Both ellipses share the same perigee point and tangent direction, so the
+ * transition is smooth (the TLI burn just adds speed along the existing
+ * velocity vector).
  *
- * Both ellipses share the same perigee point, and both have their tangent
- * direction perpendicular to the perigee radius — so the transition from
- * the parking orbit to the post-TLI orbit is smooth (the TLI burn just
- * adds speed along the existing velocity vector, it doesn't change
- * direction). Outbound and return are literally the two halves of one
- * ellipse, traversed continuously.
+ * Phase 2 uses a piecewise-linear theta(u) mapping rather than uniform, so
+ * apogee (theta = π) lines up with the real perilune wall-clock time
+ * (~45.5% of phase 2 instead of the geometric 50%). This matches the
+ * outbound-slow / return-fast asymmetry of the real free-return trajectory.
  */
 function trajectoryAt(t: number): [number, number, number] {
-  // Phase boundary
-  const T_PARK_END = 0.10;   // ~1 day of parking orbit (real mission: 23h of 10d)
-
   // Geometry — parking orbit (artistically scaled to be visible alongside Earth)
-  const PARK_PERIGEE = 0.42;  // just outside Earth's visual radius (~0.32)
-  const PARK_APOGEE = 0.85;   // ~40% of the way to the Moon
+  const PARK_PERIGEE = 0.42; // just outside Earth's visual radius (~0.32)
+  const PARK_APOGEE = 0.85;  // ~40% of the way to the Moon
   const PERIGEE_ANGLE = Math.PI; // perigee at −X so the ellipse extends toward +X (Moon)
 
   // Geometry — post-TLI free-return ellipse.
   // Apogee is pushed past the Moon's visual radius (~0.139 in scene units)
   // plus a buffer so the spacecraft visibly clears the Moon at U-turn.
-  const TLI_PERIGEE = 0.42;   // same perigee as parking orbit (TLI fires here)
-  const TLI_APOGEE = 2.30;    // ~0.30 past Moon center → clear of Moon's visual sphere
+  const TLI_PERIGEE = 0.42;  // same perigee as parking orbit (TLI fires here)
+  const TLI_APOGEE = 2.30;   // ~0.30 past Moon center → clear of Moon's visual sphere
 
   let xz: [number, number];
 
-  if (t < T_PARK_END) {
+  if (t < T_TLI) {
     // Phase 1: parking orbit — one full CCW revolution starting at perigee.
-    const u = t / T_PARK_END;
+    const u = t / T_TLI;
     const theta = u * Math.PI * 2;
     xz = ellipsePoint(PARK_PERIGEE, PARK_APOGEE, PERIGEE_ANGLE, theta);
   } else {
     // Phase 2: post-TLI free-return — one full CCW revolution.
-    // Outbound traverses the −Z half (perigee → apogee at the Moon),
-    // U-turn at apogee, return traverses the +Z half (apogee → perigee).
-    // Mission ends back at perigee (reentry interface).
-    const u = (t - T_PARK_END) / (1 - T_PARK_END);
-    const theta = u * Math.PI * 2;
+    const u = (t - T_TLI) / (1 - T_TLI);
+    // Non-uniform theta(u): outbound (theta 0 → π) covers U_PERILUNE_IN_PHASE_2
+    // of the wall-clock; return (theta π → 2π) covers the rest.
+    let theta: number;
+    if (u < U_PERILUNE_IN_PHASE_2) {
+      theta = (u / U_PERILUNE_IN_PHASE_2) * Math.PI;
+    } else {
+      theta = Math.PI + ((u - U_PERILUNE_IN_PHASE_2) / (1 - U_PERILUNE_IN_PHASE_2)) * Math.PI;
+    }
     xz = ellipsePoint(TLI_PERIGEE, TLI_APOGEE, PERIGEE_ANGLE, theta);
   }
 
@@ -113,7 +144,7 @@ function trajectoryAt(t: number): [number, number, number] {
  * enough that the rendered trajectory line looks smooth at all camera zoom
  * levels, including the tight curvature near perigee.
  */
-function generateFallbackEphemeris(): MissionEphemerisPoint[] {
+function generateEphemeris(): MissionEphemerisPoint[] {
   const COUNT = 481;
   const out: MissionEphemerisPoint[] = [];
   for (let i = 0; i < COUNT; i++) {
@@ -145,6 +176,5 @@ export const artemis2: Mission = {
   ],
   color: '#ff8a3d',
   frame: { kind: 'planet-local', planetId: 'earth' },
-  fallbackEphemeris: generateFallbackEphemeris(),
-  ephemerisApiPath: '/api/missions/artemis2',
+  ephemeris: generateEphemeris(),
 };

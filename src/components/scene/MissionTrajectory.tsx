@@ -3,7 +3,6 @@ import { useFrame } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
 import { Group, Quaternion, Vector3 } from 'three';
 import type { Mission, MissionEphemerisPoint } from '../../types/mission';
-import { useMissionEphemeris } from '../../hooks/useMissionEphemeris';
 import { clearMissionPosition, setMissionPosition } from '../../utils/missionPositions';
 import { getMoonPosition, getPlanetPosition } from '../../utils/planetPositions';
 import { OrionSpacecraft } from './OrionSpacecraft';
@@ -71,7 +70,7 @@ function sampleEphemeris(
  * the spacecraft naturally continues to inch along its real-time path.
  */
 export function MissionTrajectory({ mission }: MissionTrajectoryProps) {
-  const ephemeris = useMissionEphemeris(mission);
+  const ephemeris = mission.ephemeris;
   // Wrapper rotates the canonical (+X = Moon) trajectory frame to align with
   // the actual Moon's current direction. Snapshot once on first frame so the
   // alignment is frozen for the duration of the mission view.
