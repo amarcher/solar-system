@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useConversation } from '@elevenlabs/react';
+import { useConversation, useConversationClientTool, useRawConversation } from '@elevenlabs/react';
 import type { Planet, Moon, NavigationState } from '../types/celestialBody';
 import type { Mission } from '../types/mission';
 import { planets } from '../data/planets';
@@ -197,64 +197,8 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   const hasConnectedRef = useRef(false);
 
   const conversation = useConversation({
-    clientTools: {
-      navigate_to_planet: (params: { name: string }) => {
-        const match = planets.find(p =>
-          p.name.toLowerCase() === params.name.toLowerCase() ||
-          p.id === params.name.toLowerCase()
-        );
-        if (!match) return `No planet found matching "${params.name}"`;
-        onNavigatePlanet(match.id);
-        return `Navigated to ${match.name}`;
-      },
-      navigate_to_moon: (params: { name: string }) => {
-        // Search all moons
-        for (const planet of planets) {
-          const moons = getMoonsByPlanet(planet.id);
-          const moon = moons.find(m =>
-            m.name.toLowerCase() === params.name.toLowerCase() ||
-            m.id === params.name.toLowerCase()
-          );
-          if (moon) {
-            onNavigateMoon(planet.id, moon.id);
-            return `Navigated to ${moon.name} (moon of ${planet.name})`;
-          }
-        }
-        return `No moon found matching "${params.name}"`;
-      },
-      navigate_to_sun: () => {
-        onNavigateSun();
-        return 'Navigated to the Sun';
-      },
-      track_mission: (params: { name?: string }) => {
-        const query = (params.name ?? 'artemis').toLowerCase();
-        const match = missions.find(m =>
-          m.name.toLowerCase().includes(query) ||
-          m.id.toLowerCase().includes(query) ||
-          query.includes(m.name.toLowerCase()) ||
-          query.includes(m.id.toLowerCase())
-        ) ?? missions[0];
-        if (!match) return 'No active missions to track right now.';
-        onTrackMission(match.id);
-        return `Opened the live ${match.name} mission tracker. The solar system is paused and the camera is flying out to the spacecraft.`;
-      },
-      go_back: () => {
-        onGoBack();
-        return 'Went back';
-      },
-      peel_sun_layer: (params: { layer: string }) => {
-        const idx = sun.layers.findIndex(l =>
-          l.name.toLowerCase() === params.layer.toLowerCase()
-        );
-        if (idx === -1) {
-          return `No layer found matching "${params.layer}". Available layers: ${sun.layers.map(l => l.name).join(', ')}`;
-        }
-        onPeelSunLayer(idx);
-        const layer = sun.layers[idx];
-        return `Peeled to ${layer.name} layer (${layer.temperature}). ${layer.description.slice(0, 120)}...`;
-      },
-    },
     onConnect: () => {
+      console.log('[voice] session connected');
       if (pendingNavRef.current) {
         const ctx = buildContextForNav(pendingNavRef.current);
         if (ctx) conversation.sendContextualUpdate(ctx);
@@ -262,11 +206,126 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       }
     },
     onDisconnect: (details: unknown) => {
-      console.warn('[VoiceAgent] disconnected:', details);
+      console.log('[voice] session disconnected:', details);
     },
     onError: (error: unknown) => {
-      console.error('[VoiceAgent] session error:', error);
+      console.error('[voice] session error:', error);
     },
+  });
+
+  // Direct handle to the live Conversation instance. We use this in the
+  // stop path to call `endSession()` directly on the instance, bypassing
+  // the ConversationProvider's wrapped endSession — which was observed
+  // to silently no-op in some race conditions (when the provider's
+  // conversationRef had already been cleared by an onDisconnect listener
+  // but the underlying WebRTC session was still alive).
+  const rawConv = useRawConversation();
+
+  // Each client tool is registered via the SDK's ref-backed hook so the
+  // live Conversation instance always invokes the LATEST closure — not
+  // whatever was captured at session start. This avoids stale closures
+  // that could fire against an orphaned React tree. Each handler is also
+  // wrapped in try/catch so thrown exceptions become graceful error
+  // strings rather than being surfaced to the agent as "something went
+  // wrong" via the SDK's `is_error: true` response path.
+  useConversationClientTool('navigate_to_planet', (params) => {
+    console.log('[voice] navigate_to_planet called:', params);
+    try {
+      const name = String(params.name ?? '');
+      const match = planets.find(p =>
+        p.name.toLowerCase() === name.toLowerCase() ||
+        p.id === name.toLowerCase()
+      );
+      if (!match) return `No planet found matching "${name}"`;
+      onNavigatePlanet(match.id);
+      return `Navigated to ${match.name}`;
+    } catch (err) {
+      console.error('[voice] navigate_to_planet failed:', err);
+      return `Navigation failed: ${(err as Error)?.message ?? 'unknown error'}`;
+    }
+  });
+
+  useConversationClientTool('navigate_to_moon', (params) => {
+    console.log('[voice] navigate_to_moon called:', params);
+    try {
+      const name = String(params.name ?? '');
+      for (const planet of planets) {
+        const moons = getMoonsByPlanet(planet.id);
+        const moon = moons.find(m =>
+          m.name.toLowerCase() === name.toLowerCase() ||
+          m.id === name.toLowerCase()
+        );
+        if (moon) {
+          onNavigateMoon(planet.id, moon.id);
+          return `Navigated to ${moon.name} (moon of ${planet.name})`;
+        }
+      }
+      return `No moon found matching "${name}"`;
+    } catch (err) {
+      console.error('[voice] navigate_to_moon failed:', err);
+      return `Navigation failed: ${(err as Error)?.message ?? 'unknown error'}`;
+    }
+  });
+
+  useConversationClientTool('navigate_to_sun', () => {
+    console.log('[voice] navigate_to_sun called');
+    try {
+      onNavigateSun();
+      return 'Navigated to the Sun';
+    } catch (err) {
+      console.error('[voice] navigate_to_sun failed:', err);
+      return `Navigation failed: ${(err as Error)?.message ?? 'unknown error'}`;
+    }
+  });
+
+  useConversationClientTool('track_mission', (params) => {
+    console.log('[voice] track_mission called:', params);
+    try {
+      const rawName = params.name;
+      const query = (typeof rawName === 'string' ? rawName : 'artemis').toLowerCase();
+      const match = missions.find(m =>
+        m.name.toLowerCase().includes(query) ||
+        m.id.toLowerCase().includes(query) ||
+        query.includes(m.name.toLowerCase()) ||
+        query.includes(m.id.toLowerCase())
+      ) ?? missions[0];
+      if (!match) return 'No active missions to track right now.';
+      onTrackMission(match.id);
+      return `Opened the live ${match.name} mission tracker. The solar system is paused and the camera is flying out to the spacecraft.`;
+    } catch (err) {
+      console.error('[voice] track_mission failed:', err);
+      return `Mission tracker failed: ${(err as Error)?.message ?? 'unknown error'}`;
+    }
+  });
+
+  useConversationClientTool('go_back', () => {
+    console.log('[voice] go_back called');
+    try {
+      onGoBack();
+      return 'Went back';
+    } catch (err) {
+      console.error('[voice] go_back failed:', err);
+      return `Go back failed: ${(err as Error)?.message ?? 'unknown error'}`;
+    }
+  });
+
+  useConversationClientTool('peel_sun_layer', (params) => {
+    console.log('[voice] peel_sun_layer called:', params);
+    try {
+      const layerName = String(params.layer ?? '');
+      const idx = sun.layers.findIndex(l =>
+        l.name.toLowerCase() === layerName.toLowerCase()
+      );
+      if (idx === -1) {
+        return `No layer found matching "${layerName}". Available layers: ${sun.layers.map(l => l.name).join(', ')}`;
+      }
+      onPeelSunLayer(idx);
+      const layer = sun.layers[idx];
+      return `Peeled to ${layer.name} layer (${layer.temperature}). ${layer.description.slice(0, 120)}...`;
+    } catch (err) {
+      console.error('[voice] peel_sun_layer failed:', err);
+      return `Sun layer failed: ${(err as Error)?.message ?? 'unknown error'}`;
+    }
   });
 
   // Poll input volume after connecting
@@ -309,18 +368,35 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     if (!agentId) return;
 
     if (sessionStarted) {
-      // Optimistic: flip UI off immediately, then ask the SDK to actually
-      // close the connection. Audio may take a second or two to fully stop
-      // but the user gets instant feedback.
-      conversation.endSession();
+      // Stop path. Flip UI off immediately (optimistic). Then call
+      // endSession DIRECTLY on the live Conversation instance via
+      // useRawConversation — this bypasses the ConversationProvider's
+      // wrapped endSession, which was observed silently no-op'ing when
+      // its internal conversationRef had drifted out of sync with the
+      // actually-running WebRTC session.
+      console.log('[voice] toggle → stop (rawConv present:', !!rawConv, ')');
       setSessionStarted(false);
       hasConnectedRef.current = false;
+      if (rawConv) {
+        try {
+          rawConv.endSession();
+        } catch (err) {
+          console.error('[voice] rawConv.endSession failed:', err);
+        }
+      } else {
+        // Fallback: if we don't have a raw handle (session was starting
+        // but hadn't resolved yet), use the provider's wrapped endSession
+        // which knows how to handle the pending-connection case.
+        console.log('[voice] no rawConv, falling back to conversation.endSession');
+        conversation.endSession();
+      }
       return;
     }
 
-    // Optimistic: flip UI on synchronously BEFORE the mic prompt so the
-    // button shows "connecting" the moment the user clicks. We'll roll
-    // back if mic permission fails.
+    // Start path. Flip UI on synchronously BEFORE the mic prompt so the
+    // button shows "connecting" the moment the user clicks. Rolled back
+    // if mic permission fails.
+    console.log('[voice] toggle → start');
     setSessionStarted(true);
 
     try {
@@ -336,6 +412,7 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       else if (error.name === 'NotAllowedError') setMicError('not-allowed');
       else setMicError('device');
       setSessionStarted(false); // roll back optimistic UI
+      console.error('[voice] mic check failed:', error.name);
       return;
     }
 
@@ -364,11 +441,12 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
           },
         }),
       });
+      console.log('[voice] startSession dispatched');
     } catch (err) {
-      console.error('[VoiceAgent] startSession failed:', err);
+      console.error('[voice] startSession failed:', err);
       setSessionStarted(false);
     }
-  }, [agentId, sessionStarted, conversation]);
+  }, [agentId, sessionStarted, conversation, rawConv]);
 
   const clearMicError = useCallback(() => setMicError(null), []);
 
@@ -435,6 +513,7 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       hasConnectedRef.current &&
       sessionStarted
     ) {
+      console.log('[voice] external disconnect detected, resetting UI');
       setSessionStarted(false);
       hasConnectedRef.current = false;
     }
