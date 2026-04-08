@@ -239,6 +239,19 @@ function App() {
         </button>
       )}
 
+      {!cinemaMode && (
+        <a
+          className="app__credits-link"
+          href="https://github.com/amarcher/solar-system#credits"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Credits and attribution"
+          title="Credits and attribution"
+        >
+          Credits
+        </a>
+      )}
+
       {nav.level !== 'system' && (hideDetails || nav.level === 'mission') && (
         <div className="app__cinema-nav">
           <button

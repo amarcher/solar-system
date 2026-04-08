@@ -84,3 +84,19 @@ To add videos:
 - **The Sun**: Special entity with 6 interactive layers (Corona → Chromosphere → Photosphere → Convective Zone → Radiative Zone → Core)
 
 All scientific data should be verified against NASA/JPL sources.
+
+---
+
+## Credits
+
+**Planet & moon diffuse textures** — [Solar System Scope](https://www.solarsystemscope.com/textures/) · licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). 8K versions for Mercury, Venus, Earth, Mars, Jupiter, Saturn, and the Moon are served from Cloudflare R2. Uranus, Neptune, Pluto, and Ceres use 2K versions bundled with the app.
+
+**Milky Way starfield backdrop** — Solar System Scope · CC BY 4.0.
+
+**Orion spacecraft 3D model** (Artemis II mission tracker) — "Orion Spacecraft" by [wisemanmods](https://sketchfab.com/3d-models/none-fb89e865dcd446b89eaf78deaf213974) on Sketchfab · licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+**Scientific data & mission profiles** — Public-domain resources from [NASA](https://www.nasa.gov/) and [JPL](https://www.jpl.nasa.gov/), including Artemis II mission parameters, JPL Horizons ephemeris tooling, and planetary body facts.
+
+**Asteroid textures** — Procedurally generated and/or public-domain sources.
+
+**Voice agent** — Powered by [ElevenLabs Conversational AI](https://elevenlabs.io).
