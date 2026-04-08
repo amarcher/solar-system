@@ -17,6 +17,16 @@ export const CDN_URL = import.meta.env.VITE_TEXTURE_CDN_URL as string | undefine
 const CDN_HIRES_ENABLED =
   (import.meta.env.VITE_TEXTURE_CDN_HIRES as string | undefined)?.toLowerCase() === 'true';
 
+/**
+ * Planet IDs that have 8K (or 4K) diffuse maps uploaded to the CDN.
+ * Sourced from Solar System Scope (CC BY 4.0). Uranus, Neptune, Pluto, and
+ * Ceres are not in this list because no 8K equirectangular versions exist
+ * from a free source — they continue to use the bundled 2K.
+ */
+const HIRES_AVAILABLE_PLANETS = new Set<string>([
+  'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'moon',
+]);
+
 /** Resolve a texture path, preferring CDN when configured. */
 export function texturePath(path: string): string {
   return CDN_URL ? `${CDN_URL}${path}` : path;
@@ -53,9 +63,9 @@ export function usePlanetTexture(planetId: string): Texture | null {
         setLoaded(true);
 
         // Optional background upgrade to 8K. Gated behind an explicit
-        // opt-in so we don't 404-spam the console when the hi-res bucket
-        // is empty. See CDN_HIRES_ENABLED docblock above.
-        if (CDN_URL && CDN_HIRES_ENABLED) {
+        // opt-in AND a per-planet allowlist so we don't 404-spam the
+        // console for planets we don't have hi-res for.
+        if (CDN_URL && CDN_HIRES_ENABLED && HIRES_AVAILABLE_PLANETS.has(planetId)) {
           const hiResPath = `${CDN_URL}/textures/8k/${planetId}_diffuse.jpg`;
           loader.load(
             hiResPath,
