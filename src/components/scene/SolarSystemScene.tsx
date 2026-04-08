@@ -66,7 +66,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
       <Canvas
-        shadows
+        shadows="percentage"
         camera={{ position: [0, 35, 50], fov: 50, near: 0.001, far: 500 }}
         gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.75 }}
         aria-hidden="true"
