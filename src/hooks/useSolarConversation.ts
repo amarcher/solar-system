@@ -178,13 +178,17 @@ function buildFirstMessage(nav: NavigationState): string | undefined {
 
 export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer }: ConversationCallbacks) {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
-  const [sessionStarted, setSessionStarted] = useState(false);
   const [micError, setMicError] = useState<MicError>(null);
   const pendingNavRef = useRef<NavigationState | null>(null);
   const currentNavRef = useRef<string | null>(null);
   const latestNavRef = useRef<NavigationState>(currentNav);
   latestNavRef.current = currentNav;
   const inputVolumeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // True while a start attempt is in-flight but the SDK hasn't yet reported
+  // a 'connecting' or 'connected' status. Prevents double-start races and
+  // keeps the toolbar button showing a "connecting" state during the mic
+  // prompt + websocket handshake. Uses state (not ref) so the UI re-renders.
+  const [startInFlight, setStartInFlight] = useState(false);
 
   const conversation = useConversation({
     clientTools: {
@@ -295,12 +299,21 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     };
   }, [conversation.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The SDK's status is the single source of truth for whether a session
+  // is active. Our old local `sessionStarted` state could drift from it
+  // (external disconnect, rapid clicks, HMR) and lead to a toggle that
+  // silently did nothing (or worse, spawned a second overlapping session).
+  const isActive =
+    conversation.status === 'connected' ||
+    conversation.status === 'connecting' ||
+    startInFlight;
+
   const toggle = useCallback(async () => {
     if (!agentId) return;
 
-    if (sessionStarted) {
+    if (isActive) {
       conversation.endSession();
-      setSessionStarted(false);
+      setStartInFlight(false);
       return;
     }
 
@@ -319,7 +332,10 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       return;
     }
 
-    setSessionStarted(true);
+    // Guard against double-clicks while the SDK hasn't yet reported 'connecting'
+    if (startInFlight) return;
+    setStartInFlight(true);
+
     trackVoiceAgentActivated();
 
     // If the user is already focused on something, queue context for onConnect
@@ -332,6 +348,10 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     const firstMessage = buildFirstMessage(navAtStart);
 
     try {
+      // Note: the ElevenLabs SDK's startSession is fire-and-forget (returns
+      // void), so awaiting it is a no-op. The catch only fires on synchronous
+      // throws during setup. Session status transitions are observed via
+      // `conversation.status` (see `isActive` above).
       await conversation.startSession({
         agentId,
         connectionType: 'websocket',
@@ -343,9 +363,9 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       });
     } catch (err) {
       console.error('[VoiceAgent] startSession failed:', err);
-      setSessionStarted(false);
+      setStartInFlight(false);
     }
-  }, [agentId, sessionStarted, conversation]);
+  }, [agentId, isActive, conversation]);
 
   const clearMicError = useCallback(() => setMicError(null), []);
 
@@ -397,22 +417,25 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     );
   }, [agentId, conversation]);
 
-  // Cleanup
+  // Clear the start-in-flight guard once the SDK reports a real status
+  useEffect(() => {
+    if (conversation.status === 'connecting' || conversation.status === 'connected') {
+      setStartInFlight(false);
+    }
+  }, [conversation.status]);
+
+  // Cleanup — tear down any active session on unmount
   useEffect(() => {
     return () => {
-      if (sessionStarted) {
-        conversation.endSession();
-      }
+      conversation.endSession();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Derived UI status, always from the SDK (source of truth)
   let status: VoiceStatus = 'off';
-  if (sessionStarted) {
-    if (conversation.status === 'connected') status = 'connected';
-    else if (conversation.status === 'connecting') status = 'connecting';
-    else if (conversation.status === 'disconnected') status = 'error';
-    else status = 'connecting';
-  }
+  if (conversation.status === 'connected') status = 'connected';
+  else if (conversation.status === 'connecting' || startInFlight) status = 'connecting';
+  else status = 'off';
 
   return {
     status,
