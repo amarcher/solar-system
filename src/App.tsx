@@ -124,7 +124,20 @@ function App() {
     ? getMissionById(nav.missionId)
     : undefined;
 
-  // Mission progress (for HUD card)
+  // Ticking clock for the mission progress HUD. Without this, the
+  // "Day X of Y" counter is frozen at whatever day it was when the
+  // user first entered mission view — because `currentMission` has
+  // stable identity, so `useMemo([currentMission])` never recomputes.
+  // Tick once per minute while in mission view (the day number only
+  // changes once every 24h, so per-minute is plenty of precision).
+  const [missionTick, setMissionTick] = useState(0);
+  useEffect(() => {
+    if (nav.level !== 'mission') return;
+    const id = setInterval(() => setMissionTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, [nav.level]);
+
+  // Mission progress (for HUD card). Recomputes every `missionTick`.
   const missionProgress = useMemo(() => {
     if (!currentMission) return null;
     const launch = Date.parse(currentMission.launchDate);
@@ -133,7 +146,8 @@ function App() {
     const elapsedDays = Math.max(0, Math.min(totalDays, Math.floor((Date.now() - launch) / 86_400_000) + 1));
     const isComplete = Date.now() > end;
     return { totalDays, elapsedDays, isComplete };
-  }, [currentMission]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- missionTick is intentional to force recompute
+  }, [currentMission, missionTick]);
 
   return (
     <div className={`app${cinemaMode ? ' app--cinema' : ''}`}>
