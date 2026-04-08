@@ -239,7 +239,7 @@ function App() {
         </button>
       )}
 
-      {hideDetails && nav.level !== 'system' && (
+      {nav.level !== 'system' && (hideDetails || nav.level === 'mission') && (
         <div className="app__cinema-nav">
           <button
             className="app__cinema-nav-btn"
