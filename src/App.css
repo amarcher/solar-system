@@ -114,6 +114,38 @@ body {
   color: hsl(20, 95%, 72%);
 }
 
+/* Credits attribution link — fixed bottom-right, low-opacity so it's
+   discoverable without competing with the 3D scene. Required for CC BY 4.0
+   compliance on bundled textures and the Orion 3D model. */
+.app__credits-link {
+  position: fixed;
+  bottom: 12px;
+  right: 16px;
+  z-index: 110;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.3);
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+  pointer-events: auto;
+}
+
+.app__credits-link:hover,
+.app__credits-link:focus-visible {
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: underline;
+}
+
+@media (max-width: 560px) {
+  .app__credits-link {
+    bottom: 8px;
+    right: 10px;
+    font-size: 0.65rem;
+  }
+}
+
 /* Mission tracker HUD card */
 .app__mission-hud {
   position: fixed;
