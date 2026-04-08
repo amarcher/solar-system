@@ -35,10 +35,10 @@ export interface Mission {
   color: string;
   frame: MissionFrame;
   /**
-   * Static fallback ephemeris bundled with the app, so the layer renders
-   * immediately and survives Horizons outages. Sorted by `t` ascending.
+   * Bundled ephemeris waypoints, sorted by `t` ascending. Procedurally
+   * generated from the published mission profile and calibrated against real
+   * JPL Horizons event timestamps so the spacecraft is in the right place at
+   * the right time. See `data/missions/artemis2.ts` for the calibration math.
    */
-  fallbackEphemeris: MissionEphemerisPoint[];
-  /** Vercel serverless route that proxies live JPL Horizons data. */
-  ephemerisApiPath: string;
+  ephemeris: MissionEphemerisPoint[];
 }
