@@ -147,6 +147,39 @@ function buildSunContext(): string {
   ].join('\n');
 }
 
+// Hard teardown fallback. The ElevenLabs SDK's endSession has been observed
+// to silently no-op when called during a race (e.g. the user toggles stop
+// right as onConnect fires, before useRawConversation has populated). When
+// that happens the <audio> element the SDK injected stays alive and keeps
+// playing — and a subsequent start leaks a SECOND session on top of it.
+// This function walks the DOM, pauses every audio element, clears its
+// source, and removes it. It's aggressive but it's the only reliable way
+// to guarantee no stray audio output survives a stop click.
+function hardStopStrayAudio(label: string): number {
+  const els = Array.from(document.querySelectorAll('audio'));
+  if (els.length === 0) return 0;
+  console.log(`[voice:mobile] hardStopStrayAudio@${label}: found ${els.length} <audio> element(s), tearing down`);
+  for (const el of els) {
+    try {
+      el.pause();
+      // Detach both src forms
+      if (el.srcObject) {
+        const stream = el.srcObject as MediaStream;
+        if (typeof stream.getTracks === 'function') {
+          stream.getTracks().forEach(t => t.stop());
+        }
+        el.srcObject = null;
+      }
+      el.removeAttribute('src');
+      el.load();
+      el.remove();
+    } catch (err) {
+      console.warn('[voice:mobile] hardStopStrayAudio element teardown failed:', err);
+    }
+  }
+  return els.length;
+}
+
 // Mobile diagnostic: dump what we can observe about the audio environment
 // at a given checkpoint. This is intentionally verbose — we only enable it
 // while debugging the mobile greeting issue.
@@ -405,28 +438,33 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     if (!agentId) return;
 
     if (sessionStarted) {
-      // Stop path. Flip UI off immediately (optimistic). Then call
-      // endSession DIRECTLY on the live Conversation instance via
-      // useRawConversation — this bypasses the ConversationProvider's
-      // wrapped endSession, which was observed silently no-op'ing when
-      // its internal conversationRef had drifted out of sync with the
-      // actually-running WebRTC session.
-      console.log('[voice] toggle → stop (rawConv present:', !!rawConv, ')');
+      // Stop path. Flip UI off immediately (optimistic), then tear the
+      // session down as aggressively as possible. Both endSession forms
+      // have been observed to silently no-op under race conditions
+      // (stop click right as onConnect fires), so we call BOTH and then
+      // hard-stop any <audio> elements the SDK left behind. Without the
+      // hard stop, a stopped-but-not-disconnected session leaks, and the
+      // next start pours a second voice on top of the first.
+      console.log('[voice:mobile] toggle → stop (rawConv present:', !!rawConv, ', status:', conversation.status, ')');
       setSessionStarted(false);
       hasConnectedRef.current = false;
       if (rawConv) {
         try {
           rawConv.endSession();
         } catch (err) {
-          console.error('[voice] rawConv.endSession failed:', err);
+          console.error('[voice:mobile] rawConv.endSession failed:', err);
         }
-      } else {
-        // Fallback: if we don't have a raw handle (session was starting
-        // but hadn't resolved yet), use the provider's wrapped endSession
-        // which knows how to handle the pending-connection case.
-        console.log('[voice] no rawConv, falling back to conversation.endSession');
-        conversation.endSession();
       }
+      try {
+        conversation.endSession();
+      } catch (err) {
+        console.error('[voice:mobile] conversation.endSession failed:', err);
+      }
+      // Give the SDK a tick to drain, then hard-stop anything that survived.
+      // We do it twice: immediately (covers fast cases) and again after
+      // 500ms (covers slow SDK teardowns that might add late audio).
+      hardStopStrayAudio('stop-immediate');
+      setTimeout(() => hardStopStrayAudio('stop-delayed'), 500);
       return;
     }
 
@@ -436,6 +474,10 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     toggleStartedAtRef.current = Date.now();
     console.log('[voice:mobile] toggle → start (t0)');
     logAudioEnv('toggle-start');
+    // Pre-start safety net: if a previous session leaked an <audio>
+    // element (stop click lost the race with onConnect), hard-stop it
+    // before we create the next session. Otherwise two voices stack.
+    hardStopStrayAudio('pre-start');
     setSessionStarted(true);
 
     try {
