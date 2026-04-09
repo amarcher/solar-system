@@ -515,6 +515,36 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       }
       convRef.current = conv;
       console.log(`[voice:mobile] startSession RESOLVED (${tFromClick()})`);
+
+      // iOS audio output workaround: the SDK creates a hidden <audio>
+      // element with autoplay=true and srcObject=MediaStream. iOS Safari
+      // BLOCKS autoplay of <audio> with MediaStream sources unless they
+      // are muted OR .play() is called inside a user gesture. Since we
+      // can't modify the SDK, find the element after creation and
+      // explicitly call .play() on it. The user gesture from the original
+      // toggle click may still be active here (within ~5s of the click).
+      try {
+        const audioEls = Array.from(document.querySelectorAll('audio'));
+        console.log(`[voice:mobile] iOS audio kick: found ${audioEls.length} <audio> element(s)`);
+        for (let i = 0; i < audioEls.length; i++) {
+          const el = audioEls[i];
+          if (el.paused) {
+            const p = el.play();
+            if (p && typeof p.then === 'function') {
+              p.then(() => {
+                console.log(`[voice:mobile] iOS audio kick #${i}: PLAYED ok`);
+              }).catch(err => {
+                console.warn(`[voice:mobile] iOS audio kick #${i}: FAILED`, err?.name, err?.message);
+              });
+            }
+          } else {
+            console.log(`[voice:mobile] iOS audio kick #${i}: already playing`);
+          }
+        }
+      } catch (err) {
+        console.warn('[voice:mobile] iOS audio kick threw:', err);
+      }
+
       // Now that convRef is populated, flush any queued nav context.
       // This is necessary because onConnect fires INSIDE the await
       // above, before convRef.current = conv runs.
