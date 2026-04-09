@@ -58,6 +58,43 @@ function resumeAllAudioContexts(label: string) {
   });
 }
 
+// Generate a real silent WAV at build time — ~0.5 seconds of silence
+// as actual 8-bit unsigned PCM samples. Data URLs with a zero-length
+// data chunk (which is what the previous 44-byte WAV had) can cause
+// iOS Safari to leave the .play() promise pending forever.
+function buildSilentWavDataUrl(): string {
+  const sampleRate = 8000;
+  const numSamples = sampleRate * 0.5; // 0.5s
+  const dataSize = numSamples;
+  const fileSize = 36 + dataSize;
+  const buf = new ArrayBuffer(44 + dataSize);
+  const v = new DataView(buf);
+  // RIFF header
+  v.setUint32(0, 0x52494646, false); // "RIFF"
+  v.setUint32(4, fileSize, true);
+  v.setUint32(8, 0x57415645, false); // "WAVE"
+  // fmt chunk
+  v.setUint32(12, 0x666d7420, false); // "fmt "
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); // PCM
+  v.setUint16(22, 1, true); // mono
+  v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate, true); // byteRate
+  v.setUint16(32, 1, true); // blockAlign
+  v.setUint16(34, 8, true); // bitsPerSample
+  // data chunk
+  v.setUint32(36, 0x64617461, false); // "data"
+  v.setUint32(40, dataSize, true);
+  // 0x80 = silence for unsigned 8-bit PCM
+  for (let i = 44; i < 44 + dataSize; i++) v.setUint8(i, 0x80);
+  // Convert to base64 without btoa of a huge string (chunk it)
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return 'data:audio/wav;base64,' + btoa(binary);
+}
+const SILENT_WAV_URL = buildSilentWavDataUrl();
+
 // The createGain monkey-patch was here. Removed after sub-agent
 // diagnosis: the audio IS playing (confirmed via
 // audioElement.currentTime advancing past 15s during "silent" greeting),
@@ -452,31 +489,36 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     setRawStatus('connecting');
 
     // ===== iOS speaker routing primer =====
-    // Fire-and-forget playback of a tiny silent WAV file. A file-backed
-    // <audio> element playing concurrently forces iOS to select a
-    // "Playback" audio session category routing to the loudspeaker
-    // rather than the earpiece (the default when getUserMedia is used).
-    // CRITICAL: do NOT await the .play() — on iOS if routing is wrong
-    // the promise never settles. Fire and forget.
+    // Play a real silent WAV (0.5s of actual zero samples, not a
+    // zero-length data chunk which hangs on iOS) in a loop. A
+    // file-backed <audio> element that's actively playing forces iOS
+    // to select the "Playback" audio session category routing to the
+    // loudspeaker, rather than the earpiece default that getUserMedia
+    // would force via PlayAndRecord.
     try {
       if (!playbackPrimerRef.current) {
         const a = new Audio();
-        // Minimal silent 8-bit mono WAV (≈44 bytes): header + 0 samples.
-        a.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA==';
+        a.src = SILENT_WAV_URL;
         a.loop = true;
         a.setAttribute('playsinline', '');
         a.setAttribute('webkit-playsinline', '');
         a.volume = 0.01;
         a.muted = false;
+        // Event listeners for diagnostic visibility
+        a.addEventListener('play', () => console.log('[voice:mobile] primer event: play'));
+        a.addEventListener('playing', () => console.log('[voice:mobile] primer event: playing'));
+        a.addEventListener('canplay', () => console.log('[voice:mobile] primer event: canplay'));
+        a.addEventListener('error', (e) => console.warn('[voice:mobile] primer event: error', (e.target as HTMLAudioElement)?.error));
+        a.addEventListener('stalled', () => console.warn('[voice:mobile] primer event: stalled'));
+        a.addEventListener('suspend', () => console.log('[voice:mobile] primer event: suspend'));
         playbackPrimerRef.current = a;
         console.log('[voice:mobile] iOS speaker primer: created');
       }
-      // Fire-and-forget. The returned promise may never settle on iOS
-      // if routing is contested, but the play() call itself inside the
-      // gesture is what tells iOS "use Playback session".
-      const p = playbackPrimerRef.current.play();
+      const primer = playbackPrimerRef.current;
+      console.log(`[voice:mobile] iOS speaker primer: calling play() (paused=${primer.paused}, readyState=${primer.readyState})`);
+      const p = primer.play();
       if (p && typeof p.then === 'function') {
-        p.then(() => console.log('[voice:mobile] iOS speaker primer: playing'))
+        p.then(() => console.log('[voice:mobile] iOS speaker primer: play() resolved'))
          .catch(err => console.warn('[voice:mobile] iOS speaker primer play rejected:', err?.name, err?.message));
       }
     } catch (err) {
