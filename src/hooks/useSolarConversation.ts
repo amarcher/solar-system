@@ -8,6 +8,55 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // works perfectly on the same device. Diagnosed via a window.debugStartDirect
 // bypass that ran end-to-end with greeting, transcripts, and agent responses.
 import { Conversation } from '@elevenlabs/client';
+
+// =====================================================================
+// AudioContext monkey-patch — iOS Safari workaround
+// =====================================================================
+// Problem: the SDK's MediaDeviceOutput.create() does:
+//   context = new AudioContext(...)
+//   /* lots of async setup */
+//   await context.resume()
+// On iOS Safari 18.7, that resume() resolves successfully but leaves
+// the context in 'suspended' state because we're past the user gesture
+// window. The MediaStream destination then produces silence, and the
+// hidden <audio> element faithfully plays the silence — fooling our
+// "force play" workaround into thinking audio is fine.
+//
+// Fix: track every AudioContext that gets created on the page. After
+// our toggle click (which IS a user gesture), force .resume() on every
+// tracked context. This catches the SDK's context once it's been
+// created and unlocks it from inside our gesture's task chain.
+// =====================================================================
+const audioContextInstances: AudioContext[] = [];
+{
+  const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext; __solarAcPatched?: boolean };
+  const Original = w.AudioContext || w.webkitAudioContext;
+  if (Original && !w.__solarAcPatched) {
+    w.__solarAcPatched = true;
+    const Patched = function(this: AudioContext, ...args: ConstructorParameters<typeof AudioContext>) {
+      const inst = new Original(...args);
+      audioContextInstances.push(inst);
+      console.log(`[voice:mobile] AudioContext patch: tracked instance #${audioContextInstances.length - 1}, state=${inst.state}, sampleRate=${inst.sampleRate}`);
+      return inst;
+    } as unknown as typeof AudioContext;
+    Patched.prototype = Original.prototype;
+    Object.setPrototypeOf(Patched, Original);
+    w.AudioContext = Patched;
+    if (w.webkitAudioContext) w.webkitAudioContext = Patched;
+    console.log('[voice:mobile] AudioContext patch installed');
+  }
+}
+function resumeAllAudioContexts(label: string) {
+  audioContextInstances.forEach((ctx, i) => {
+    if (ctx.state === 'closed') return;
+    const before = ctx.state;
+    ctx.resume().then(() => {
+      console.log(`[voice:mobile] resumeAll@${label} #${i}: ${before} → ${ctx.state}`);
+    }).catch(err => {
+      console.warn(`[voice:mobile] resumeAll@${label} #${i} FAILED:`, err?.name, err?.message);
+    });
+  });
+}
 import type { Planet, Moon, NavigationState } from '../types/celestialBody';
 import type { Mission } from '../types/mission';
 import { planets } from '../data/planets';
@@ -515,6 +564,16 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       }
       convRef.current = conv;
       console.log(`[voice:mobile] startSession RESOLVED (${tFromClick()})`);
+
+      // Force-resume any AudioContext instances created during the
+      // SDK's startup. The SDK's own await context.resume() is past
+      // the user gesture window on iOS, so calling resume() again
+      // here (still inside our hook's call chain) may catch a brief
+      // remaining user-activation window.
+      resumeAllAudioContexts('after-startSession');
+      // Try again after a short delay in case the SDK creates more
+      // contexts during onConnect callbacks.
+      setTimeout(() => resumeAllAudioContexts('delayed-100ms'), 100);
 
       // iOS audio output workaround: the SDK creates a hidden <audio>
       // element with autoplay=true and srcObject=MediaStream. iOS Safari
