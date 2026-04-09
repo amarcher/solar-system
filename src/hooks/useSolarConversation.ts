@@ -58,44 +58,14 @@ function resumeAllAudioContexts(label: string) {
   });
 }
 
-// =====================================================================
-// createGain monkey-patch — iOS Safari audio routing
-// =====================================================================
-// The previous (post-startSession) routing fix worked too late: by the
-// time we ran gain.connect(context.destination) at +5316ms, the first
-// message audio chunks had already been streamed through gain at
-// +5122ms (only ~200ms later but enough to lose the entire first
-// message). Later messages produced echo because they flowed through
-// BOTH the original chain and the new direct destination connection.
-//
-// Fix: patch AudioContext.prototype.createGain so every new gain node
-// is AUTOMATICALLY connected to its context.destination at creation
-// time — well before the SDK pushes audio through it. The first
-// message is captured.
-//
-// Safety: only the output context calls createGain (verified via
-// grep on @elevenlabs/client 1.1.2 — input.js uses createMediaStreamSource
-// only, no gain). So no feedback loop risk from input audio.
-// =====================================================================
-{
-  const w = window as unknown as { __solarGainPatched?: boolean };
-  const proto = (window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)?.prototype;
-  if (proto && !w.__solarGainPatched) {
-    w.__solarGainPatched = true;
-    const original = proto.createGain;
-    proto.createGain = function(this: AudioContext) {
-      const gain = original.call(this);
-      try {
-        gain.connect(this.destination);
-        console.log('[voice:mobile] createGain patch: auto-connected gain → destination');
-      } catch (err) {
-        console.warn('[voice:mobile] createGain patch: auto-connect failed:', err);
-      }
-      return gain;
-    };
-    console.log('[voice:mobile] createGain patch installed');
-  }
-}
+// The createGain monkey-patch was here. Removed after sub-agent
+// diagnosis: the audio IS playing (confirmed via
+// audioElement.currentTime advancing past 15s during "silent" greeting),
+// but iOS is routing it to the earpiece at near-zero volume because
+// getUserMedia puts Safari into AVAudioSessionCategoryPlayAndRecord.
+// Connecting gain → context.destination created a second audio path
+// that caused echo on later messages without fixing the routing of
+// the first message. See playback primer below for the real fix.
 import type { Planet, Moon, NavigationState } from '../types/celestialBody';
 import type { Mission } from '../types/mission';
 import { planets } from '../data/planets';
@@ -325,6 +295,15 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   const handlersRef = useRef({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer });
   handlersRef.current = { onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer };
 
+  // Playback primer for iOS speaker routing. iOS Safari routes audio
+  // to the earpiece (receiver) when getUserMedia is active because it
+  // switches the audio session to AVAudioSessionCategoryPlayAndRecord.
+  // A file-sourced HTMLAudioElement playing concurrently forces the
+  // session into "Playback" mode routing to the loudspeaker, and the
+  // SDK's subsequent MediaStream audio element inherits that route.
+  // Held in a ref so it survives the whole session — never gc'd.
+  const playbackPrimerRef = useRef<HTMLAudioElement | null>(null);
+
   // Sticky AudioContext for iOS audio unlock. Created lazily on the
   // first toggle click and kept alive for the lifetime of the page.
   // Once iOS sees an AudioContext successfully resumed inside a user
@@ -472,6 +451,38 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     setSessionStarted(true);
     setRawStatus('connecting');
 
+    // ===== iOS speaker routing primer =====
+    // Fire-and-forget playback of a tiny silent WAV file. A file-backed
+    // <audio> element playing concurrently forces iOS to select a
+    // "Playback" audio session category routing to the loudspeaker
+    // rather than the earpiece (the default when getUserMedia is used).
+    // CRITICAL: do NOT await the .play() — on iOS if routing is wrong
+    // the promise never settles. Fire and forget.
+    try {
+      if (!playbackPrimerRef.current) {
+        const a = new Audio();
+        // Minimal silent 8-bit mono WAV (≈44 bytes): header + 0 samples.
+        a.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA==';
+        a.loop = true;
+        a.setAttribute('playsinline', '');
+        a.setAttribute('webkit-playsinline', '');
+        a.volume = 0.01;
+        a.muted = false;
+        playbackPrimerRef.current = a;
+        console.log('[voice:mobile] iOS speaker primer: created');
+      }
+      // Fire-and-forget. The returned promise may never settle on iOS
+      // if routing is contested, but the play() call itself inside the
+      // gesture is what tells iOS "use Playback session".
+      const p = playbackPrimerRef.current.play();
+      if (p && typeof p.then === 'function') {
+        p.then(() => console.log('[voice:mobile] iOS speaker primer: playing'))
+         .catch(err => console.warn('[voice:mobile] iOS speaker primer play rejected:', err?.name, err?.message));
+      }
+    } catch (err) {
+      console.warn('[voice:mobile] iOS speaker primer threw:', err);
+    }
+
     // ===== iOS AUDIO UNLOCK — synchronous, in the user gesture =====
     // Canonical iOS pattern: create an AudioContext (or reuse existing)
     // and call .resume() SYNCHRONOUSLY in the user gesture. Once iOS
@@ -608,9 +619,22 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       // already running at this point per the latest test).
       resumeAllAudioContexts('after-startSession');
 
-      // (iOS routing fix is now handled by the createGain monkey-patch
-      // at module load — runs at gain creation time, before the SDK
-      // pushes audio through, so the first message is captured.)
+      // Force playsInline on the SDK's hidden <audio> element so iOS
+      // doesn't treat it as a "media player" that would route to the
+      // receiver. Combined with the playback primer running concurrently
+      // in the gesture, this should force loudspeaker routing.
+      try {
+        const audioEls = Array.from(document.querySelectorAll('audio'));
+        for (const el of audioEls) {
+          el.setAttribute('playsinline', '');
+          el.setAttribute('webkit-playsinline', '');
+          el.muted = false;
+          el.volume = 1;
+        }
+        console.log(`[voice:mobile] applied playsinline/volume to ${audioEls.length} <audio> element(s)`);
+      } catch (err) {
+        console.warn('[voice:mobile] playsinline apply failed:', err);
+      }
 
       // iOS audio output workaround: the SDK creates a hidden <audio>
       // element with autoplay=true and srcObject=MediaStream. iOS Safari
