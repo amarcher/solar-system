@@ -237,12 +237,6 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   const handlersRef = useRef({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer });
   handlersRef.current = { onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer };
 
-  // Held HTMLAudioElement reference for the iOS unlock primer. Without
-  // a stable ref, the element can be garbage-collected before .play()
-  // resolves, leaving the promise pending forever (which is why we
-  // never saw PLAYED/FAILED in the last test).
-  const unlockAudioRef = useRef<HTMLAudioElement | null>(null);
-
   // Abort flag for in-flight startSession. If the user clicks stop
   // while the start path is still awaiting Conversation.startSession,
   // we set this flag. When the promise resolves, the start path tears
