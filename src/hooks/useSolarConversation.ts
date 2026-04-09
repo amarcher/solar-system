@@ -147,6 +147,36 @@ function buildSunContext(): string {
   ].join('\n');
 }
 
+// Mobile diagnostic: dump what we can observe about the audio environment
+// at a given checkpoint. This is intentionally verbose — we only enable it
+// while debugging the mobile greeting issue.
+function logAudioEnv(label: string): void {
+  try {
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && (navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints! > 1);
+    const isAndroid = /Android/.test(ua);
+    const audioEls = Array.from(document.querySelectorAll('audio'));
+    const audioSummary = audioEls.map((el, i) => ({
+      i,
+      paused: el.paused,
+      muted: el.muted,
+      volume: el.volume,
+      readyState: el.readyState,
+      srcType: el.src ? 'src' : el.srcObject ? 'srcObject' : 'none',
+    }));
+    console.log(`[voice:mobile] env@${label}`, {
+      isIOS,
+      isAndroid,
+      visibility: document.visibilityState,
+      hidden: document.hidden,
+      audioElementCount: audioEls.length,
+      audioEls: audioSummary,
+    });
+  } catch (err) {
+    console.warn('[voice:mobile] logAudioEnv failed:', err);
+  }
+}
+
 function buildFirstMessage(nav: NavigationState): string | undefined {
   switch (nav.level) {
     case 'sun':
@@ -195,10 +225,16 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   // session. Used to distinguish an initial 'disconnected' (pre-click) from
   // a post-connection drop — only the latter should reset sessionStarted.
   const hasConnectedRef = useRef(false);
+  // Timestamp of the most recent toggle→start click. Used to time-stamp
+  // every log line relative to the click so we can see on mobile where
+  // the greeting pipeline stalls.
+  const toggleStartedAtRef = useRef<number | null>(null);
 
   const conversation = useConversation({
     onConnect: () => {
-      console.log('[voice] session connected');
+      const t = Date.now() - (toggleStartedAtRef.current ?? Date.now());
+      console.log(`[voice:mobile] onConnect fired (+${t}ms from click)`);
+      logAudioEnv('onConnect');
       if (pendingNavRef.current) {
         const ctx = buildContextForNav(pendingNavRef.current);
         if (ctx) conversation.sendContextualUpdate(ctx);
@@ -206,10 +242,11 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       }
     },
     onDisconnect: (details: unknown) => {
-      console.log('[voice] session disconnected:', details);
+      const t = Date.now() - (toggleStartedAtRef.current ?? Date.now());
+      console.log(`[voice:mobile] onDisconnect (+${t}ms from click):`, details);
     },
     onError: (error: unknown) => {
-      console.error('[voice] session error:', error);
+      console.error('[voice:mobile] session error:', error);
     },
   });
 
@@ -396,7 +433,9 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     // Start path. Flip UI on synchronously BEFORE the mic prompt so the
     // button shows "connecting" the moment the user clicks. Rolled back
     // if mic permission fails.
-    console.log('[voice] toggle → start');
+    toggleStartedAtRef.current = Date.now();
+    console.log('[voice:mobile] toggle → start (t0)');
+    logAudioEnv('toggle-start');
     setSessionStarted(true);
 
     try {
@@ -405,7 +444,10 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
         setTimeout(() => reject(new DOMException('getUserMedia timed out', 'TimeoutError')), 5_000)
       );
       const tempStream = await Promise.race([micPromise, timeoutPromise]);
+      const tMic = Date.now() - toggleStartedAtRef.current;
+      console.log(`[voice:mobile] mic-check acquired (+${tMic}ms)`);
       tempStream.getTracks().forEach(t => t.stop());
+      console.log('[voice:mobile] mic-check temp tracks stopped');
     } catch (err) {
       const error = err as DOMException;
       if (error.name === 'TimeoutError') setMicError('timeout');
@@ -426,6 +468,11 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     }
 
     const firstMessage = buildFirstMessage(navAtStart);
+    console.log('[voice:mobile] startSession about to dispatch', {
+      navLevel: navAtStart.level,
+      hasFirstMessageOverride: !!firstMessage,
+      firstMessagePreview: firstMessage?.slice(0, 60),
+    });
 
     try {
       // Note: the ElevenLabs SDK's startSession is fire-and-forget (returns
@@ -441,9 +488,11 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
           },
         }),
       });
-      console.log('[voice] startSession dispatched');
+      const tDispatch = Date.now() - (toggleStartedAtRef.current ?? Date.now());
+      console.log(`[voice:mobile] startSession dispatched (+${tDispatch}ms)`);
+      logAudioEnv('post-startSession');
     } catch (err) {
-      console.error('[voice] startSession failed:', err);
+      console.error('[voice:mobile] startSession failed:', err);
       setSessionStarted(false);
     }
   }, [agentId, sessionStarted, conversation, rawConv]);
@@ -518,6 +567,28 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       hasConnectedRef.current = false;
     }
   }, [conversation.status, sessionStarted]);
+
+  // Mobile diagnostic: log every isSpeaking transition with timing relative
+  // to the toggle click. If we see 'connected' but never isSpeaking=true,
+  // the greeting audio is being blocked (iOS autoplay / AudioContext).
+  useEffect(() => {
+    const t = toggleStartedAtRef.current ? Date.now() - toggleStartedAtRef.current : -1;
+    console.log(`[voice:mobile] isSpeaking → ${conversation.isSpeaking} (+${t}ms)`);
+    if (conversation.isSpeaking) logAudioEnv('isSpeaking-true');
+  }, [conversation.isSpeaking]);
+
+  // Mobile diagnostic: log visibility changes during an active session.
+  // If the user backgrounds the tab during the handshake, iOS suspends
+  // the audio context and the greeting gets eaten.
+  useEffect(() => {
+    if (!sessionStarted) return;
+    const onVis = () => {
+      const t = toggleStartedAtRef.current ? Date.now() - toggleStartedAtRef.current : -1;
+      console.log(`[voice:mobile] visibilitychange → ${document.visibilityState} (+${t}ms)`);
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [sessionStarted]);
 
   // Cleanup — tear down any active session on unmount
   useEffect(() => {
