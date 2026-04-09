@@ -364,6 +364,33 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     setSessionStarted(true);
     setRawStatus('connecting');
 
+    // iOS audio unlock. iOS Safari blocks AudioContext output until an
+    // AudioContext is created and a sound is played within the same
+    // synchronous user gesture. The SDK creates its own AudioContext
+    // inside the awaited Conversation.startSession() call — by then
+    // we're no longer in the gesture window, so the first agent
+    // greeting plays silently. Playing a 1-sample silent buffer here
+    // (synchronously, in the click handler) unlocks the audio output
+    // for the entire page session.
+    try {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (Ctx) {
+        const ctx = new Ctx();
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        // Some iOS versions also need an explicit resume.
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(() => { /* ignore */ });
+        }
+        console.log('[voice:mobile] audio unlock primer played, ctx.state=', ctx.state);
+      }
+    } catch (err) {
+      console.warn('[voice:mobile] audio unlock primer failed:', err);
+    }
+
     trackVoiceAgentActivated();
 
     const navAtStart = latestNavRef.current;
@@ -439,15 +466,30 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   const clearMicError = useCallback(() => setMicError(null), []);
 
   const notifyNavChange = useCallback((nav: NavigationState) => {
-    if (!agentId) return;
+    if (!agentId) {
+      console.log('[voice:mobile] notifyNavChange skipped (no agentId)');
+      return;
+    }
     const key = JSON.stringify(nav);
-    if (currentNavRef.current === key) return;
+    if (currentNavRef.current === key) {
+      console.log('[voice:mobile] notifyNavChange skipped (dedup):', nav.level);
+      return;
+    }
     currentNavRef.current = key;
     const ctx = buildContextForNav(nav);
-    if (!ctx) return;
+    if (!ctx) {
+      console.log('[voice:mobile] notifyNavChange no context for', nav.level);
+      return;
+    }
     if (convRef.current && rawStatus === 'connected') {
-      convRef.current.sendContextualUpdate(ctx);
+      console.log('[voice:mobile] notifyNavChange → sendContextualUpdate', { level: nav.level, ctxLength: ctx.length });
+      try {
+        convRef.current.sendContextualUpdate(ctx);
+      } catch (err) {
+        console.error('[voice:mobile] sendContextualUpdate threw:', err);
+      }
     } else {
+      console.log('[voice:mobile] notifyNavChange queued (not connected yet):', { hasConv: !!convRef.current, rawStatus });
       pendingNavRef.current = nav;
     }
   }, [agentId, rawStatus]);
