@@ -630,10 +630,17 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     }
 
     const firstMessage = buildFirstMessage(navAtStart);
+    // EXPERIMENT: temporarily NOT passing the firstMessage override, to
+    // test whether the override payload is what causes the server-side
+    // immediate-disconnect on iOS. Every broken iPhone session has had
+    // hasFirstMessageOverride: true, and the agent has been picking up
+    // context from "previous sessions" — possibly because the override
+    // payload is malformed in a way that makes the server retain or
+    // reject the session.
     console.log('[voice:mobile] startSession about to dispatch', {
       navLevel: navAtStart.level,
-      hasFirstMessageOverride: !!firstMessage,
-      firstMessagePreview: firstMessage?.slice(0, 60),
+      hasFirstMessageOverride: false,
+      firstMessageBuiltButDropped: !!firstMessage,
     });
 
     try {
@@ -641,21 +648,9 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       // void), so awaiting it is a no-op. The catch only fires on synchronous
       // throws during setup. Session status transitions are observed via
       // `conversation.status` and the sync-down effect below.
-      // Transport: forced 'websocket'. We tried removing this to fall back
-      // to the SDK default (LiveKit/WebRTC), but ElevenLabs' LiveKit server
-      // returns 404 on `/rtc/v1` (the path the bundled livekit-client uses
-      // in @elevenlabs/client 1.1.x), making LiveKit completely unusable.
-      // Websocket is the only transport we have evidence of ever working
-      // on iOS Safari 18.7 (the very first iPhone test passed end-to-end
-      // with this exact config: SDK 1.0.x + connectionType websocket).
       await conversation.startSession({
         agentId,
         connectionType: 'websocket',
-        ...(firstMessage && {
-          overrides: {
-            agent: { firstMessage },
-          },
-        }),
       });
       const tDispatch = Date.now() - (toggleStartedAtRef.current ?? Date.now());
       console.log(`[voice:mobile] startSession dispatched (+${tDispatch}ms)`);
