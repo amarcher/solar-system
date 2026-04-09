@@ -808,6 +808,29 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     console.log('[voice:mobile] initial audioElementCount:', document.querySelectorAll('audio').length);
   }, []);
 
+  // GLOBAL ERROR/REJECTION CATCHERS. The @elevenlabs/client startSession
+  // factory returns a promise that the SDK's React provider holds in
+  // lockRef.current.then(...). If that promise rejects on iOS — which we
+  // strongly suspect, since useRawConversation() never transitions to
+  // present even though onConnect fires — the rejection is silently
+  // swallowed (the .then's second arg only sets lockRef=null without
+  // logging). These global listeners surface every uncaught error so we
+  // can finally see what's blowing up.
+  useEffect(() => {
+    const onUnhandled = (e: PromiseRejectionEvent) => {
+      console.error('[voice:mobile] UNHANDLED REJECTION:', e.reason?.message ?? e.reason, e.reason);
+    };
+    const onError = (e: ErrorEvent) => {
+      console.error('[voice:mobile] WINDOW ERROR:', e.message, e.error);
+    };
+    window.addEventListener('unhandledrejection', onUnhandled);
+    window.addEventListener('error', onError);
+    return () => {
+      window.removeEventListener('unhandledrejection', onUnhandled);
+      window.removeEventListener('error', onError);
+    };
+  }, []);
+
   // Cleanup — tear down any active session on unmount
   useEffect(() => {
     return () => {
