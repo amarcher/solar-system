@@ -237,6 +237,19 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   const handlersRef = useRef({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer });
   handlersRef.current = { onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer };
 
+  // Held HTMLAudioElement reference for the iOS unlock primer. Without
+  // a stable ref, the element can be garbage-collected before .play()
+  // resolves, leaving the promise pending forever (which is why we
+  // never saw PLAYED/FAILED in the last test).
+  const unlockAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Abort flag for in-flight startSession. If the user clicks stop
+  // while the start path is still awaiting Conversation.startSession,
+  // we set this flag. When the promise resolves, the start path tears
+  // down the new session immediately — preventing the "double session"
+  // bug where rapid stop+start leaks two live sessions.
+  const startAbortRef = useRef(false);
+
   const tFromClick = () =>
     toggleStartedAtRef.current ? `+${Date.now() - toggleStartedAtRef.current}ms` : 'pre-click';
 
@@ -345,6 +358,10 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       setSessionStarted(false);
       setIsSpeaking(false);
       setRawStatus('disconnected');
+      // Signal any in-flight startSession to abort when its promise
+      // resolves. Without this, a fast stop+start sequence leaves the
+      // first session orphaned but still alive.
+      startAbortRef.current = true;
       const conv = convRef.current;
       convRef.current = null;
       if (conv) {
@@ -360,33 +377,38 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
 
     // Start path
     toggleStartedAtRef.current = Date.now();
+    startAbortRef.current = false;
     console.log('[voice:mobile] toggle → start (t0)');
     setSessionStarted(true);
     setRawStatus('connecting');
 
-    // iOS audio unlock via HTMLAudioElement only. We previously also
-    // created an AudioContext primer here, but the user reported
-    // "crackly, poor quality" audio after that change — suspect: two
-    // AudioContexts (ours + the SDK's) competing for iOS's single
-    // audio session, causing sample-rate or buffer issues. The
-    // <audio> element approach plays a tiny silent MP3 in the user
-    // gesture, which is enough to unlock subsequent audio output
-    // for the page session without creating a competing context.
+    // iOS audio unlock via HTMLAudioElement. Plays a known-good silent
+    // MP3 inside the user gesture, then HOLDS A REFERENCE so the
+    // element doesn't get garbage-collected before .play() resolves
+    // (the previous test never logged PLAYED/FAILED — that was the
+    // promise hanging because the element was GC'd).
+    console.log('[voice:mobile] audio unlock primer: starting');
     try {
-      const silent = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7pyn3Xf//FFAFBQYBALAQAtJ/Q==');
-      silent.preload = 'auto';
-      silent.muted = false;
-      silent.volume = 0.001;
-      const playPromise = silent.play();
-      if (playPromise) {
+      // Reuse existing element if we have one — re-playing the same
+      // <audio> element is cheaper and keeps iOS happy.
+      if (!unlockAudioRef.current) {
+        // Known-good silent MP3 base64. ~50ms of silence.
+        unlockAudioRef.current = new Audio('data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQAA//uQZAAAAAAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//uQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV');
+        unlockAudioRef.current.preload = 'auto';
+      }
+      const el = unlockAudioRef.current;
+      el.currentTime = 0;
+      const playPromise = el.play();
+      console.log('[voice:mobile] audio unlock primer: .play() returned', typeof playPromise);
+      if (playPromise && typeof playPromise.then === 'function') {
         playPromise.then(() => {
-          console.log('[voice:mobile] audio unlock <audio> primer PLAYED');
+          console.log('[voice:mobile] audio unlock primer: PLAYED ok');
         }).catch(err => {
-          console.warn('[voice:mobile] audio unlock <audio> primer FAILED:', err?.name, err?.message);
+          console.warn('[voice:mobile] audio unlock primer: FAILED', err?.name, err?.message);
         });
       }
     } catch (err) {
-      console.warn('[voice:mobile] audio unlock primer threw:', err);
+      console.warn('[voice:mobile] audio unlock primer: THREW', err);
     }
 
     trackVoiceAgentActivated();
@@ -450,6 +472,20 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
         },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- callbacks not all in public type
       } as any);
+      // If the user clicked stop while we were awaiting the startSession
+      // promise, abort: tear down this brand-new session immediately
+      // instead of installing it. This prevents the orphaned-session
+      // bug where a stop+start race leaves two live sessions.
+      if (startAbortRef.current) {
+        console.log('[voice:mobile] startSession resolved but ABORTED — tearing down');
+        startAbortRef.current = false;
+        try {
+          await conv.endSession();
+        } catch (err) {
+          console.error('[voice:mobile] aborted endSession failed:', err);
+        }
+        return;
+      }
       convRef.current = conv;
       console.log(`[voice:mobile] startSession RESOLVED (${tFromClick()})`);
       // Now that convRef is populated, flush any queued nav context.
