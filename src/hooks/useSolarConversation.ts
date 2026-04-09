@@ -643,16 +643,16 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       // void), so awaiting it is a no-op. The catch only fires on synchronous
       // throws during setup. Session status transitions are observed via
       // `conversation.status` and the sync-down effect below.
-      // Previously we forced `connectionType: 'websocket'`. On iOS Safari
-      // 18.7 / WebKit 26.x that transport established then immediately
-      // dropped — SDK onConnect fired in the same millisecond as
-      // onStatusChange: "disconnected", no audio chunks ever arrived,
-      // and stale audio from previous sessions leaked in on reconnect
-      // (suggesting server-side resumption of a half-dead connection).
-      // Removing the override lets the SDK use its default transport
-      // (LiveKit/WebRTC) which is what ElevenLabs designs for mobile.
+      // Transport: forced 'websocket'. We tried removing this to fall back
+      // to the SDK default (LiveKit/WebRTC), but ElevenLabs' LiveKit server
+      // returns 404 on `/rtc/v1` (the path the bundled livekit-client uses
+      // in @elevenlabs/client 1.1.x), making LiveKit completely unusable.
+      // Websocket is the only transport we have evidence of ever working
+      // on iOS Safari 18.7 (the very first iPhone test passed end-to-end
+      // with this exact config: SDK 1.0.x + connectionType websocket).
       await conversation.startSession({
         agentId,
+        connectionType: 'websocket',
         ...(firstMessage && {
           overrides: {
             agent: { firstMessage },
@@ -801,9 +801,11 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     };
   }, []);
 
-  // Log the full UA once on mount so we know exactly what device/browser
-  // the logs are coming from.
+  // Log the full UA + build identifier once on mount. The build SHA lets
+  // us verify the deployed bundle matches the latest commit on the
+  // preview branch — so we know we're not testing a stale Vercel build.
   useEffect(() => {
+    console.log(`[voice:mobile] BUILD ${__BUILD_SHA__} @ ${__BUILD_TIME__}`);
     console.log('[voice:mobile] UA:', navigator.userAgent);
     console.log('[voice:mobile] initial audioElementCount:', document.querySelectorAll('audio').length);
   }, []);
