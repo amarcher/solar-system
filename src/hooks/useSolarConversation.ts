@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConversation, useConversationClientTool, useRawConversation } from '@elevenlabs/react';
+// Imported directly so the debug bypass below can call the underlying
+// SDK without going through the React provider — that lets us catch
+// the silent rejection that the provider's `.then(success, failure)`
+// pattern swallows.
+import { Conversation } from '@elevenlabs/client';
 import type { Planet, Moon, NavigationState } from '../types/celestialBody';
 import type { Mission } from '../types/mission';
 import { planets } from '../data/planets';
@@ -801,6 +806,49 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     console.log(`[voice:mobile] BUILD ${__BUILD_SHA__} @ ${__BUILD_TIME__}`);
     console.log('[voice:mobile] UA:', navigator.userAgent);
     console.log('[voice:mobile] initial audioElementCount:', document.querySelectorAll('audio').length);
+  }, []);
+
+  // DEBUG: expose a direct-bypass entry point on window so we can call
+  // the underlying SDK without going through ConversationProvider. The
+  // provider's .then(success, failure) handler silently swallows any
+  // rejection from Conversation.startSession() — calling it directly
+  // with an explicit try/catch should finally surface the actual error.
+  // Run from Safari Web Inspector console:  await debugStartDirect()
+  useEffect(() => {
+    (window as unknown as { debugStartDirect?: () => Promise<unknown> }).debugStartDirect = async () => {
+      const aid = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
+      console.log('[debug-direct] === starting ===  agentId=', aid);
+      if (!aid) {
+        console.error('[debug-direct] no agent id');
+        return;
+      }
+      try {
+        console.log('[debug-direct] calling Conversation.startSession...');
+        const conv = await Conversation.startSession({
+          agentId: aid,
+          connectionType: 'websocket',
+          onConnect: () => console.log('[debug-direct] onConnect'),
+          onDisconnect: (d: unknown) => console.log('[debug-direct] onDisconnect:', d),
+          onError: (err: unknown) => console.error('[debug-direct] onError:', err),
+          onMessage: (m: unknown) => console.log('[debug-direct] onMessage:', m),
+          onStatusChange: (s: unknown) => console.log('[debug-direct] onStatusChange:', s),
+          onModeChange: (m: unknown) => console.log('[debug-direct] onModeChange:', m),
+          onAudio: () => { /* count silently */ },
+          onDebug: (d: unknown) => console.log('[debug-direct] onDebug:', d),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any);
+        console.log('[debug-direct] === RESOLVED ===', conv);
+        (window as unknown as { debugConv?: unknown }).debugConv = conv;
+      } catch (err) {
+        console.error('[debug-direct] === REJECTED ===', err);
+        if (err instanceof Error) {
+          console.error('[debug-direct] error.name:', err.name);
+          console.error('[debug-direct] error.message:', err.message);
+          console.error('[debug-direct] error.stack:', err.stack);
+        }
+      }
+    };
+    console.log('[debug] window.debugStartDirect() available — call from console to bypass React provider');
   }, []);
 
   // GLOBAL ERROR/REJECTION CATCHERS. The @elevenlabs/client startSession
