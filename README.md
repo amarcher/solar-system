@@ -4,7 +4,7 @@ Interactive 3D solar system explorer for kids, built with React + Three.js + Ele
 
 Click any planet to explore its details, moons, and fun facts. An AI voice guide narrates the experience and responds to questions. Click the Sun for a special interactive experience where you can peel back its layers from the corona to the core.
 
-Part of a series of educational interactive apps — see also: [Periodic Table](https://github.com/amarcher/periodic-table).
+Part of a series of educational interactive apps — see also: [Periodic Table](https://github.com/amarcher/periodic-table) and [Animal Penpals](https://animalpenpals.tech/).
 
 ---
 
