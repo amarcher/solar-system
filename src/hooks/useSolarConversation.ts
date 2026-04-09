@@ -364,14 +364,15 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     setSessionStarted(true);
     setRawStatus('connecting');
 
-    // iOS audio unlock. iOS Safari blocks AudioContext output until an
-    // AudioContext is created and a sound is played within the same
-    // synchronous user gesture. The SDK creates its own AudioContext
-    // inside the awaited Conversation.startSession() call — by then
-    // we're no longer in the gesture window, so the first agent
-    // greeting plays silently. Playing a 1-sample silent buffer here
-    // (synchronously, in the click handler) unlocks the audio output
-    // for the entire page session.
+    // iOS audio unlock. iOS Safari blocks audio output until something
+    // is played within a synchronous user gesture. The SDK creates its
+    // AudioContext inside the awaited Conversation.startSession() call,
+    // past the gesture window — so the first greeting plays silently.
+    // We use BOTH unlock techniques:
+    //   1. AudioContext + silent buffer (unlocks AudioContext API path)
+    //   2. HTMLAudioElement.play() with a silent data URL (unlocks the
+    //      <audio> element path, which is what some SDK versions use)
+    // Both are kicked off synchronously inside the click handler.
     try {
       const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (Ctx) {
@@ -381,27 +382,51 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
         source.buffer = buffer;
         source.connect(ctx.destination);
         source.start(0);
-        // Some iOS versions also need an explicit resume.
-        if (ctx.state === 'suspended') {
-          ctx.resume().catch(() => { /* ignore */ });
-        }
-        console.log('[voice:mobile] audio unlock primer played, ctx.state=', ctx.state);
+        ctx.resume().then(() => {
+          console.log('[voice:mobile] audio unlock AudioContext resumed, state=', ctx.state);
+        }).catch(err => {
+          console.warn('[voice:mobile] audio unlock resume failed:', err);
+        });
       }
     } catch (err) {
-      console.warn('[voice:mobile] audio unlock primer failed:', err);
+      console.warn('[voice:mobile] audio unlock AudioContext failed:', err);
+    }
+    try {
+      // Tiny silent MP3 (≈100 bytes). Playing this in the gesture
+      // tells iOS "this page wants audio output" for HTMLAudioElement
+      // playback, which is what unlocks subsequent SDK audio elements.
+      const silent = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7pyn3Xf//FFAFBQYBALAQAtJ/Q==');
+      silent.preload = 'auto';
+      silent.muted = false;
+      silent.volume = 0.001;
+      const playPromise = silent.play();
+      if (playPromise) {
+        playPromise.then(() => {
+          console.log('[voice:mobile] audio unlock <audio> primer played');
+        }).catch(err => {
+          console.warn('[voice:mobile] audio unlock <audio> primer failed:', err.name, err.message);
+        });
+      }
+    } catch (err) {
+      console.warn('[voice:mobile] audio unlock <audio> primer threw:', err);
     }
 
     trackVoiceAgentActivated();
 
     const navAtStart = latestNavRef.current;
-    const firstMessage = buildFirstMessage(navAtStart);
+    // EXPERIMENT: drop the firstMessage override. User hypothesis: when
+    // the override is passed, the server sends back the message text but
+    // the audio is silent on iOS — every other agent response audio
+    // plays fine. Without the override the agent uses its server-default
+    // greeting, then immediately receives our contextual update for the
+    // current nav level (sent right after the await resolves below).
     if (navAtStart.level !== 'system') {
       pendingNavRef.current = navAtStart;
     }
 
     console.log('[voice:mobile] startSession about to dispatch', {
       navLevel: navAtStart.level,
-      hasFirstMessageOverride: !!firstMessage,
+      firstMessageOverride: 'DROPPED (testing iOS audio issue)',
     });
 
     try {
@@ -409,18 +434,13 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
         agentId,
         connectionType: 'websocket',
         clientTools: buildClientTools(),
-        ...(firstMessage && {
-          overrides: { agent: { firstMessage } },
-        }),
         onConnect: () => {
           console.log(`[voice:mobile] onConnect (${tFromClick()})`);
           setRawStatus('connected');
-          // Send queued nav context
-          if (pendingNavRef.current && convRef.current) {
-            const ctx = buildContextForNav(pendingNavRef.current);
-            if (ctx) convRef.current.sendContextualUpdate(ctx);
-            pendingNavRef.current = null;
-          }
+          // NOTE: We can't send queued nav context here — onConnect fires
+          // INSIDE the awaited Conversation.startSession() call, so
+          // convRef.current hasn't been assigned yet. The send happens
+          // immediately after the await resolves below.
         },
         onDisconnect: (details: unknown) => {
           console.log(`[voice:mobile] onDisconnect (${tFromClick()}):`, details);
@@ -452,6 +472,22 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       } as any);
       convRef.current = conv;
       console.log(`[voice:mobile] startSession RESOLVED (${tFromClick()})`);
+      // Now that convRef is populated, flush any queued nav context.
+      // This is necessary because onConnect fires INSIDE the await
+      // above, before convRef.current = conv runs.
+      if (pendingNavRef.current) {
+        const queuedNav = pendingNavRef.current;
+        pendingNavRef.current = null;
+        const ctx = buildContextForNav(queuedNav);
+        if (ctx) {
+          console.log('[voice:mobile] flushing queued nav context after RESOLVED', { level: queuedNav.level, ctxLength: ctx.length });
+          try {
+            conv.sendContextualUpdate(ctx);
+          } catch (err) {
+            console.error('[voice:mobile] sendContextualUpdate threw:', err);
+          }
+        }
+      }
     } catch (err) {
       console.error('[voice:mobile] startSession REJECTED:', err);
       if (err instanceof Error) {
