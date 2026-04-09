@@ -237,6 +237,14 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   const handlersRef = useRef({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer });
   handlersRef.current = { onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer };
 
+  // Sticky AudioContext for iOS audio unlock. Created lazily on the
+  // first toggle click and kept alive for the lifetime of the page.
+  // Once iOS sees an AudioContext successfully resumed inside a user
+  // gesture, it allows subsequent AudioContexts (the SDK's) to resume
+  // without a fresh gesture. This is the canonical iOS unlock pattern
+  // used by Howler.js, Tone.js, etc.
+  const unlockCtxRef = useRef<AudioContext | null>(null);
+
   // Abort flag for in-flight startSession. If the user clicks stop
   // while the start path is still awaiting Conversation.startSession,
   // we set this flag. When the promise resolves, the start path tears
@@ -376,17 +384,48 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     setSessionStarted(true);
     setRawStatus('connecting');
 
+    // ===== iOS AUDIO UNLOCK — synchronous, in the user gesture =====
+    // Canonical iOS pattern: create an AudioContext (or reuse existing)
+    // and call .resume() SYNCHRONOUSLY in the user gesture. Once iOS
+    // sees an AudioContext successfully unlocked here, it allows the
+    // SDK's later-created AudioContext to resume too. The context is
+    // held in unlockCtxRef forever — never closed, never connected,
+    // just a "this page is allowed to play audio" sentinel.
+    try {
+      if (!unlockCtxRef.current) {
+        const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (Ctx) {
+          unlockCtxRef.current = new Ctx();
+          console.log('[voice:mobile] iOS unlock: created AudioContext, state=', unlockCtxRef.current.state);
+        }
+      }
+      if (unlockCtxRef.current) {
+        const ctx = unlockCtxRef.current;
+        // Play a 1-sample silent buffer to prove audio output works.
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        // Resume — sync call, async resolution. The KEY for iOS unlock
+        // is that this call originates inside the user gesture.
+        ctx.resume().then(() => {
+          console.log('[voice:mobile] iOS unlock: resume resolved, state=', ctx.state);
+        }).catch(err => {
+          console.warn('[voice:mobile] iOS unlock: resume rejected', err);
+        });
+        console.log('[voice:mobile] iOS unlock: silent buffer started, state=', ctx.state);
+      }
+    } catch (err) {
+      console.warn('[voice:mobile] iOS unlock: threw', err);
+    }
+
     trackVoiceAgentActivated();
 
-    // iOS audio unlock via getUserMedia in the user gesture. The very
-    // first iPhone test that worked end-to-end had this pre-flight mic
-    // check, and we removed it speculatively. Bringing it back: iOS
-    // Safari treats explicit getUserMedia (with the permission prompt)
-    // as strong user activation, which extends the audio playback
-    // unlock window. We acquire the mic synchronously (inside the
-    // gesture), immediately stop the tracks, and let the SDK re-acquire
-    // — the cached permission means no second prompt.
-    console.log('[voice:mobile] pre-flight getUserMedia (iOS audio unlock)');
+    // Pre-flight getUserMedia inside the user gesture to trigger the mic
+    // permission prompt early (so the SDK's later acquisition uses cached
+    // perm) AND to keep user activation alive for iOS audio.
+    console.log('[voice:mobile] pre-flight getUserMedia');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log('[voice:mobile] pre-flight getUserMedia ok');
