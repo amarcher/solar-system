@@ -565,15 +565,44 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       convRef.current = conv;
       console.log(`[voice:mobile] startSession RESOLVED (${tFromClick()})`);
 
-      // Force-resume any AudioContext instances created during the
-      // SDK's startup. The SDK's own await context.resume() is past
-      // the user gesture window on iOS, so calling resume() again
-      // here (still inside our hook's call chain) may catch a brief
-      // remaining user-activation window.
+      // Force-resume any AudioContexts (defensive — they're usually
+      // already running at this point per the latest test).
       resumeAllAudioContexts('after-startSession');
-      // Try again after a short delay in case the SDK creates more
-      // contexts during onConnect callbacks.
-      setTimeout(() => resumeAllAudioContexts('delayed-100ms'), 100);
+
+      // ===== iOS audio routing workaround =====
+      // The SDK pipes audio through:
+      //   worklet → gain → analyser → MediaStreamAudioDestinationNode
+      //                              → MediaStream → <audio>.srcObject
+      // KNOWN iOS Safari BUG: MediaStreams sourced from
+      // MediaStreamAudioDestinationNode don't produce audible output
+      // through <audio> elements. The element reports paused=false
+      // and looks healthy, but no sound. Latest test confirmed our
+      // AudioContexts are 'running' yet the greeting is silent —
+      // this is the bug.
+      //
+      // Workaround: reach into the SDK's MediaDeviceOutput via
+      // reflection and ALSO connect the gain node directly to
+      // context.destination. AudioNodes support multiple outputs,
+      // so audio flows to both the MediaStream (for desktop / Chrome
+      // / device-switching) AND the speakers (for iOS). The direct
+      // context.destination path bypasses the buggy MediaStream
+      // routing on iOS.
+      try {
+        // The SDK's BaseConversation has an `output` property holding
+        // the MediaDeviceOutput instance. Its `gain` and `context` are
+        // private TypeScript fields but exist at runtime.
+        const sdkOutput = (conv as unknown as { output?: { gain?: GainNode; context?: AudioContext } }).output;
+        const gain = sdkOutput?.gain;
+        const ctx = sdkOutput?.context;
+        if (gain && ctx) {
+          gain.connect(ctx.destination);
+          console.log('[voice:mobile] iOS routing fix: connected SDK gain → context.destination');
+        } else {
+          console.warn('[voice:mobile] iOS routing fix: SDK output internals not found', { hasGain: !!gain, hasCtx: !!ctx, sdkOutputKeys: sdkOutput ? Object.keys(sdkOutput) : null });
+        }
+      } catch (err) {
+        console.warn('[voice:mobile] iOS routing fix threw:', err);
+      }
 
       // iOS audio output workaround: the SDK creates a hidden <audio>
       // element with autoplay=true and srcObject=MediaStream. iOS Safari
