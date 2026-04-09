@@ -364,37 +364,15 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     setSessionStarted(true);
     setRawStatus('connecting');
 
-    // iOS audio unlock. iOS Safari blocks audio output until something
-    // is played within a synchronous user gesture. The SDK creates its
-    // AudioContext inside the awaited Conversation.startSession() call,
-    // past the gesture window — so the first greeting plays silently.
-    // We use BOTH unlock techniques:
-    //   1. AudioContext + silent buffer (unlocks AudioContext API path)
-    //   2. HTMLAudioElement.play() with a silent data URL (unlocks the
-    //      <audio> element path, which is what some SDK versions use)
-    // Both are kicked off synchronously inside the click handler.
+    // iOS audio unlock via HTMLAudioElement only. We previously also
+    // created an AudioContext primer here, but the user reported
+    // "crackly, poor quality" audio after that change — suspect: two
+    // AudioContexts (ours + the SDK's) competing for iOS's single
+    // audio session, causing sample-rate or buffer issues. The
+    // <audio> element approach plays a tiny silent MP3 in the user
+    // gesture, which is enough to unlock subsequent audio output
+    // for the page session without creating a competing context.
     try {
-      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (Ctx) {
-        const ctx = new Ctx();
-        const buffer = ctx.createBuffer(1, 1, 22050);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
-        source.start(0);
-        ctx.resume().then(() => {
-          console.log('[voice:mobile] audio unlock AudioContext resumed, state=', ctx.state);
-        }).catch(err => {
-          console.warn('[voice:mobile] audio unlock resume failed:', err);
-        });
-      }
-    } catch (err) {
-      console.warn('[voice:mobile] audio unlock AudioContext failed:', err);
-    }
-    try {
-      // Tiny silent MP3 (≈100 bytes). Playing this in the gesture
-      // tells iOS "this page wants audio output" for HTMLAudioElement
-      // playback, which is what unlocks subsequent SDK audio elements.
       const silent = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7pyn3Xf//FFAFBQYBALAQAtJ/Q==');
       silent.preload = 'auto';
       silent.muted = false;
@@ -402,31 +380,30 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       const playPromise = silent.play();
       if (playPromise) {
         playPromise.then(() => {
-          console.log('[voice:mobile] audio unlock <audio> primer played');
+          console.log('[voice:mobile] audio unlock <audio> primer PLAYED');
         }).catch(err => {
-          console.warn('[voice:mobile] audio unlock <audio> primer failed:', err.name, err.message);
+          console.warn('[voice:mobile] audio unlock <audio> primer FAILED:', err?.name, err?.message);
         });
       }
     } catch (err) {
-      console.warn('[voice:mobile] audio unlock <audio> primer threw:', err);
+      console.warn('[voice:mobile] audio unlock primer threw:', err);
     }
 
     trackVoiceAgentActivated();
 
     const navAtStart = latestNavRef.current;
-    // EXPERIMENT: drop the firstMessage override. User hypothesis: when
-    // the override is passed, the server sends back the message text but
-    // the audio is silent on iOS — every other agent response audio
-    // plays fine. Without the override the agent uses its server-default
-    // greeting, then immediately receives our contextual update for the
-    // current nav level (sent right after the await resolves below).
+    const firstMessage = buildFirstMessage(navAtStart);
+    // Restored after testing showed the override is NOT the cause — the
+    // first agent message is silent on iOS even at system level (no
+    // override). The actual cause is iOS audio output not being unlocked
+    // by the time the SDK plays its first audio chunk.
     if (navAtStart.level !== 'system') {
       pendingNavRef.current = navAtStart;
     }
 
     console.log('[voice:mobile] startSession about to dispatch', {
       navLevel: navAtStart.level,
-      firstMessageOverride: 'DROPPED (testing iOS audio issue)',
+      hasFirstMessageOverride: !!firstMessage,
     });
 
     try {
@@ -434,6 +411,9 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
         agentId,
         connectionType: 'websocket',
         clientTools: buildClientTools(),
+        ...(firstMessage && {
+          overrides: { agent: { firstMessage } },
+        }),
         onConnect: () => {
           console.log(`[voice:mobile] onConnect (${tFromClick()})`);
           setRawStatus('connected');
