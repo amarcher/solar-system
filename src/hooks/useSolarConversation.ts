@@ -272,11 +272,17 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   // audio mid-teardown. We gate the next start on this promise.
   const teardownPromiseRef = useRef<Promise<void> | null>(null);
   const teardownResolveRef = useRef<(() => void) | null>(null);
+  // Counters for chatty SDK events so we don't spam the console.
+  const audioChunkCountRef = useRef(0);
+  const vadEventCountRef = useRef(0);
+
+  // Helper: timestamp relative to the most recent toggle click
+  const tFromClick = () =>
+    toggleStartedAtRef.current ? `+${Date.now() - toggleStartedAtRef.current}ms` : 'pre-click';
 
   const conversation = useConversation({
     onConnect: () => {
-      const t = Date.now() - (toggleStartedAtRef.current ?? Date.now());
-      console.log(`[voice:mobile] onConnect fired (+${t}ms from click)`);
+      console.log(`[voice:mobile] onConnect (${tFromClick()})`);
       logAudioEnv('onConnect');
       if (pendingNavRef.current) {
         const ctx = buildContextForNav(pendingNavRef.current);
@@ -285,9 +291,7 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       }
     },
     onDisconnect: (details: unknown) => {
-      const t = Date.now() - (toggleStartedAtRef.current ?? Date.now());
-      console.log(`[voice:mobile] onDisconnect (+${t}ms from click):`, details);
-      // Release any start path waiting for the previous session to drain.
+      console.log(`[voice:mobile] onDisconnect (${tFromClick()}):`, details);
       if (teardownResolveRef.current) {
         console.log('[voice:mobile] teardown promise resolving from onDisconnect');
         teardownResolveRef.current();
@@ -296,9 +300,81 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       }
     },
     onError: (error: unknown) => {
-      console.error('[voice:mobile] session error:', error);
+      console.error(`[voice:mobile] onError (${tFromClick()}):`, error);
     },
-  });
+    // ——— FULL INSTRUMENTATION ———
+    // These surface SDK-internal events that are normally invisible.
+    // `onMessage` gives us agent/user transcript text — tells us whether
+    // the user's voice is being transcribed at all.
+    onMessage: (msg: unknown) => {
+      console.log(`[voice:mobile] onMessage (${tFromClick()}):`, msg);
+    },
+    // `onStatusChange` is the ground-truth status transition callback.
+    // Our useEffect watcher on conversation.status may miss intermediate
+    // transitions; this catches every one.
+    onStatusChange: (s: unknown) => {
+      console.log(`[voice:mobile] onStatusChange (${tFromClick()}):`, s);
+    },
+    // `onModeChange` fires on listening ↔ speaking transitions. If
+    // isSpeaking never flips in our React state but this does, the
+    // SDK's React state is the thing that's broken, not the session.
+    onModeChange: (m: unknown) => {
+      console.log(`[voice:mobile] onModeChange (${tFromClick()}):`, m);
+    },
+    // `onAudio` fires for every audio chunk the agent sends. If the
+    // agent is speaking but we hear nothing, this will still fire —
+    // telling us the audio IS arriving, it's just not being played.
+    onAudio: (audio: unknown) => {
+      // Too chatty to log every chunk — count them instead.
+      audioChunkCountRef.current += 1;
+      if (audioChunkCountRef.current === 1 || audioChunkCountRef.current % 50 === 0) {
+        console.log(`[voice:mobile] onAudio chunk #${audioChunkCountRef.current} (${tFromClick()})`, typeof audio);
+      }
+    },
+    // `onVadScore` fires with voice-activity-detection scores from the
+    // user's mic. If this never fires (or stays 0), the mic isn't
+    // hearing the user — which would explain "agent ignores me".
+    onVadScore: (score: unknown) => {
+      vadEventCountRef.current += 1;
+      if (vadEventCountRef.current === 1 || vadEventCountRef.current % 20 === 0) {
+        console.log(`[voice:mobile] onVadScore #${vadEventCountRef.current} (${tFromClick()}):`, score);
+      }
+    },
+    // `onUnhandledClientToolCall` fires when the agent calls a tool the
+    // current session does NOT have registered. If this fires with
+    // `navigate_to_planet`, it means the session the user is talking
+    // to is not the session our hook registered tools on — definitive
+    // proof of a ghost-session bug.
+    onUnhandledClientToolCall: (call: unknown) => {
+      console.warn(`[voice:mobile] onUnhandledClientToolCall (${tFromClick()}):`, call);
+    },
+    // `onAgentToolRequest` fires when the agent intends to call a tool.
+    // Pairs with the per-tool `useConversationClientTool` logs: if
+    // this fires but the tool handler never runs, the call is
+    // vanishing somewhere between the SDK and our handlers.
+    onAgentToolRequest: (req: unknown) => {
+      console.log(`[voice:mobile] onAgentToolRequest (${tFromClick()}):`, req);
+    },
+    onAgentToolResponse: (resp: unknown) => {
+      console.log(`[voice:mobile] onAgentToolResponse (${tFromClick()}):`, resp);
+    },
+    onInterruption: (i: unknown) => {
+      console.log(`[voice:mobile] onInterruption (${tFromClick()}):`, i);
+    },
+    onGuardrailTriggered: (g: unknown) => {
+      console.warn(`[voice:mobile] onGuardrailTriggered (${tFromClick()}):`, g);
+    },
+    onConversationMetadata: (meta: unknown) => {
+      console.log(`[voice:mobile] onConversationMetadata (${tFromClick()}):`, meta);
+    },
+    onAsrInitiationMetadata: (meta: unknown) => {
+      console.log(`[voice:mobile] onAsrInitiationMetadata (${tFromClick()}):`, meta);
+    },
+    onDebug: (d: unknown) => {
+      console.log(`[voice:mobile] onDebug (${tFromClick()}):`, d);
+    },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK's UseConversationOptions doesn't include all CALLBACK_KEYS in its public type
+  } as any);
 
   // Direct handle to the live Conversation instance. We use this in the
   // stop path to call `endSession()` directly on the instance, bypassing
@@ -505,6 +581,8 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     // button shows "connecting" the moment the user clicks. Rolled back
     // if mic permission fails.
     toggleStartedAtRef.current = Date.now();
+    audioChunkCountRef.current = 0;
+    vadEventCountRef.current = 0;
     console.log('[voice:mobile] toggle → start (t0)');
     logAudioEnv('toggle-start');
     setSessionStarted(true);
@@ -658,10 +736,28 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   // to the toggle click. If we see 'connected' but never isSpeaking=true,
   // the greeting audio is being blocked (iOS autoplay / AudioContext).
   useEffect(() => {
-    const t = toggleStartedAtRef.current ? Date.now() - toggleStartedAtRef.current : -1;
-    console.log(`[voice:mobile] isSpeaking → ${conversation.isSpeaking} (+${t}ms)`);
+    console.log(`[voice:mobile] isSpeaking → ${conversation.isSpeaking} (${tFromClick()})`);
     if (conversation.isSpeaking) logAudioEnv('isSpeaking-true');
-  }, [conversation.isSpeaking]);
+  }, [conversation.isSpeaking]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ground-truth: log every conversation.status transition. This is the
+  // React-observable status — if it doesn't reflect reality (e.g. stays
+  // "disconnected" after onConnect fires) we know the SDK's React state
+  // isn't syncing with the underlying session.
+  useEffect(() => {
+    console.log(`[voice:mobile] status → ${conversation.status} (${tFromClick()})`);
+  }, [conversation.status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Watch conversation.mode (listening/speaking/connecting). Another
+  // independent signal in case isSpeaking is stale.
+  useEffect(() => {
+    console.log(`[voice:mobile] mode → ${conversation.mode} (${tFromClick()})`);
+  }, [conversation.mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Watch useRawConversation() — SDK's "is there a live session?" signal.
+  useEffect(() => {
+    console.log(`[voice:mobile] rawConv → ${rawConv ? 'present' : 'null'} (${tFromClick()})`);
+  }, [rawConv]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mobile diagnostic: log visibility changes during an active session.
   // If the user backgrounds the tab during the handshake, iOS suspends
@@ -669,12 +765,41 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   useEffect(() => {
     if (!sessionStarted) return;
     const onVis = () => {
-      const t = toggleStartedAtRef.current ? Date.now() - toggleStartedAtRef.current : -1;
-      console.log(`[voice:mobile] visibilitychange → ${document.visibilityState} (+${t}ms)`);
+      console.log(`[voice:mobile] visibilitychange → ${document.visibilityState} (${tFromClick()})`);
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, [sessionStarted]);
+  }, [sessionStarted]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Detect iOS Safari back/forward cache (bfcache). If the user navigates
+  // away and comes back via the back button, Safari may restore a live
+  // page including any in-flight WebRTC sessions — meaning our React
+  // state is fresh but there's a ghost session still running audio.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      console.log(`[voice:mobile] pageshow (persisted=${e.persisted}) audioElementCount=${document.querySelectorAll('audio').length}`);
+      if (e.persisted) {
+        console.warn('[voice:mobile] page restored from bfcache — possible ghost session');
+        hardStopStrayAudio('bfcache-restore');
+      }
+    };
+    const onPageHide = (e: PageTransitionEvent) => {
+      console.log(`[voice:mobile] pagehide (persisted=${e.persisted})`);
+    };
+    window.addEventListener('pageshow', onPageShow);
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      window.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('pagehide', onPageHide);
+    };
+  }, []);
+
+  // Log the full UA once on mount so we know exactly what device/browser
+  // the logs are coming from.
+  useEffect(() => {
+    console.log('[voice:mobile] UA:', navigator.userAgent);
+    console.log('[voice:mobile] initial audioElementCount:', document.querySelectorAll('audio').length);
+  }, []);
 
   // Cleanup — tear down any active session on unmount
   useEffect(() => {
