@@ -57,6 +57,45 @@ function resumeAllAudioContexts(label: string) {
     });
   });
 }
+
+// =====================================================================
+// createGain monkey-patch — iOS Safari audio routing
+// =====================================================================
+// The previous (post-startSession) routing fix worked too late: by the
+// time we ran gain.connect(context.destination) at +5316ms, the first
+// message audio chunks had already been streamed through gain at
+// +5122ms (only ~200ms later but enough to lose the entire first
+// message). Later messages produced echo because they flowed through
+// BOTH the original chain and the new direct destination connection.
+//
+// Fix: patch AudioContext.prototype.createGain so every new gain node
+// is AUTOMATICALLY connected to its context.destination at creation
+// time — well before the SDK pushes audio through it. The first
+// message is captured.
+//
+// Safety: only the output context calls createGain (verified via
+// grep on @elevenlabs/client 1.1.2 — input.js uses createMediaStreamSource
+// only, no gain). So no feedback loop risk from input audio.
+// =====================================================================
+{
+  const w = window as unknown as { __solarGainPatched?: boolean };
+  const proto = (window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)?.prototype;
+  if (proto && !w.__solarGainPatched) {
+    w.__solarGainPatched = true;
+    const original = proto.createGain;
+    proto.createGain = function(this: AudioContext) {
+      const gain = original.call(this);
+      try {
+        gain.connect(this.destination);
+        console.log('[voice:mobile] createGain patch: auto-connected gain → destination');
+      } catch (err) {
+        console.warn('[voice:mobile] createGain patch: auto-connect failed:', err);
+      }
+      return gain;
+    };
+    console.log('[voice:mobile] createGain patch installed');
+  }
+}
 import type { Planet, Moon, NavigationState } from '../types/celestialBody';
 import type { Mission } from '../types/mission';
 import { planets } from '../data/planets';
@@ -569,40 +608,9 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       // already running at this point per the latest test).
       resumeAllAudioContexts('after-startSession');
 
-      // ===== iOS audio routing workaround =====
-      // The SDK pipes audio through:
-      //   worklet → gain → analyser → MediaStreamAudioDestinationNode
-      //                              → MediaStream → <audio>.srcObject
-      // KNOWN iOS Safari BUG: MediaStreams sourced from
-      // MediaStreamAudioDestinationNode don't produce audible output
-      // through <audio> elements. The element reports paused=false
-      // and looks healthy, but no sound. Latest test confirmed our
-      // AudioContexts are 'running' yet the greeting is silent —
-      // this is the bug.
-      //
-      // Workaround: reach into the SDK's MediaDeviceOutput via
-      // reflection and ALSO connect the gain node directly to
-      // context.destination. AudioNodes support multiple outputs,
-      // so audio flows to both the MediaStream (for desktop / Chrome
-      // / device-switching) AND the speakers (for iOS). The direct
-      // context.destination path bypasses the buggy MediaStream
-      // routing on iOS.
-      try {
-        // The SDK's BaseConversation has an `output` property holding
-        // the MediaDeviceOutput instance. Its `gain` and `context` are
-        // private TypeScript fields but exist at runtime.
-        const sdkOutput = (conv as unknown as { output?: { gain?: GainNode; context?: AudioContext } }).output;
-        const gain = sdkOutput?.gain;
-        const ctx = sdkOutput?.context;
-        if (gain && ctx) {
-          gain.connect(ctx.destination);
-          console.log('[voice:mobile] iOS routing fix: connected SDK gain → context.destination');
-        } else {
-          console.warn('[voice:mobile] iOS routing fix: SDK output internals not found', { hasGain: !!gain, hasCtx: !!ctx, sdkOutputKeys: sdkOutput ? Object.keys(sdkOutput) : null });
-        }
-      } catch (err) {
-        console.warn('[voice:mobile] iOS routing fix threw:', err);
-      }
+      // (iOS routing fix is now handled by the createGain monkey-patch
+      // at module load — runs at gain creation time, before the SDK
+      // pushes audio through, so the first message is captured.)
 
       // iOS audio output workaround: the SDK creates a hidden <audio>
       // element with autoplay=true and srcObject=MediaStream. iOS Safari
