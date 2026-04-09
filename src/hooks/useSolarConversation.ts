@@ -491,9 +491,12 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     }
   });
 
-  // Poll input volume after connecting
+  // Poll input volume continuously while a session is active. We used to
+  // gate this on `conversation.status === 'connected'`, but on iOS that
+  // status sometimes never updates even though audio is flowing — and we
+  // need visibility into whether the mic is actually capturing.
   useEffect(() => {
-    if (conversation.status !== 'connected') {
+    if (!sessionStarted) {
       if (inputVolumeIntervalRef.current !== null) {
         clearInterval(inputVolumeIntervalRef.current);
         inputVolumeIntervalRef.current = null;
@@ -502,22 +505,34 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     }
 
     const startedAt = Date.now();
-    const POLL_DURATION_MS = 10_000;
-    const POLL_INTERVAL_MS = 500;
+    let pollCount = 0;
+    let lastNonZeroAt = 0;
 
     inputVolumeIntervalRef.current = setInterval(() => {
-      const volume = conversation.getInputVolume();
+      pollCount += 1;
+      let volume = -1;
+      try {
+        volume = conversation.getInputVolume();
+      } catch (err) {
+        if (pollCount === 1) console.warn('[voice:mobile] getInputVolume threw:', err);
+      }
       if (volume > 0) {
+        if (lastNonZeroAt === 0) {
+          console.log(`[voice:mobile] FIRST mic input volume>0: ${volume.toFixed(3)} (${tFromClick()})`);
+        }
+        lastNonZeroAt = Date.now();
+      }
+      // Log every 2s so we can see whether the mic is silent or active.
+      if (pollCount % 4 === 0) {
+        const sinceVoice = lastNonZeroAt > 0 ? `${Date.now() - lastNonZeroAt}ms ago` : 'never';
+        console.log(`[voice:mobile] mic poll #${pollCount}: vol=${volume.toFixed?.(3) ?? volume}, lastVoice=${sinceVoice} (${tFromClick()})`);
+      }
+      // Stop polling after 30s to avoid unbounded log spam.
+      if (Date.now() - startedAt >= 30_000) {
         clearInterval(inputVolumeIntervalRef.current!);
         inputVolumeIntervalRef.current = null;
-        return;
       }
-      if (Date.now() - startedAt >= POLL_DURATION_MS) {
-        clearInterval(inputVolumeIntervalRef.current!);
-        inputVolumeIntervalRef.current = null;
-        setMicError('no-input');
-      }
-    }, POLL_INTERVAL_MS);
+    }, 500);
 
     return () => {
       if (inputVolumeIntervalRef.current !== null) {
@@ -525,7 +540,7 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
         inputVolumeIntervalRef.current = null;
       }
     };
-  }, [conversation.status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sessionStarted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = useCallback(async () => {
     if (!agentId) return;
@@ -588,39 +603,22 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     setSessionStarted(true);
 
     // If a previous session is still tearing down, wait for it to
-    // actually disconnect before we start the next one. This is the
-    // critical fix for the "two voices stacking" bug — the SDK's
-    // startSession guard checks a ref that was cleared synchronously
-    // in endSession, even though the underlying WebRTC session is
-    // still mid-teardown and still playing audio.
+    // actually disconnect before we start the next one.
     if (teardownPromiseRef.current) {
       console.log('[voice:mobile] awaiting previous session teardown...');
       const waitStart = Date.now();
       await teardownPromiseRef.current;
       console.log(`[voice:mobile] previous teardown complete (+${Date.now() - waitStart}ms)`);
     }
-    // Last-resort safety: any DOM audio that survived.
-    hardStopStrayAudio('pre-start');
 
-    try {
-      const micPromise = navigator.mediaDevices.getUserMedia({ audio: true });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new DOMException('getUserMedia timed out', 'TimeoutError')), 5_000)
-      );
-      const tempStream = await Promise.race([micPromise, timeoutPromise]);
-      const tMic = Date.now() - toggleStartedAtRef.current;
-      console.log(`[voice:mobile] mic-check acquired (+${tMic}ms)`);
-      tempStream.getTracks().forEach(t => t.stop());
-      console.log('[voice:mobile] mic-check temp tracks stopped');
-    } catch (err) {
-      const error = err as DOMException;
-      if (error.name === 'TimeoutError') setMicError('timeout');
-      else if (error.name === 'NotAllowedError') setMicError('not-allowed');
-      else setMicError('device');
-      setSessionStarted(false); // roll back optimistic UI
-      console.error('[voice] mic check failed:', error.name);
-      return;
-    }
+    // NOTE: We previously did a pre-flight `navigator.mediaDevices.getUserMedia`
+    // here as a way to surface mic permission errors early. iOS Safari's
+    // media stack is fragile to back-to-back acquire/stop/acquire cycles —
+    // stopping a track and immediately re-acquiring (which the SDK does
+    // internally) can leave the mic in a half-broken state where audio
+    // appears to flow but no input data is sent. Removing the pre-flight
+    // and letting the SDK acquire the mic exactly once.
+    console.log('[voice:mobile] pre-flight mic check SKIPPED (testing)');
 
     trackVoiceAgentActivated();
 
