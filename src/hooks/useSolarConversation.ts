@@ -262,6 +262,16 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   // every log line relative to the click so we can see on mobile where
   // the greeting pipeline stalls.
   const toggleStartedAtRef = useRef<number | null>(null);
+  // Promise that resolves when the current tear-down completes (i.e.
+  // when onDisconnect fires for the session we just stopped). The SDK
+  // clears its React refs synchronously in endSession() but the actual
+  // WebRTC teardown of the underlying Conversation instance is async
+  // and NOT awaited — so if the user clicks Talk again immediately,
+  // the SDK's guard `if (conversationRef.current)` passes (it's null)
+  // and a second session spawns on top of the first one still playing
+  // audio mid-teardown. We gate the next start on this promise.
+  const teardownPromiseRef = useRef<Promise<void> | null>(null);
+  const teardownResolveRef = useRef<(() => void) | null>(null);
 
   const conversation = useConversation({
     onConnect: () => {
@@ -277,6 +287,13 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     onDisconnect: (details: unknown) => {
       const t = Date.now() - (toggleStartedAtRef.current ?? Date.now());
       console.log(`[voice:mobile] onDisconnect (+${t}ms from click):`, details);
+      // Release any start path waiting for the previous session to drain.
+      if (teardownResolveRef.current) {
+        console.log('[voice:mobile] teardown promise resolving from onDisconnect');
+        teardownResolveRef.current();
+        teardownResolveRef.current = null;
+        teardownPromiseRef.current = null;
+      }
     },
     onError: (error: unknown) => {
       console.error('[voice:mobile] session error:', error);
@@ -438,16 +455,33 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     if (!agentId) return;
 
     if (sessionStarted) {
-      // Stop path. Flip UI off immediately (optimistic), then tear the
-      // session down as aggressively as possible. Both endSession forms
-      // have been observed to silently no-op under race conditions
-      // (stop click right as onConnect fires), so we call BOTH and then
-      // hard-stop any <audio> elements the SDK left behind. Without the
-      // hard stop, a stopped-but-not-disconnected session leaks, and the
-      // next start pours a second voice on top of the first.
+      // Stop path. The SDK's endSession clears its React refs synchronously
+      // but does NOT await the underlying WebRTC teardown — so we install a
+      // promise that the next start path will wait on. The promise resolves
+      // either when onDisconnect fires (happy path) or after a 3s safety
+      // timeout (in case onDisconnect never fires, which we've observed on
+      // races where rawConv was never populated).
       console.log('[voice:mobile] toggle → stop (rawConv present:', !!rawConv, ', status:', conversation.status, ')');
       setSessionStarted(false);
       hasConnectedRef.current = false;
+
+      // Arm the teardown-wait promise BEFORE calling endSession so a
+      // lightning-fast onDisconnect can still resolve it.
+      if (!teardownPromiseRef.current) {
+        teardownPromiseRef.current = new Promise<void>(resolve => {
+          teardownResolveRef.current = resolve;
+        });
+        // Safety: if onDisconnect never fires, unblock after 3s.
+        setTimeout(() => {
+          if (teardownResolveRef.current) {
+            console.warn('[voice:mobile] teardown safety-timeout (3s) — forcing resolve');
+            teardownResolveRef.current();
+            teardownResolveRef.current = null;
+            teardownPromiseRef.current = null;
+          }
+        }, 3000);
+      }
+
       if (rawConv) {
         try {
           rawConv.endSession();
@@ -460,11 +494,10 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       } catch (err) {
         console.error('[voice:mobile] conversation.endSession failed:', err);
       }
-      // Give the SDK a tick to drain, then hard-stop anything that survived.
-      // We do it twice: immediately (covers fast cases) and again after
-      // 500ms (covers slow SDK teardowns that might add late audio).
+      // DOM <audio> teardown as a last-resort safety net. WebRTC audio
+      // typically plays via WebAudio and may not live on an <audio>
+      // element, so this is not sufficient on its own — but it can't hurt.
       hardStopStrayAudio('stop-immediate');
-      setTimeout(() => hardStopStrayAudio('stop-delayed'), 500);
       return;
     }
 
@@ -474,11 +507,22 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     toggleStartedAtRef.current = Date.now();
     console.log('[voice:mobile] toggle → start (t0)');
     logAudioEnv('toggle-start');
-    // Pre-start safety net: if a previous session leaked an <audio>
-    // element (stop click lost the race with onConnect), hard-stop it
-    // before we create the next session. Otherwise two voices stack.
-    hardStopStrayAudio('pre-start');
     setSessionStarted(true);
+
+    // If a previous session is still tearing down, wait for it to
+    // actually disconnect before we start the next one. This is the
+    // critical fix for the "two voices stacking" bug — the SDK's
+    // startSession guard checks a ref that was cleared synchronously
+    // in endSession, even though the underlying WebRTC session is
+    // still mid-teardown and still playing audio.
+    if (teardownPromiseRef.current) {
+      console.log('[voice:mobile] awaiting previous session teardown...');
+      const waitStart = Date.now();
+      await teardownPromiseRef.current;
+      console.log(`[voice:mobile] previous teardown complete (+${Date.now() - waitStart}ms)`);
+    }
+    // Last-resort safety: any DOM audio that survived.
+    hardStopStrayAudio('pre-start');
 
     try {
       const micPromise = navigator.mediaDevices.getUserMedia({ audio: true });
