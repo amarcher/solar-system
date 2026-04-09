@@ -643,9 +643,16 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       // void), so awaiting it is a no-op. The catch only fires on synchronous
       // throws during setup. Session status transitions are observed via
       // `conversation.status` and the sync-down effect below.
+      // Previously we forced `connectionType: 'websocket'`. On iOS Safari
+      // 18.7 / WebKit 26.x that transport established then immediately
+      // dropped — SDK onConnect fired in the same millisecond as
+      // onStatusChange: "disconnected", no audio chunks ever arrived,
+      // and stale audio from previous sessions leaked in on reconnect
+      // (suggesting server-side resumption of a half-dead connection).
+      // Removing the override lets the SDK use its default transport
+      // (LiveKit/WebRTC) which is what ElevenLabs designs for mobile.
       await conversation.startSession({
         agentId,
-        connectionType: 'websocket',
         ...(firstMessage && {
           overrides: {
             agent: { firstMessage },
