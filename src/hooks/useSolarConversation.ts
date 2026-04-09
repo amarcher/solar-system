@@ -382,36 +382,30 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     setSessionStarted(true);
     setRawStatus('connecting');
 
-    // iOS audio unlock via HTMLAudioElement. Plays a known-good silent
-    // MP3 inside the user gesture, then HOLDS A REFERENCE so the
-    // element doesn't get garbage-collected before .play() resolves
-    // (the previous test never logged PLAYED/FAILED — that was the
-    // promise hanging because the element was GC'd).
-    console.log('[voice:mobile] audio unlock primer: starting');
-    try {
-      // Reuse existing element if we have one — re-playing the same
-      // <audio> element is cheaper and keeps iOS happy.
-      if (!unlockAudioRef.current) {
-        // Known-good silent MP3 base64. ~50ms of silence.
-        unlockAudioRef.current = new Audio('data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQAA//uQZAAAAAAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//uQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV');
-        unlockAudioRef.current.preload = 'auto';
-      }
-      const el = unlockAudioRef.current;
-      el.currentTime = 0;
-      const playPromise = el.play();
-      console.log('[voice:mobile] audio unlock primer: .play() returned', typeof playPromise);
-      if (playPromise && typeof playPromise.then === 'function') {
-        playPromise.then(() => {
-          console.log('[voice:mobile] audio unlock primer: PLAYED ok');
-        }).catch(err => {
-          console.warn('[voice:mobile] audio unlock primer: FAILED', err?.name, err?.message);
-        });
-      }
-    } catch (err) {
-      console.warn('[voice:mobile] audio unlock primer: THREW', err);
-    }
-
     trackVoiceAgentActivated();
+
+    // iOS audio unlock via getUserMedia in the user gesture. The very
+    // first iPhone test that worked end-to-end had this pre-flight mic
+    // check, and we removed it speculatively. Bringing it back: iOS
+    // Safari treats explicit getUserMedia (with the permission prompt)
+    // as strong user activation, which extends the audio playback
+    // unlock window. We acquire the mic synchronously (inside the
+    // gesture), immediately stop the tracks, and let the SDK re-acquire
+    // — the cached permission means no second prompt.
+    console.log('[voice:mobile] pre-flight getUserMedia (iOS audio unlock)');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('[voice:mobile] pre-flight getUserMedia ok');
+      stream.getTracks().forEach(t => t.stop());
+    } catch (err) {
+      const error = err as DOMException;
+      console.error('[voice:mobile] pre-flight getUserMedia failed:', error.name);
+      if (error.name === 'NotAllowedError') setMicError('not-allowed');
+      else setMicError('device');
+      setSessionStarted(false);
+      setRawStatus('disconnected');
+      return;
+    }
 
     const navAtStart = latestNavRef.current;
     const firstMessage = buildFirstMessage(navAtStart);
