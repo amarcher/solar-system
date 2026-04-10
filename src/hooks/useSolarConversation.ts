@@ -591,6 +591,31 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       pendingNavRef.current = navAtStart;
     }
 
+    // ===== iOS audio element play() workaround =====
+    // The SDK creates a hidden <audio autoplay> element during
+    // startSession and sets its srcObject to a MediaStream, but never
+    // calls .play() explicitly. iOS Safari requires an explicit play()
+    // call in the user-gesture chain — autoplay with srcObject is not
+    // sufficient. Use a MutationObserver to catch the element the
+    // instant the SDK appends it to the DOM and call play() on it.
+    // This fires during the startSession async chain, which is still
+    // connected to the original user gesture.
+    const audioPlayObserver = new MutationObserver(mutations => {
+      for (const mut of mutations) {
+        for (const node of Array.from(mut.addedNodes)) {
+          if (node instanceof HTMLAudioElement) {
+            console.log('[voice:mobile] MutationObserver: caught new <audio>, calling play()');
+            node.play().then(() => {
+              console.log('[voice:mobile] MutationObserver: play() resolved');
+            }).catch(err => {
+              console.warn('[voice:mobile] MutationObserver: play() failed:', err?.name, err?.message);
+            });
+          }
+        }
+      }
+    });
+    audioPlayObserver.observe(document.body, { childList: true, subtree: true });
+
     console.log('[voice:mobile] startSession about to dispatch', {
       navLevel: navAtStart.level,
       hasFirstMessageOverride: !!firstMessage,
@@ -661,50 +686,29 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       // already running at this point per the latest test).
       resumeAllAudioContexts('after-startSession');
 
-      // Force playsInline on the SDK's hidden <audio> element so iOS
-      // doesn't treat it as a "media player" that would route to the
-      // receiver. Combined with the playback primer running concurrently
-      // in the gesture, this should force loudspeaker routing.
-      try {
-        const audioEls = Array.from(document.querySelectorAll('audio'));
-        for (const el of audioEls) {
-          el.setAttribute('playsinline', '');
-          el.setAttribute('webkit-playsinline', '');
-          el.muted = false;
-          el.volume = 1;
-        }
-        console.log(`[voice:mobile] applied playsinline/volume to ${audioEls.length} <audio> element(s)`);
-      } catch (err) {
-        console.warn('[voice:mobile] playsinline apply failed:', err);
-      }
+      // Disconnect the MutationObserver — it's done its job.
+      audioPlayObserver.disconnect();
 
-      // iOS audio output workaround: the SDK creates a hidden <audio>
-      // element with autoplay=true and srcObject=MediaStream. iOS Safari
-      // BLOCKS autoplay of <audio> with MediaStream sources unless they
-      // are muted OR .play() is called inside a user gesture. Since we
-      // can't modify the SDK, find the element after creation and
-      // explicitly call .play() on it. The user gesture from the original
-      // toggle click may still be active here (within ~5s of the click).
+      // Belt-and-suspenders: also call play() on all audio elements now,
+      // regardless of paused state. iOS reports paused=false even when
+      // the audio isn't producing audible output.
       try {
         const audioEls = Array.from(document.querySelectorAll('audio'));
-        console.log(`[voice:mobile] iOS audio kick: found ${audioEls.length} <audio> element(s)`);
+        console.log(`[voice:mobile] post-startSession: forcing play() on ${audioEls.length} <audio> element(s)`);
         for (let i = 0; i < audioEls.length; i++) {
           const el = audioEls[i];
-          if (el.paused) {
-            const p = el.play();
-            if (p && typeof p.then === 'function') {
-              p.then(() => {
-                console.log(`[voice:mobile] iOS audio kick #${i}: PLAYED ok`);
-              }).catch(err => {
-                console.warn(`[voice:mobile] iOS audio kick #${i}: FAILED`, err?.name, err?.message);
-              });
-            }
-          } else {
-            console.log(`[voice:mobile] iOS audio kick #${i}: already playing`);
-          }
+          el.setAttribute('playsinline', '');
+          el.setAttribute('webkit-playsinline', '');
+          el.volume = 1;
+          el.muted = false;
+          el.play().then(() => {
+            console.log(`[voice:mobile] post-startSession play #${i}: resolved`);
+          }).catch(err => {
+            console.warn(`[voice:mobile] post-startSession play #${i}: failed`, err?.name, err?.message);
+          });
         }
       } catch (err) {
-        console.warn('[voice:mobile] iOS audio kick threw:', err);
+        console.warn('[voice:mobile] post-startSession play threw:', err);
       }
 
       // Now that convRef is populated, flush any queued nav context.
