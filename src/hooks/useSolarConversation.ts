@@ -95,6 +95,45 @@ function buildSilentWavDataUrl(): string {
 }
 const SILENT_WAV_URL = buildSilentWavDataUrl();
 
+// =====================================================================
+// srcObject setter monkey-patch — iOS Safari audio fix
+// =====================================================================
+// The SDK creates an <audio> element, sets autoplay=true, then LATER
+// assigns audioElement.srcObject = mediaStream. On iOS Safari, setting
+// srcObject on an element that was already "played" (via autoplay or
+// explicit play()) does NOT restart playback for the new source. The
+// element stays in a pseudo-playing state with no audible output.
+//
+// Fix: intercept the srcObject setter. When a MediaStream is assigned,
+// immediately call play() on the element. This ensures iOS treats the
+// new source as a fresh playback request.
+// =====================================================================
+{
+  const w = window as unknown as { __solarSrcObjPatched?: boolean };
+  if (!w.__solarSrcObjPatched) {
+    const desc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'srcObject');
+    if (desc?.set) {
+      w.__solarSrcObjPatched = true;
+      const originalSet = desc.set;
+      Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
+        ...desc,
+        set(this: HTMLMediaElement, value: MediaProvider | null) {
+          originalSet.call(this, value);
+          if (value) {
+            console.log('[voice:mobile] srcObject patch: stream assigned, calling play()');
+            this.play().then(() => {
+              console.log('[voice:mobile] srcObject patch: play() resolved');
+            }).catch(err => {
+              console.warn('[voice:mobile] srcObject patch: play() failed:', err?.name, err?.message);
+            });
+          }
+        }
+      });
+      console.log('[voice:mobile] srcObject setter patch installed');
+    }
+  }
+}
+
 // The createGain monkey-patch was here. Removed after sub-agent
 // diagnosis: the audio IS playing (confirmed via
 // audioElement.currentTime advancing past 15s during "silent" greeting),
