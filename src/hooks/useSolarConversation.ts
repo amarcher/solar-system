@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useConversation, useConversationClientTool, useRawConversation } from '@elevenlabs/react';
+// We bypass @elevenlabs/react's ConversationProvider and use the underlying
+// @elevenlabs/client SDK directly. The React provider's state layer is
+// broken on iOS Safari 18.7: useConversation reports `disconnected` within
+// 1ms of `connected`, useRawConversation never populates, and
+// useConversationClientTool registrations don't reach the live session —
+// so tool calls vanish. Calling Conversation.startSession() directly
+// works perfectly on the same device.
+import { Conversation } from '@elevenlabs/client';
+
 import type { Planet, Moon, NavigationState } from '../types/celestialBody';
 import type { Mission } from '../types/mission';
 import { planets } from '../data/planets';
@@ -176,377 +184,6 @@ function buildFirstMessage(nav: NavigationState): string | undefined {
   }
 }
 
-export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer }: ConversationCallbacks) {
-  const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
-  const [micError, setMicError] = useState<MicError>(null);
-  const pendingNavRef = useRef<NavigationState | null>(null);
-  const currentNavRef = useRef<string | null>(null);
-  const latestNavRef = useRef<NavigationState>(currentNav);
-  latestNavRef.current = currentNav;
-  const inputVolumeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Optimistic session-active flag driven by user intent (toggle clicks).
-  // We used to derive this purely from `conversation.status`, but the SDK's
-  // status transitions are async and take 1–2s to propagate — meaning the
-  // toolbar button visibly lagged behind every click. Now we flip this
-  // state synchronously on click and sync DOWN from the SDK only for
-  // external disconnects (see the `useEffect` below that watches status).
-  const [sessionStarted, setSessionStarted] = useState(false);
-  // Tracks whether the SDK has ever reached 'connected' during the current
-  // session. Used to distinguish an initial 'disconnected' (pre-click) from
-  // a post-connection drop — only the latter should reset sessionStarted.
-  const hasConnectedRef = useRef(false);
-
-  const conversation = useConversation({
-    onConnect: () => {
-      console.log('[voice] session connected');
-      if (pendingNavRef.current) {
-        const ctx = buildContextForNav(pendingNavRef.current);
-        if (ctx) conversation.sendContextualUpdate(ctx);
-        pendingNavRef.current = null;
-      }
-    },
-    onDisconnect: (details: unknown) => {
-      console.log('[voice] session disconnected:', details);
-    },
-    onError: (error: unknown) => {
-      console.error('[voice] session error:', error);
-    },
-  });
-
-  // Direct handle to the live Conversation instance. We use this in the
-  // stop path to call `endSession()` directly on the instance, bypassing
-  // the ConversationProvider's wrapped endSession — which was observed
-  // to silently no-op in some race conditions (when the provider's
-  // conversationRef had already been cleared by an onDisconnect listener
-  // but the underlying WebRTC session was still alive).
-  const rawConv = useRawConversation();
-
-  // Each client tool is registered via the SDK's ref-backed hook so the
-  // live Conversation instance always invokes the LATEST closure — not
-  // whatever was captured at session start. This avoids stale closures
-  // that could fire against an orphaned React tree. Each handler is also
-  // wrapped in try/catch so thrown exceptions become graceful error
-  // strings rather than being surfaced to the agent as "something went
-  // wrong" via the SDK's `is_error: true` response path.
-  useConversationClientTool('navigate_to_planet', (params) => {
-    console.log('[voice] navigate_to_planet called:', params);
-    try {
-      const name = String(params.name ?? '');
-      const match = planets.find(p =>
-        p.name.toLowerCase() === name.toLowerCase() ||
-        p.id === name.toLowerCase()
-      );
-      if (!match) return `No planet found matching "${name}"`;
-      onNavigatePlanet(match.id);
-      return `Navigated to ${match.name}`;
-    } catch (err) {
-      console.error('[voice] navigate_to_planet failed:', err);
-      return `Navigation failed: ${(err as Error)?.message ?? 'unknown error'}`;
-    }
-  });
-
-  useConversationClientTool('navigate_to_moon', (params) => {
-    console.log('[voice] navigate_to_moon called:', params);
-    try {
-      const name = String(params.name ?? '');
-      for (const planet of planets) {
-        const moons = getMoonsByPlanet(planet.id);
-        const moon = moons.find(m =>
-          m.name.toLowerCase() === name.toLowerCase() ||
-          m.id === name.toLowerCase()
-        );
-        if (moon) {
-          onNavigateMoon(planet.id, moon.id);
-          return `Navigated to ${moon.name} (moon of ${planet.name})`;
-        }
-      }
-      return `No moon found matching "${name}"`;
-    } catch (err) {
-      console.error('[voice] navigate_to_moon failed:', err);
-      return `Navigation failed: ${(err as Error)?.message ?? 'unknown error'}`;
-    }
-  });
-
-  useConversationClientTool('navigate_to_sun', () => {
-    console.log('[voice] navigate_to_sun called');
-    try {
-      onNavigateSun();
-      return 'Navigated to the Sun';
-    } catch (err) {
-      console.error('[voice] navigate_to_sun failed:', err);
-      return `Navigation failed: ${(err as Error)?.message ?? 'unknown error'}`;
-    }
-  });
-
-  useConversationClientTool('track_mission', (params) => {
-    console.log('[voice] track_mission called:', params);
-    try {
-      const rawName = params.name;
-      const query = (typeof rawName === 'string' ? rawName : 'artemis').toLowerCase();
-      const match = missions.find(m =>
-        m.name.toLowerCase().includes(query) ||
-        m.id.toLowerCase().includes(query) ||
-        query.includes(m.name.toLowerCase()) ||
-        query.includes(m.id.toLowerCase())
-      ) ?? missions[0];
-      if (!match) return 'No active missions to track right now.';
-      onTrackMission(match.id);
-      return `Opened the live ${match.name} mission tracker. The solar system is paused and the camera is flying out to the spacecraft.`;
-    } catch (err) {
-      console.error('[voice] track_mission failed:', err);
-      return `Mission tracker failed: ${(err as Error)?.message ?? 'unknown error'}`;
-    }
-  });
-
-  useConversationClientTool('go_back', () => {
-    console.log('[voice] go_back called');
-    try {
-      onGoBack();
-      return 'Went back';
-    } catch (err) {
-      console.error('[voice] go_back failed:', err);
-      return `Go back failed: ${(err as Error)?.message ?? 'unknown error'}`;
-    }
-  });
-
-  useConversationClientTool('peel_sun_layer', (params) => {
-    console.log('[voice] peel_sun_layer called:', params);
-    try {
-      const layerName = String(params.layer ?? '');
-      const idx = sun.layers.findIndex(l =>
-        l.name.toLowerCase() === layerName.toLowerCase()
-      );
-      if (idx === -1) {
-        return `No layer found matching "${layerName}". Available layers: ${sun.layers.map(l => l.name).join(', ')}`;
-      }
-      onPeelSunLayer(idx);
-      const layer = sun.layers[idx];
-      return `Peeled to ${layer.name} layer (${layer.temperature}). ${layer.description.slice(0, 120)}...`;
-    } catch (err) {
-      console.error('[voice] peel_sun_layer failed:', err);
-      return `Sun layer failed: ${(err as Error)?.message ?? 'unknown error'}`;
-    }
-  });
-
-  // Poll input volume after connecting
-  useEffect(() => {
-    if (conversation.status !== 'connected') {
-      if (inputVolumeIntervalRef.current !== null) {
-        clearInterval(inputVolumeIntervalRef.current);
-        inputVolumeIntervalRef.current = null;
-      }
-      return;
-    }
-
-    const startedAt = Date.now();
-    const POLL_DURATION_MS = 10_000;
-    const POLL_INTERVAL_MS = 500;
-
-    inputVolumeIntervalRef.current = setInterval(() => {
-      const volume = conversation.getInputVolume();
-      if (volume > 0) {
-        clearInterval(inputVolumeIntervalRef.current!);
-        inputVolumeIntervalRef.current = null;
-        return;
-      }
-      if (Date.now() - startedAt >= POLL_DURATION_MS) {
-        clearInterval(inputVolumeIntervalRef.current!);
-        inputVolumeIntervalRef.current = null;
-        setMicError('no-input');
-      }
-    }, POLL_INTERVAL_MS);
-
-    return () => {
-      if (inputVolumeIntervalRef.current !== null) {
-        clearInterval(inputVolumeIntervalRef.current);
-        inputVolumeIntervalRef.current = null;
-      }
-    };
-  }, [conversation.status]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const toggle = useCallback(async () => {
-    if (!agentId) return;
-
-    if (sessionStarted) {
-      // Stop path. Flip UI off immediately (optimistic). Then call
-      // endSession DIRECTLY on the live Conversation instance via
-      // useRawConversation — this bypasses the ConversationProvider's
-      // wrapped endSession, which was observed silently no-op'ing when
-      // its internal conversationRef had drifted out of sync with the
-      // actually-running WebRTC session.
-      console.log('[voice] toggle → stop (rawConv present:', !!rawConv, ')');
-      setSessionStarted(false);
-      hasConnectedRef.current = false;
-      if (rawConv) {
-        try {
-          rawConv.endSession();
-        } catch (err) {
-          console.error('[voice] rawConv.endSession failed:', err);
-        }
-      } else {
-        // Fallback: if we don't have a raw handle (session was starting
-        // but hadn't resolved yet), use the provider's wrapped endSession
-        // which knows how to handle the pending-connection case.
-        console.log('[voice] no rawConv, falling back to conversation.endSession');
-        conversation.endSession();
-      }
-      return;
-    }
-
-    // Start path. Flip UI on synchronously BEFORE the mic prompt so the
-    // button shows "connecting" the moment the user clicks. Rolled back
-    // if mic permission fails.
-    console.log('[voice] toggle → start');
-    setSessionStarted(true);
-
-    try {
-      const micPromise = navigator.mediaDevices.getUserMedia({ audio: true });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new DOMException('getUserMedia timed out', 'TimeoutError')), 5_000)
-      );
-      const tempStream = await Promise.race([micPromise, timeoutPromise]);
-      tempStream.getTracks().forEach(t => t.stop());
-    } catch (err) {
-      const error = err as DOMException;
-      if (error.name === 'TimeoutError') setMicError('timeout');
-      else if (error.name === 'NotAllowedError') setMicError('not-allowed');
-      else setMicError('device');
-      setSessionStarted(false); // roll back optimistic UI
-      console.error('[voice] mic check failed:', error.name);
-      return;
-    }
-
-    trackVoiceAgentActivated();
-
-    // If the user is already focused on something, queue context for onConnect
-    // and override the first message to match what they're looking at
-    const navAtStart = latestNavRef.current;
-    if (navAtStart.level !== 'system') {
-      pendingNavRef.current = navAtStart;
-    }
-
-    const firstMessage = buildFirstMessage(navAtStart);
-
-    try {
-      // Note: the ElevenLabs SDK's startSession is fire-and-forget (returns
-      // void), so awaiting it is a no-op. The catch only fires on synchronous
-      // throws during setup. Session status transitions are observed via
-      // `conversation.status` and the sync-down effect below.
-      await conversation.startSession({
-        agentId,
-        connectionType: 'websocket',
-        ...(firstMessage && {
-          overrides: {
-            agent: { firstMessage },
-          },
-        }),
-      });
-      console.log('[voice] startSession dispatched');
-    } catch (err) {
-      console.error('[voice] startSession failed:', err);
-      setSessionStarted(false);
-    }
-  }, [agentId, sessionStarted, conversation, rawConv]);
-
-  const clearMicError = useCallback(() => setMicError(null), []);
-
-  const notifyNavChange = useCallback((nav: NavigationState) => {
-    if (!agentId) return;
-
-    const key = JSON.stringify(nav);
-    if (currentNavRef.current === key) return;
-    currentNavRef.current = key;
-
-    const ctx = buildContextForNav(nav);
-    if (!ctx) return;
-
-    if (conversation.status === 'connected') {
-      conversation.sendContextualUpdate(ctx);
-    } else {
-      pendingNavRef.current = nav;
-    }
-  }, [agentId, conversation]);
-
-  const notifyLayerChange = useCallback((layerIndex: number) => {
-    if (!agentId || conversation.status !== 'connected') return;
-    const layer = sun.layers[layerIndex];
-    const peeledLayers = sun.layers.slice(0, layerIndex).map(l => l.name);
-    const deeperLayers = sun.layers.slice(layerIndex + 1).map(l => l.name);
-    conversation.sendContextualUpdate(
-      [
-        `[SUN LAYER PEELED] The child just peeled to the ${layer.name} layer!`,
-        peeledLayers.length > 0
-          ? `They've peeled past: ${peeledLayers.join(', ')}.`
-          : `This is the outermost layer.`,
-        `Now viewing: ${layer.name} — ${layer.temperature}.`,
-        layer.description,
-        deeperLayers.length > 0
-          ? `Deeper layers they can still explore: ${deeperLayers.join(', ')}.`
-          : `This is the innermost layer — the core! They've peeled all the way down!`,
-        '',
-        `React with excitement about what they just revealed! Share a cool fact about this layer.`,
-      ].join('\n')
-    );
-  }, [agentId, conversation]);
-
-  const notifyNavClosed = useCallback(() => {
-    if (!agentId || conversation.status !== 'connected') return;
-    currentNavRef.current = null;
-    conversation.sendContextualUpdate(
-      '[CLOSED] The child returned to the solar system overview. ' +
-      'Encourage them to explore a planet, moon, or the Sun!'
-    );
-  }, [agentId, conversation]);
-
-  // Sync DOWN from the SDK: if an external event disconnects the session
-  // (network drop, agent-side timeout, error) we need to reset sessionStarted
-  // so the button goes back to "Talk to Stella". We only treat a
-  // 'disconnected' status as an external drop AFTER we've seen 'connected'
-  // during this session — otherwise the initial page-load 'disconnected'
-  // would clear sessionStarted before the user even clicks.
-  useEffect(() => {
-    if (conversation.status === 'connected') {
-      hasConnectedRef.current = true;
-    }
-    if (
-      conversation.status === 'disconnected' &&
-      hasConnectedRef.current &&
-      sessionStarted
-    ) {
-      console.log('[voice] external disconnect detected, resetting UI');
-      setSessionStarted(false);
-      hasConnectedRef.current = false;
-    }
-  }, [conversation.status, sessionStarted]);
-
-  // Cleanup — tear down any active session on unmount
-  useEffect(() => {
-    return () => {
-      conversation.endSession();
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Derived UI status: optimistic on user intent, but upgrades to 'connected'
-  // when the SDK confirms. During the mic prompt + handshake window, the
-  // button shows 'connecting' so the user gets instant click feedback.
-  let status: VoiceStatus = 'off';
-  if (sessionStarted) {
-    status = conversation.status === 'connected' ? 'connected' : 'connecting';
-  }
-
-  return {
-    status,
-    isSpeaking: conversation.isSpeaking,
-    micError,
-    clearMicError,
-    notifyNavChange,
-    notifyNavClosed,
-    notifyLayerChange,
-    toggle,
-    agentId,
-  };
-}
-
 function buildContextForNav(nav: NavigationState): string | null {
   switch (nav.level) {
     case 'sun':
@@ -567,4 +204,345 @@ function buildContextForNav(nav: NavigationState): string | null {
     default:
       return null;
   }
+}
+
+export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer }: ConversationCallbacks) {
+  const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
+
+  // Live Conversation instance from @elevenlabs/client. We hold this in
+  // a ref so callbacks can read the latest value without re-rendering.
+  const convRef = useRef<Conversation | null>(null);
+
+  // Optimistic session-active flag flipped synchronously on toggle click
+  // so the UI button doesn't lag behind the user's action. Cleared on
+  // onDisconnect or stop.
+  const [sessionStarted, setSessionStarted] = useState(false);
+
+  // Status & speaking state, set from the SDK callbacks at session level.
+  const [rawStatus, setRawStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const [micError, setMicError] = useState<MicError>(null);
+  const pendingNavRef = useRef<NavigationState | null>(null);
+  const currentNavRef = useRef<string | null>(null);
+  const latestNavRef = useRef<NavigationState>(currentNav);
+  latestNavRef.current = currentNav;
+
+  // Refs to navigation handlers so client tools always invoke the LATEST
+  // closure even though clientTools are passed once at session start.
+  // Without this, a tool call halfway through a session would fire
+  // against stale React state.
+  const handlersRef = useRef({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer });
+  handlersRef.current = { onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer };
+
+  // Abort flag for in-flight startSession. If the user clicks stop
+  // while the start path is still awaiting Conversation.startSession,
+  // we set this flag. When the promise resolves, the start path tears
+  // down the new session immediately — preventing the "double session"
+  // bug where rapid stop+start leaks two live sessions.
+  const startAbortRef = useRef(false);
+
+  // Build the clientTools record passed to Conversation.startSession.
+  // Tools dispatch through handlersRef so they always hit the current
+  // React closures, not whatever was captured at session-start time.
+  const buildClientTools = useCallback(() => ({
+    navigate_to_planet: (params: { name?: unknown }) => {
+      console.log('[voice] navigate_to_planet called:', params);
+      try {
+        const name = String(params.name ?? '');
+        const match = planets.find(p =>
+          p.name.toLowerCase() === name.toLowerCase() || p.id === name.toLowerCase()
+        );
+        if (!match) return `No planet found matching "${name}"`;
+        handlersRef.current.onNavigatePlanet(match.id);
+        return `Navigated to ${match.name}`;
+      } catch (err) {
+        console.error('[voice] navigate_to_planet failed:', err);
+        return `Navigation failed: ${(err as Error)?.message ?? 'unknown error'}`;
+      }
+    },
+    navigate_to_moon: (params: { name?: unknown }) => {
+      console.log('[voice] navigate_to_moon called:', params);
+      try {
+        const name = String(params.name ?? '');
+        for (const planet of planets) {
+          const moons = getMoonsByPlanet(planet.id);
+          const moon = moons.find(m =>
+            m.name.toLowerCase() === name.toLowerCase() || m.id === name.toLowerCase()
+          );
+          if (moon) {
+            handlersRef.current.onNavigateMoon(planet.id, moon.id);
+            return `Navigated to ${moon.name} (moon of ${planet.name})`;
+          }
+        }
+        return `No moon found matching "${name}"`;
+      } catch (err) {
+        console.error('[voice] navigate_to_moon failed:', err);
+        return `Navigation failed: ${(err as Error)?.message ?? 'unknown error'}`;
+      }
+    },
+    navigate_to_sun: () => {
+      console.log('[voice] navigate_to_sun called');
+      try {
+        handlersRef.current.onNavigateSun();
+        return 'Navigated to the Sun';
+      } catch (err) {
+        console.error('[voice] navigate_to_sun failed:', err);
+        return `Navigation failed: ${(err as Error)?.message ?? 'unknown error'}`;
+      }
+    },
+    track_mission: (params: { name?: unknown }) => {
+      console.log('[voice] track_mission called:', params);
+      try {
+        const rawName = params.name;
+        const query = (typeof rawName === 'string' ? rawName : 'artemis').toLowerCase();
+        const match = missions.find(m =>
+          m.name.toLowerCase().includes(query) ||
+          m.id.toLowerCase().includes(query) ||
+          query.includes(m.name.toLowerCase()) ||
+          query.includes(m.id.toLowerCase())
+        ) ?? missions[0];
+        if (!match) return 'No active missions to track right now.';
+        handlersRef.current.onTrackMission(match.id);
+        return `Opened the live ${match.name} mission tracker. The solar system is paused and the camera is flying out to the spacecraft.`;
+      } catch (err) {
+        console.error('[voice] track_mission failed:', err);
+        return `Mission tracker failed: ${(err as Error)?.message ?? 'unknown error'}`;
+      }
+    },
+    go_back: () => {
+      console.log('[voice] go_back called');
+      try {
+        handlersRef.current.onGoBack();
+        return 'Went back';
+      } catch (err) {
+        console.error('[voice] go_back failed:', err);
+        return `Go back failed: ${(err as Error)?.message ?? 'unknown error'}`;
+      }
+    },
+    peel_sun_layer: (params: { layer?: unknown }) => {
+      console.log('[voice] peel_sun_layer called:', params);
+      try {
+        const layerName = String(params.layer ?? '');
+        const idx = sun.layers.findIndex(l => l.name.toLowerCase() === layerName.toLowerCase());
+        if (idx === -1) {
+          return `No layer found matching "${layerName}". Available layers: ${sun.layers.map(l => l.name).join(', ')}`;
+        }
+        handlersRef.current.onPeelSunLayer(idx);
+        const layer = sun.layers[idx];
+        return `Peeled to ${layer.name} layer (${layer.temperature}). ${layer.description.slice(0, 120)}...`;
+      } catch (err) {
+        console.error('[voice] peel_sun_layer failed:', err);
+        return `Sun layer failed: ${(err as Error)?.message ?? 'unknown error'}`;
+      }
+    },
+  }), []);
+
+  const toggle = useCallback(async () => {
+    if (!agentId) return;
+
+    if (sessionStarted) {
+      // Stop path
+      setSessionStarted(false);
+      setIsSpeaking(false);
+      setRawStatus('disconnected');
+      // Signal any in-flight startSession to abort when its promise
+      // resolves. Without this, a fast stop+start sequence leaves the
+      // first session orphaned but still alive.
+      startAbortRef.current = true;
+      const conv = convRef.current;
+      convRef.current = null;
+      if (conv) {
+        try {
+          await conv.endSession();
+        } catch {
+          // Session may already be closed
+        }
+      }
+      return;
+    }
+
+    // Start path
+    startAbortRef.current = false;
+    setSessionStarted(true);
+    setRawStatus('connecting');
+
+    trackVoiceAgentActivated();
+
+    // Pre-flight getUserMedia inside the user gesture to trigger the mic
+    // permission prompt early (so the SDK's later acquisition uses cached
+    // perm) AND to keep user activation alive for iOS audio.
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+    } catch (err) {
+      const error = err as DOMException;
+      if (error.name === 'NotAllowedError') setMicError('not-allowed');
+      else setMicError('device');
+      setSessionStarted(false);
+      setRawStatus('disconnected');
+      return;
+    }
+
+    const navAtStart = latestNavRef.current;
+    const firstMessage = buildFirstMessage(navAtStart);
+    if (navAtStart.level !== 'system') {
+      pendingNavRef.current = navAtStart;
+    }
+
+    try {
+      const conv = await Conversation.startSession({
+        agentId,
+        connectionType: 'websocket',
+        clientTools: buildClientTools(),
+        ...(firstMessage && {
+          overrides: { agent: { firstMessage } },
+        }),
+        onConnect: () => {
+          setRawStatus('connected');
+          // NOTE: We can't send queued nav context here — onConnect fires
+          // INSIDE the awaited Conversation.startSession() call, so
+          // convRef.current hasn't been assigned yet. The send happens
+          // immediately after the await resolves below.
+        },
+        onDisconnect: () => {
+          setRawStatus('disconnected');
+          setIsSpeaking(false);
+          setSessionStarted(false);
+          convRef.current = null;
+        },
+        onError: (err: unknown) => {
+          console.error('[voice] session error:', err);
+        },
+        onMessage: () => {
+          // Messages handled by SDK
+        },
+        onStatusChange: (s: { status: string }) => {
+          if (s.status === 'connected' || s.status === 'connecting' || s.status === 'disconnected') {
+            setRawStatus(s.status);
+          }
+        },
+        onModeChange: (m: { mode: string }) => {
+          setIsSpeaking(m.mode === 'speaking');
+        },
+        onDebug: () => {
+          // Debug messages handled by SDK
+        },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- callbacks not all in public type
+      } as any);
+
+      // If the user clicked stop while we were awaiting the startSession
+      // promise, abort: tear down this brand-new session immediately
+      // instead of installing it. This prevents the orphaned-session
+      // bug where a stop+start race leaves two live sessions.
+      if (startAbortRef.current) {
+        startAbortRef.current = false;
+        try {
+          await conv.endSession();
+        } catch {
+          // Session may already be closed
+        }
+        return;
+      }
+      convRef.current = conv;
+
+      // Now that convRef is populated, flush any queued nav context.
+      // This is necessary because onConnect fires INSIDE the await
+      // above, before convRef.current = conv runs.
+      if (pendingNavRef.current) {
+        const queuedNav = pendingNavRef.current;
+        pendingNavRef.current = null;
+        const ctx = buildContextForNav(queuedNav);
+        if (ctx) {
+          try {
+            conv.sendContextualUpdate(ctx);
+          } catch (err) {
+            console.error('[voice] sendContextualUpdate failed:', err);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[voice] startSession failed:', err);
+      setSessionStarted(false);
+      setRawStatus('disconnected');
+      setMicError('device');
+    }
+  }, [agentId, sessionStarted, buildClientTools]);
+
+  const clearMicError = useCallback(() => setMicError(null), []);
+
+  const notifyNavChange = useCallback((nav: NavigationState) => {
+    if (!agentId) return;
+    const key = JSON.stringify(nav);
+    if (currentNavRef.current === key) return;
+    currentNavRef.current = key;
+    const ctx = buildContextForNav(nav);
+    if (!ctx) return;
+    if (convRef.current && rawStatus === 'connected') {
+      try {
+        convRef.current.sendContextualUpdate(ctx);
+      } catch (err) {
+        console.error('[voice] sendContextualUpdate failed:', err);
+      }
+    } else {
+      pendingNavRef.current = nav;
+    }
+  }, [agentId, rawStatus]);
+
+  const notifyLayerChange = useCallback((layerIndex: number) => {
+    if (!agentId || !convRef.current || rawStatus !== 'connected') return;
+    const layer = sun.layers[layerIndex];
+    const peeledLayers = sun.layers.slice(0, layerIndex).map(l => l.name);
+    const deeperLayers = sun.layers.slice(layerIndex + 1).map(l => l.name);
+    convRef.current.sendContextualUpdate(
+      [
+        `[SUN LAYER PEELED] The child just peeled to the ${layer.name} layer!`,
+        peeledLayers.length > 0
+          ? `They've peeled past: ${peeledLayers.join(', ')}.`
+          : `This is the outermost layer.`,
+        `Now viewing: ${layer.name} — ${layer.temperature}.`,
+        layer.description,
+        deeperLayers.length > 0
+          ? `Deeper layers they can still explore: ${deeperLayers.join(', ')}.`
+          : `This is the innermost layer — the core! They've peeled all the way down!`,
+        '',
+        `React with excitement about what they just revealed! Share a cool fact about this layer.`,
+      ].join('\n')
+    );
+  }, [agentId, rawStatus]);
+
+  const notifyNavClosed = useCallback(() => {
+    if (!agentId || !convRef.current || rawStatus !== 'connected') return;
+    currentNavRef.current = null;
+    convRef.current.sendContextualUpdate(
+      '[CLOSED] The child returned to the solar system overview. ' +
+      'Encourage them to explore a planet, moon, or the Sun!'
+    );
+  }, [agentId, rawStatus]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      convRef.current?.endSession().catch(() => { /* swallow */ });
+      convRef.current = null;
+    };
+  }, []);
+
+  // Derived UI status: optimistic on user intent, upgrades when SDK confirms.
+  let status: VoiceStatus = 'off';
+  if (sessionStarted) {
+    status = rawStatus === 'connected' ? 'connected' : 'connecting';
+  }
+
+  return {
+    status,
+    isSpeaking,
+    micError,
+    clearMicError,
+    notifyNavChange,
+    notifyNavClosed,
+    notifyLayerChange,
+    toggle,
+    agentId,
+  };
 }
