@@ -5,143 +5,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // 1ms of `connected`, useRawConversation never populates, and
 // useConversationClientTool registrations don't reach the live session —
 // so tool calls vanish. Calling Conversation.startSession() directly
-// works perfectly on the same device. Diagnosed via a window.debugStartDirect
-// bypass that ran end-to-end with greeting, transcripts, and agent responses.
+// works perfectly on the same device.
 import { Conversation } from '@elevenlabs/client';
 
-// =====================================================================
-// AudioContext monkey-patch — iOS Safari workaround
-// =====================================================================
-// Problem: the SDK's MediaDeviceOutput.create() does:
-//   context = new AudioContext(...)
-//   /* lots of async setup */
-//   await context.resume()
-// On iOS Safari 18.7, that resume() resolves successfully but leaves
-// the context in 'suspended' state because we're past the user gesture
-// window. The MediaStream destination then produces silence, and the
-// hidden <audio> element faithfully plays the silence — fooling our
-// "force play" workaround into thinking audio is fine.
-//
-// Fix: track every AudioContext that gets created on the page. After
-// our toggle click (which IS a user gesture), force .resume() on every
-// tracked context. This catches the SDK's context once it's been
-// created and unlocks it from inside our gesture's task chain.
-// =====================================================================
-const audioContextInstances: AudioContext[] = [];
-{
-  const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext; __solarAcPatched?: boolean };
-  const Original = w.AudioContext || w.webkitAudioContext;
-  if (Original && !w.__solarAcPatched) {
-    w.__solarAcPatched = true;
-    const Patched = function(this: AudioContext, ...args: ConstructorParameters<typeof AudioContext>) {
-      const inst = new Original(...args);
-      audioContextInstances.push(inst);
-      console.log(`[voice:mobile] AudioContext patch: tracked instance #${audioContextInstances.length - 1}, state=${inst.state}, sampleRate=${inst.sampleRate}`);
-      return inst;
-    } as unknown as typeof AudioContext;
-    Patched.prototype = Original.prototype;
-    Object.setPrototypeOf(Patched, Original);
-    w.AudioContext = Patched;
-    if (w.webkitAudioContext) w.webkitAudioContext = Patched;
-    console.log('[voice:mobile] AudioContext patch installed');
-  }
-}
-function resumeAllAudioContexts(label: string) {
-  audioContextInstances.forEach((ctx, i) => {
-    if (ctx.state === 'closed') return;
-    const before = ctx.state;
-    ctx.resume().then(() => {
-      console.log(`[voice:mobile] resumeAll@${label} #${i}: ${before} → ${ctx.state}`);
-    }).catch(err => {
-      console.warn(`[voice:mobile] resumeAll@${label} #${i} FAILED:`, err?.name, err?.message);
-    });
-  });
-}
-
-// Generate a real silent WAV at build time — ~0.5 seconds of silence
-// as actual 8-bit unsigned PCM samples. Data URLs with a zero-length
-// data chunk (which is what the previous 44-byte WAV had) can cause
-// iOS Safari to leave the .play() promise pending forever.
-function buildSilentWavDataUrl(): string {
-  const sampleRate = 8000;
-  const numSamples = sampleRate * 0.5; // 0.5s
-  const dataSize = numSamples;
-  const fileSize = 36 + dataSize;
-  const buf = new ArrayBuffer(44 + dataSize);
-  const v = new DataView(buf);
-  // RIFF header
-  v.setUint32(0, 0x52494646, false); // "RIFF"
-  v.setUint32(4, fileSize, true);
-  v.setUint32(8, 0x57415645, false); // "WAVE"
-  // fmt chunk
-  v.setUint32(12, 0x666d7420, false); // "fmt "
-  v.setUint32(16, 16, true);
-  v.setUint16(20, 1, true); // PCM
-  v.setUint16(22, 1, true); // mono
-  v.setUint32(24, sampleRate, true);
-  v.setUint32(28, sampleRate, true); // byteRate
-  v.setUint16(32, 1, true); // blockAlign
-  v.setUint16(34, 8, true); // bitsPerSample
-  // data chunk
-  v.setUint32(36, 0x64617461, false); // "data"
-  v.setUint32(40, dataSize, true);
-  // 0x80 = silence for unsigned 8-bit PCM
-  for (let i = 44; i < 44 + dataSize; i++) v.setUint8(i, 0x80);
-  // Convert to base64 without btoa of a huge string (chunk it)
-  const bytes = new Uint8Array(buf);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return 'data:audio/wav;base64,' + btoa(binary);
-}
-const SILENT_WAV_URL = buildSilentWavDataUrl();
-
-// =====================================================================
-// srcObject setter monkey-patch — iOS Safari audio fix
-// =====================================================================
-// The SDK creates an <audio> element, sets autoplay=true, then LATER
-// assigns audioElement.srcObject = mediaStream. On iOS Safari, setting
-// srcObject on an element that was already "played" (via autoplay or
-// explicit play()) does NOT restart playback for the new source. The
-// element stays in a pseudo-playing state with no audible output.
-//
-// Fix: intercept the srcObject setter. When a MediaStream is assigned,
-// immediately call play() on the element. This ensures iOS treats the
-// new source as a fresh playback request.
-// =====================================================================
-{
-  const w = window as unknown as { __solarSrcObjPatched?: boolean };
-  if (!w.__solarSrcObjPatched) {
-    const desc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'srcObject');
-    if (desc?.set) {
-      w.__solarSrcObjPatched = true;
-      const originalSet = desc.set;
-      Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
-        ...desc,
-        set(this: HTMLMediaElement, value: MediaProvider | null) {
-          originalSet.call(this, value);
-          if (value) {
-            console.log('[voice:mobile] srcObject patch: stream assigned, calling play()');
-            this.play().then(() => {
-              console.log('[voice:mobile] srcObject patch: play() resolved');
-            }).catch(err => {
-              console.warn('[voice:mobile] srcObject patch: play() failed:', err?.name, err?.message);
-            });
-          }
-        }
-      });
-      console.log('[voice:mobile] srcObject setter patch installed');
-    }
-  }
-}
-
-// The createGain monkey-patch was here. Removed after sub-agent
-// diagnosis: the audio IS playing (confirmed via
-// audioElement.currentTime advancing past 15s during "silent" greeting),
-// but iOS is routing it to the earpiece at near-zero volume because
-// getUserMedia puts Safari into AVAudioSessionCategoryPlayAndRecord.
-// Connecting gain → context.destination created a second audio path
-// that caused echo on later messages without fixing the routing of
-// the first message. See playback primer below for the real fix.
 import type { Planet, Moon, NavigationState } from '../types/celestialBody';
 import type { Mission } from '../types/mission';
 import { planets } from '../data/planets';
@@ -361,8 +227,6 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   const currentNavRef = useRef<string | null>(null);
   const latestNavRef = useRef<NavigationState>(currentNav);
   latestNavRef.current = currentNav;
-  const inputVolumeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const toggleStartedAtRef = useRef<number | null>(null);
 
   // Refs to navigation handlers so client tools always invoke the LATEST
   // closure even though clientTools are passed once at session start.
@@ -371,32 +235,12 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   const handlersRef = useRef({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer });
   handlersRef.current = { onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer };
 
-  // Playback primer for iOS speaker routing. iOS Safari routes audio
-  // to the earpiece (receiver) when getUserMedia is active because it
-  // switches the audio session to AVAudioSessionCategoryPlayAndRecord.
-  // A file-sourced HTMLAudioElement playing concurrently forces the
-  // session into "Playback" mode routing to the loudspeaker, and the
-  // SDK's subsequent MediaStream audio element inherits that route.
-  // Held in a ref so it survives the whole session — never gc'd.
-  const playbackPrimerRef = useRef<HTMLAudioElement | null>(null);
-
-  // Sticky AudioContext for iOS audio unlock. Created lazily on the
-  // first toggle click and kept alive for the lifetime of the page.
-  // Once iOS sees an AudioContext successfully resumed inside a user
-  // gesture, it allows subsequent AudioContexts (the SDK's) to resume
-  // without a fresh gesture. This is the canonical iOS unlock pattern
-  // used by Howler.js, Tone.js, etc.
-  const unlockCtxRef = useRef<AudioContext | null>(null);
-
   // Abort flag for in-flight startSession. If the user clicks stop
   // while the start path is still awaiting Conversation.startSession,
   // we set this flag. When the promise resolves, the start path tears
   // down the new session immediately — preventing the "double session"
   // bug where rapid stop+start leaks two live sessions.
   const startAbortRef = useRef(false);
-
-  const tFromClick = () =>
-    toggleStartedAtRef.current ? `+${Date.now() - toggleStartedAtRef.current}ms` : 'pre-click';
 
   // Build the clientTools record passed to Conversation.startSession.
   // Tools dispatch through handlersRef so they always hit the current
@@ -499,7 +343,6 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
 
     if (sessionStarted) {
       // Stop path
-      console.log(`[voice:mobile] toggle → stop (${tFromClick()})`);
       setSessionStarted(false);
       setIsSpeaking(false);
       setRawStatus('disconnected');
@@ -512,107 +355,28 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       if (conv) {
         try {
           await conv.endSession();
-          console.log('[voice:mobile] conv.endSession resolved');
-        } catch (err) {
-          console.error('[voice:mobile] conv.endSession failed:', err);
+        } catch {
+          // Session may already be closed
         }
       }
       return;
     }
 
     // Start path
-    toggleStartedAtRef.current = Date.now();
     startAbortRef.current = false;
-    console.log('[voice:mobile] toggle → start (t0)');
     setSessionStarted(true);
     setRawStatus('connecting');
-
-    // ===== iOS speaker routing primer =====
-    // Play a real silent WAV (0.5s of actual zero samples, not a
-    // zero-length data chunk which hangs on iOS) in a loop. A
-    // file-backed <audio> element that's actively playing forces iOS
-    // to select the "Playback" audio session category routing to the
-    // loudspeaker, rather than the earpiece default that getUserMedia
-    // would force via PlayAndRecord.
-    try {
-      if (!playbackPrimerRef.current) {
-        const a = new Audio();
-        a.src = SILENT_WAV_URL;
-        a.loop = true;
-        a.setAttribute('playsinline', '');
-        a.setAttribute('webkit-playsinline', '');
-        a.volume = 0.01;
-        a.muted = false;
-        // Event listeners for diagnostic visibility
-        a.addEventListener('play', () => console.log('[voice:mobile] primer event: play'));
-        a.addEventListener('playing', () => console.log('[voice:mobile] primer event: playing'));
-        a.addEventListener('canplay', () => console.log('[voice:mobile] primer event: canplay'));
-        a.addEventListener('error', (e) => console.warn('[voice:mobile] primer event: error', (e.target as HTMLAudioElement)?.error));
-        a.addEventListener('stalled', () => console.warn('[voice:mobile] primer event: stalled'));
-        a.addEventListener('suspend', () => console.log('[voice:mobile] primer event: suspend'));
-        playbackPrimerRef.current = a;
-        console.log('[voice:mobile] iOS speaker primer: created');
-      }
-      const primer = playbackPrimerRef.current;
-      console.log(`[voice:mobile] iOS speaker primer: calling play() (paused=${primer.paused}, readyState=${primer.readyState})`);
-      const p = primer.play();
-      if (p && typeof p.then === 'function') {
-        p.then(() => console.log('[voice:mobile] iOS speaker primer: play() resolved'))
-         .catch(err => console.warn('[voice:mobile] iOS speaker primer play rejected:', err?.name, err?.message));
-      }
-    } catch (err) {
-      console.warn('[voice:mobile] iOS speaker primer threw:', err);
-    }
-
-    // ===== iOS AUDIO UNLOCK — synchronous, in the user gesture =====
-    // Canonical iOS pattern: create an AudioContext (or reuse existing)
-    // and call .resume() SYNCHRONOUSLY in the user gesture. Once iOS
-    // sees an AudioContext successfully unlocked here, it allows the
-    // SDK's later-created AudioContext to resume too. The context is
-    // held in unlockCtxRef forever — never closed, never connected,
-    // just a "this page is allowed to play audio" sentinel.
-    try {
-      if (!unlockCtxRef.current) {
-        const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-        if (Ctx) {
-          unlockCtxRef.current = new Ctx();
-          console.log('[voice:mobile] iOS unlock: created AudioContext, state=', unlockCtxRef.current.state);
-        }
-      }
-      if (unlockCtxRef.current) {
-        const ctx = unlockCtxRef.current;
-        // Play a 1-sample silent buffer to prove audio output works.
-        const buffer = ctx.createBuffer(1, 1, 22050);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
-        source.start(0);
-        // Resume — sync call, async resolution. The KEY for iOS unlock
-        // is that this call originates inside the user gesture.
-        ctx.resume().then(() => {
-          console.log('[voice:mobile] iOS unlock: resume resolved, state=', ctx.state);
-        }).catch(err => {
-          console.warn('[voice:mobile] iOS unlock: resume rejected', err);
-        });
-        console.log('[voice:mobile] iOS unlock: silent buffer started, state=', ctx.state);
-      }
-    } catch (err) {
-      console.warn('[voice:mobile] iOS unlock: threw', err);
-    }
 
     trackVoiceAgentActivated();
 
     // Pre-flight getUserMedia inside the user gesture to trigger the mic
     // permission prompt early (so the SDK's later acquisition uses cached
     // perm) AND to keep user activation alive for iOS audio.
-    console.log('[voice:mobile] pre-flight getUserMedia');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log('[voice:mobile] pre-flight getUserMedia ok');
       stream.getTracks().forEach(t => t.stop());
     } catch (err) {
       const error = err as DOMException;
-      console.error('[voice:mobile] pre-flight getUserMedia failed:', error.name);
       if (error.name === 'NotAllowedError') setMicError('not-allowed');
       else setMicError('device');
       setSessionStarted(false);
@@ -622,43 +386,9 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
 
     const navAtStart = latestNavRef.current;
     const firstMessage = buildFirstMessage(navAtStart);
-    // Restored after testing showed the override is NOT the cause — the
-    // first agent message is silent on iOS even at system level (no
-    // override). The actual cause is iOS audio output not being unlocked
-    // by the time the SDK plays its first audio chunk.
     if (navAtStart.level !== 'system') {
       pendingNavRef.current = navAtStart;
     }
-
-    // ===== iOS audio element play() workaround =====
-    // The SDK creates a hidden <audio autoplay> element during
-    // startSession and sets its srcObject to a MediaStream, but never
-    // calls .play() explicitly. iOS Safari requires an explicit play()
-    // call in the user-gesture chain — autoplay with srcObject is not
-    // sufficient. Use a MutationObserver to catch the element the
-    // instant the SDK appends it to the DOM and call play() on it.
-    // This fires during the startSession async chain, which is still
-    // connected to the original user gesture.
-    const audioPlayObserver = new MutationObserver(mutations => {
-      for (const mut of mutations) {
-        for (const node of Array.from(mut.addedNodes)) {
-          if (node instanceof HTMLAudioElement) {
-            console.log('[voice:mobile] MutationObserver: caught new <audio>, calling play()');
-            node.play().then(() => {
-              console.log('[voice:mobile] MutationObserver: play() resolved');
-            }).catch(err => {
-              console.warn('[voice:mobile] MutationObserver: play() failed:', err?.name, err?.message);
-            });
-          }
-        }
-      }
-    });
-    audioPlayObserver.observe(document.body, { childList: true, subtree: true });
-
-    console.log('[voice:mobile] startSession about to dispatch', {
-      navLevel: navAtStart.level,
-      hasFirstMessageOverride: !!firstMessage,
-    });
 
     try {
       const conv = await Conversation.startSession({
@@ -669,86 +399,52 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
           overrides: { agent: { firstMessage } },
         }),
         onConnect: () => {
-          console.log(`[voice:mobile] onConnect (${tFromClick()})`);
           setRawStatus('connected');
           // NOTE: We can't send queued nav context here — onConnect fires
           // INSIDE the awaited Conversation.startSession() call, so
           // convRef.current hasn't been assigned yet. The send happens
           // immediately after the await resolves below.
         },
-        onDisconnect: (details: unknown) => {
-          console.log(`[voice:mobile] onDisconnect (${tFromClick()}):`, details);
+        onDisconnect: () => {
           setRawStatus('disconnected');
           setIsSpeaking(false);
           setSessionStarted(false);
           convRef.current = null;
         },
         onError: (err: unknown) => {
-          console.error(`[voice:mobile] onError (${tFromClick()}):`, err);
+          console.error('[voice] session error:', err);
         },
-        onMessage: (msg: unknown) => {
-          console.log(`[voice:mobile] onMessage (${tFromClick()}):`, msg);
+        onMessage: () => {
+          // Messages handled by SDK
         },
         onStatusChange: (s: { status: string }) => {
-          console.log(`[voice:mobile] onStatusChange (${tFromClick()}):`, s);
           if (s.status === 'connected' || s.status === 'connecting' || s.status === 'disconnected') {
             setRawStatus(s.status);
           }
         },
         onModeChange: (m: { mode: string }) => {
-          console.log(`[voice:mobile] onModeChange (${tFromClick()}):`, m);
           setIsSpeaking(m.mode === 'speaking');
         },
-        onDebug: (d: unknown) => {
-          console.log(`[voice:mobile] onDebug (${tFromClick()}):`, d);
+        onDebug: () => {
+          // Debug messages handled by SDK
         },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- callbacks not all in public type
       } as any);
+
       // If the user clicked stop while we were awaiting the startSession
       // promise, abort: tear down this brand-new session immediately
       // instead of installing it. This prevents the orphaned-session
       // bug where a stop+start race leaves two live sessions.
       if (startAbortRef.current) {
-        console.log('[voice:mobile] startSession resolved but ABORTED — tearing down');
         startAbortRef.current = false;
         try {
           await conv.endSession();
-        } catch (err) {
-          console.error('[voice:mobile] aborted endSession failed:', err);
+        } catch {
+          // Session may already be closed
         }
         return;
       }
       convRef.current = conv;
-      console.log(`[voice:mobile] startSession RESOLVED (${tFromClick()})`);
-
-      // Force-resume any AudioContexts (defensive — they're usually
-      // already running at this point per the latest test).
-      resumeAllAudioContexts('after-startSession');
-
-      // Disconnect the MutationObserver — it's done its job.
-      audioPlayObserver.disconnect();
-
-      // Belt-and-suspenders: also call play() on all audio elements now,
-      // regardless of paused state. iOS reports paused=false even when
-      // the audio isn't producing audible output.
-      try {
-        const audioEls = Array.from(document.querySelectorAll('audio'));
-        console.log(`[voice:mobile] post-startSession: forcing play() on ${audioEls.length} <audio> element(s)`);
-        for (let i = 0; i < audioEls.length; i++) {
-          const el = audioEls[i];
-          el.setAttribute('playsinline', '');
-          el.setAttribute('webkit-playsinline', '');
-          el.volume = 1;
-          el.muted = false;
-          el.play().then(() => {
-            console.log(`[voice:mobile] post-startSession play #${i}: resolved`);
-          }).catch(err => {
-            console.warn(`[voice:mobile] post-startSession play #${i}: failed`, err?.name, err?.message);
-          });
-        }
-      } catch (err) {
-        console.warn('[voice:mobile] post-startSession play threw:', err);
-      }
 
       // Now that convRef is populated, flush any queued nav context.
       // This is necessary because onConnect fires INSIDE the await
@@ -758,19 +454,15 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
         pendingNavRef.current = null;
         const ctx = buildContextForNav(queuedNav);
         if (ctx) {
-          console.log('[voice:mobile] flushing queued nav context after RESOLVED', { level: queuedNav.level, ctxLength: ctx.length });
           try {
             conv.sendContextualUpdate(ctx);
           } catch (err) {
-            console.error('[voice:mobile] sendContextualUpdate threw:', err);
+            console.error('[voice] sendContextualUpdate failed:', err);
           }
         }
       }
     } catch (err) {
-      console.error('[voice:mobile] startSession REJECTED:', err);
-      if (err instanceof Error) {
-        console.error('[voice:mobile] error.name:', err.name, 'message:', err.message);
-      }
+      console.error('[voice] startSession failed:', err);
       setSessionStarted(false);
       setRawStatus('disconnected');
       setMicError('device');
@@ -780,30 +472,19 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   const clearMicError = useCallback(() => setMicError(null), []);
 
   const notifyNavChange = useCallback((nav: NavigationState) => {
-    if (!agentId) {
-      console.log('[voice:mobile] notifyNavChange skipped (no agentId)');
-      return;
-    }
+    if (!agentId) return;
     const key = JSON.stringify(nav);
-    if (currentNavRef.current === key) {
-      console.log('[voice:mobile] notifyNavChange skipped (dedup):', nav.level);
-      return;
-    }
+    if (currentNavRef.current === key) return;
     currentNavRef.current = key;
     const ctx = buildContextForNav(nav);
-    if (!ctx) {
-      console.log('[voice:mobile] notifyNavChange no context for', nav.level);
-      return;
-    }
+    if (!ctx) return;
     if (convRef.current && rawStatus === 'connected') {
-      console.log('[voice:mobile] notifyNavChange → sendContextualUpdate', { level: nav.level, ctxLength: ctx.length });
       try {
         convRef.current.sendContextualUpdate(ctx);
       } catch (err) {
-        console.error('[voice:mobile] sendContextualUpdate threw:', err);
+        console.error('[voice] sendContextualUpdate failed:', err);
       }
     } else {
-      console.log('[voice:mobile] notifyNavChange queued (not connected yet):', { hasConv: !!convRef.current, rawStatus });
       pendingNavRef.current = nav;
     }
   }, [agentId, rawStatus]);
@@ -838,96 +519,6 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       'Encourage them to explore a planet, moon, or the Sun!'
     );
   }, [agentId, rawStatus]);
-
-  // Diagnostic: continuous mic input volume polling. Logs every 2s.
-  useEffect(() => {
-    if (!sessionStarted) {
-      if (inputVolumeIntervalRef.current) {
-        clearInterval(inputVolumeIntervalRef.current);
-        inputVolumeIntervalRef.current = null;
-      }
-      return;
-    }
-    const startedAt = Date.now();
-    let pollCount = 0;
-    let lastNonZeroAt = 0;
-    inputVolumeIntervalRef.current = setInterval(() => {
-      pollCount += 1;
-      let volume = -1;
-      try {
-        volume = convRef.current?.getInputVolume() ?? -1;
-      } catch (err) {
-        if (pollCount === 1) console.warn('[voice:mobile] getInputVolume threw:', err);
-      }
-      if (volume > 0 && lastNonZeroAt === 0) {
-        console.log(`[voice:mobile] FIRST mic input volume>0: ${volume.toFixed(3)} (${tFromClick()})`);
-        lastNonZeroAt = Date.now();
-      } else if (volume > 0) {
-        lastNonZeroAt = Date.now();
-      }
-      if (pollCount % 4 === 0) {
-        const sinceVoice = lastNonZeroAt > 0 ? `${Date.now() - lastNonZeroAt}ms ago` : 'never';
-        console.log(`[voice:mobile] mic poll #${pollCount}: vol=${volume.toFixed?.(3) ?? volume}, lastVoice=${sinceVoice} (${tFromClick()})`);
-      }
-      if (Date.now() - startedAt >= 30_000) {
-        clearInterval(inputVolumeIntervalRef.current!);
-        inputVolumeIntervalRef.current = null;
-      }
-    }, 500);
-    return () => {
-      if (inputVolumeIntervalRef.current) {
-        clearInterval(inputVolumeIntervalRef.current);
-        inputVolumeIntervalRef.current = null;
-      }
-    };
-  }, [sessionStarted]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Diagnostic: log status & isSpeaking transitions
-  useEffect(() => {
-    console.log(`[voice:mobile] status → ${rawStatus} (${tFromClick()})`);
-  }, [rawStatus]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    console.log(`[voice:mobile] isSpeaking → ${isSpeaking} (${tFromClick()})`);
-  }, [isSpeaking]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Diagnostic: page lifecycle (bfcache)
-  useEffect(() => {
-    const onPageShow = (e: PageTransitionEvent) => {
-      console.log(`[voice:mobile] pageshow (persisted=${e.persisted})`);
-    };
-    const onPageHide = (e: PageTransitionEvent) => {
-      console.log(`[voice:mobile] pagehide (persisted=${e.persisted})`);
-    };
-    window.addEventListener('pageshow', onPageShow);
-    window.addEventListener('pagehide', onPageHide);
-    return () => {
-      window.removeEventListener('pageshow', onPageShow);
-      window.removeEventListener('pagehide', onPageHide);
-    };
-  }, []);
-
-  // Diagnostic: build identifier + UA on mount
-  useEffect(() => {
-    console.log(`[voice:mobile] BUILD ${__BUILD_SHA__} @ ${__BUILD_TIME__}`);
-    console.log('[voice:mobile] UA:', navigator.userAgent);
-  }, []);
-
-  // Diagnostic: global error/rejection catchers
-  useEffect(() => {
-    const onUnhandled = (e: PromiseRejectionEvent) => {
-      console.error('[voice:mobile] UNHANDLED REJECTION:', e.reason?.message ?? e.reason, e.reason);
-    };
-    const onError = (e: ErrorEvent) => {
-      console.error('[voice:mobile] WINDOW ERROR:', e.message, e.error);
-    };
-    window.addEventListener('unhandledrejection', onUnhandled);
-    window.addEventListener('error', onError);
-    return () => {
-      window.removeEventListener('unhandledrejection', onUnhandled);
-      window.removeEventListener('error', onError);
-    };
-  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
