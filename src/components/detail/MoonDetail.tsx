@@ -105,6 +105,14 @@ export function MoonDetail({ moon, onClose, onBack }: MoonDetailProps) {
               <span className="moon-detail__prop-value">{moon.orbitalPeriod.toFixed(1)} days</span>
             </div>
             <div className="moon-detail__prop">
+              <span className="moon-detail__prop-label">Day Length</span>
+              <span className="moon-detail__prop-value">
+                {moon.chaoticRotation
+                  ? 'Chaotic (unpredictable)'
+                  : `${(moon.rotationPeriod ?? moon.orbitalPeriod * 24).toFixed(1)} hours`}
+              </span>
+            </div>
+            <div className="moon-detail__prop">
               <span className="moon-detail__prop-label">Distance from Planet</span>
               <span className="moon-detail__prop-value">{moon.distanceFromPlanet.toLocaleString()} km</span>
             </div>

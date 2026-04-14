@@ -161,10 +161,27 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false }: M
       groupRef.current.getWorldPosition(worldPos.current);
       setMoonPosition(moon.id, worldPos.current.x, worldPos.current.y, worldPos.current.z);
     }
-    // Slow tumble for irregular moons
-    if (!paused && moon.shape === 'irregular' && moonMeshRef.current) {
-      moonMeshRef.current.rotation.x += delta * 0.15;
-      moonMeshRef.current.rotation.y += delta * 0.25;
+    // Moon self-rotation
+    if (!paused && moonMeshRef.current) {
+      if (moon.chaoticRotation) {
+        // Chaotic rotation: multi-axis tumble with per-moon deterministic rates
+        const seed = hashString(moon.id);
+        const r1 = 0.2 + (seed % 100) / 500;
+        const r2 = 0.15 + ((seed >> 8) % 100) / 400;
+        const r3 = 0.1 + ((seed >> 16) % 100) / 600;
+        moonMeshRef.current.rotation.x += delta * r1;
+        moonMeshRef.current.rotation.y += delta * r2;
+        moonMeshRef.current.rotation.z += delta * r3;
+      } else {
+        // Synchronous (tidally locked) or explicit rotation period
+        const periodHours = moon.rotationPeriod ?? (moon.orbitalPeriod * 24);
+        const speed = periodHours !== 0 ? 0.3 / Math.abs(periodHours / 24) : 0.1;
+        const direction =
+          (moon.rotationPeriod !== undefined && moon.rotationPeriod < 0)
+            ? -1
+            : (moon.retrograde ? -1 : 1);
+        moonMeshRef.current.rotation.y += delta * speed * direction;
+      }
     }
   });
 

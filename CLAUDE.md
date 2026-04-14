@@ -12,6 +12,7 @@
 - `npm run build` — production build (`tsc -b && vite build`)
 - `npm run preview` — preview production build
 - `npx tsc --noEmit` — type check without emitting
+- `npm test` — run unit tests (vitest)
 
 ## Architecture
 
@@ -52,7 +53,7 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. Detail panels a
 
 ### Data (accuracy is critical — verify against authoritative sources)
 - `src/data/planets.ts` — 10 planets (Mercury–Neptune + Pluto + Ceres) with scientific data + 3D scene values
-- `src/data/moons.ts` — ~27 curated notable moons with `getMoonsByPlanet()` and `getMoonById()`
+- `src/data/moons.ts` — ~27 curated notable moons with `getMoonsByPlanet()` and `getMoonById()`. Moon rotation: most are tidally locked (no `rotationPeriod` needed — defaults to `orbitalPeriod * 24`). Exceptions: `chaoticRotation: true` (Hyperion, Nix, Hydra) or explicit `rotationPeriod` in hours (Nereid).
 - `src/data/sun.ts` — Sun data with 6 peelable layers (corona → core)
 - `src/data/videoManifest.ts` — keyed by string ID (not atomic number like periodic table)
 
