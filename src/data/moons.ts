@@ -347,6 +347,7 @@ export const moons: Moon[] = [
     ],
     orbitRadius: 3.0,
     shape: 'irregular',
+    chaoticRotation: true,
   },
 
   // ─── Uranus ───────────────────────────────────────────────────────────────
@@ -521,6 +522,7 @@ export const moons: Moon[] = [
       "Nereid's brightness varies dramatically as it spins, suggesting a very irregular shape or wildly varied surface colours.",
     ],
     orbitRadius: 4.0,
+    rotationPeriod: 11.52,
   },
 
   // ─── Pluto ────────────────────────────────────────────────────────────────
@@ -566,6 +568,7 @@ export const moons: Moon[] = [
     ],
     orbitRadius: 2.5,
     shape: 'irregular',
+    chaoticRotation: true,
   },
   {
     id: 'hydra',
@@ -588,6 +591,7 @@ export const moons: Moon[] = [
     ],
     orbitRadius: 3.3,
     shape: 'irregular',
+    chaoticRotation: true,
   },
 ];
 
