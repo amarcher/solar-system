@@ -37,9 +37,25 @@ type NavigationState =
 
 Navigation state machine lives in `src/hooks/useNavigation.ts`. Back transitions: moon → planet → system; sun → system.
 
+### View Modes — Parallel to Navigation
+
+A `ViewMode` state runs orthogonal to the navigation state machine:
+
+```typescript
+type ViewMode = 'artistic' | 'orrery' | 'sky';
+```
+
+| Mode | What it shows | Position source |
+|------|--------------|----------------|
+| `artistic` | Playful circular orbits, compressed scale (default) | `Math.cos/sin * orbitRadius` |
+| `orrery` | Real planetary positions for any date/time | `astronomy-engine` VSOP87 ephemeris |
+| `sky` | Terrestrial night sky from observer's location | `astronomy-engine` Horizon() alt/az |
+
+Managed by `AstronomyContext` in `src/astronomy/`. The astronomy-engine library (~43KB gz) is lazy-loaded on first mode switch. Both realistic modes share a time system (`timeRef` for 60fps reads, 1Hz `displayTime` for UI).
+
 ### 3D Scene — Always Mounted
 
-The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. Detail panels are HTML overlays on top. Camera animates via exponential lerp in `CameraRig.tsx`.
+The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionally renders one of three subtrees based on `ViewMode`: artistic (`PlanetOrbit`), orrery (`RealisticScene`), or sky (`SkyScene`). Detail panels are HTML overlays on top. Camera animates via exponential lerp in `CameraRig.tsx` (artistic/orrery) or `TerrestrialRig.tsx` (sky).
 
 ### Key Patterns (copied from periodic table)
 
@@ -60,13 +76,26 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. Detail panels a
 ### Types
 - `src/types/celestialBody.ts` — `Planet`, `Moon`, `SunData`, `SunLayer`, `NavigationState`, `PlanetCategory`
 
+### Astronomy Engine (`src/astronomy/`)
+- `AstronomyContext.tsx` — React context: `ViewMode`, simulation time, observer location
+- `AstronomyService.ts` — lazy wrapper around `astronomy-engine` (heliocentric, geocentric, horizontal positions, sidereal time, moon phase)
+- `realisticScale.ts` — log-compressed AU-to-scene-unit mapping for orrery mode
+- `useObserver.ts` — observer lat/lng state with geolocation + localStorage persistence
+- `types.ts` — `ViewMode`, `AstronomyTime`, `ObserverLocation`
+
 ### 3D Scene (`src/components/scene/`)
-- `SolarSystemScene.tsx` — R3F Canvas + Bloom post-processing + OrbitControls
+- `SolarSystemScene.tsx` — R3F Canvas, branches on ViewMode: artistic / orrery / sky
 - `Sun.tsx` — custom GLSL noise shader for animated surface + glow sphere
-- `PlanetOrbit.tsx` — orbit ring + orbiting planet group
+- `PlanetOrbit.tsx` — orbit ring + orbiting planet group (artistic mode)
 - `PlanetMesh.tsx` — textured sphere + atmosphere glow + rings (Saturn/Uranus)
-- `CameraRig.tsx` — animated camera controller (lerps to target based on nav state)
-- `StarField.tsx` — 3000 instanced points with color variation
+- `CameraRig.tsx` — animated camera controller (artistic + orrery modes)
+- `RealisticScene.tsx` — orrery mode orchestrator (real star field + astronomy-engine planets)
+- `RealisticPlanet.tsx` — planet positioned by heliocentric ephemeris vectors
+- `RealisticStarField.tsx` — 8400 real stars from Yale Bright Star Catalog (magnitude/color-mapped)
+- `SkyScene.tsx` — terrestrial sky dome with sidereal-time-rotated stars + alt/az-positioned bodies
+- `TerrestrialRig.tsx` — fixed-origin camera with alt-az panning (sky mode)
+- `HorizonPlane.tsx` — ground disc with N/E/S/W compass labels
+- `StarField.tsx` — 3000 instanced points with color variation (artistic mode)
 - `AsteroidBelt.tsx` — 600 instanced dodecahedrons between Mars and Jupiter orbits
 
 ### Detail Overlays (`src/components/detail/`)
@@ -77,6 +106,15 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. Detail panels a
 ### Voice Agent
 - `src/hooks/useSolarConversation.ts` — ElevenLabs voice session, contextual updates, 4 client tools
 - `src/components/ui/VoiceAgent.tsx/css` — floating orb (space-themed orange gradient)
+
+### UI (`src/components/ui/`)
+- `ModeToggle.tsx/css` — bottom-center pill toggle: Explore / Orrery / Sky
+- `TimeControls.tsx/css` — date display, date picker, "Now" button, speed presets (orrery + sky)
+- `ObserverPicker.tsx/css` — lat/lng input + geolocation button (sky mode only)
+- `VoiceAgent.tsx/css` — floating orb (space-themed orange gradient)
+
+### Data
+- `src/data/stars.ts` — lazy loader for Yale Bright Star Catalog JSON (`public/data/bright_stars.json`)
 
 ### Utilities
 - `src/utils/colors.ts` — `PlanetCategory` → color mapping (rocky, gas-giant, ice-giant, dwarf)
@@ -123,3 +161,4 @@ Key adaptations from periodic table:
 - Component CSS files co-located with `.tsx` files
 - BEM-like class naming: `.component__element--modifier`
 - 3D scale is artistic, not realistic (log radii, sqrt orbits) — real scale makes inner planets invisible
+- Orrery mode uses log-compressed AU (`scaleAU` in `realisticScale.ts`) to keep all planets visible

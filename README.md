@@ -18,6 +18,8 @@ Part of a series of educational interactive apps — see also: [Periodic Table](
 - [x] **Phase 2b: Sun + Moon Detail** — `SunDetail` with interactive peelable layers (corona → core), `MoonDetail` with back navigation
 - [x] **Phase 2c: Voice Agent** — `useSolarConversation` hook with 4 client tools (`navigate_to_planet`, `navigate_to_moon`, `navigate_to_sun`, `go_back`), contextual update builders for planets/moons/Sun
 
+- [x] **Astronomical Clock** — Three view modes (Explore / Orrery / Sky) powered by `astronomy-engine` VSOP87 ephemeris. Orrery shows real planetary positions for any date. Sky mode renders the actual night sky from any location on Earth with 8400 real stars, sidereal-time rotation, and compass-oriented horizon.
+
 ### Up Next
 
 - [ ] **Phase 3: Textures + Visual Polish** — Download Solar System Scope textures (CC-BY, 8K), progressive loading (512px bundled → 4K from CDN), PBR materials (diffuse + normal + bump maps), atmosphere Fresnel shader, ring textures for Saturn/Uranus, Sun noise shader improvements, NASA cubemap skybox
@@ -30,10 +32,10 @@ Part of a series of educational interactive apps — see also: [Periodic Table](
 
 ### Future Ideas
 
+- Device orientation for sky mode — point phone at the sky, camera follows gyroscope/compass
+- Constellation lines overlay
 - Planet comparison mode — drag two planets side by side
-- Time controls — speed up/slow down orbits, watch years pass
-- Constellation overlay on the starfield
-- AR mode — point phone at the sky, overlay planet info
+- AR mode — overlay planet info on camera feed
 - Generalize the platform — human body explorer, world map explorer, etc.
 
 ---
@@ -96,6 +98,10 @@ All scientific data should be verified against NASA/JPL sources.
 **Orion spacecraft 3D model** (Artemis II mission tracker) — "Orion Spacecraft" by [wisemanmods](https://sketchfab.com/3d-models/none-fb89e865dcd446b89eaf78deaf213974) on Sketchfab · licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 **Scientific data & mission profiles** — Public-domain resources from [NASA](https://www.nasa.gov/) and [JPL](https://www.jpl.nasa.gov/), including Artemis II mission parameters, JPL Horizons ephemeris tooling, and planetary body facts.
+
+**Star catalog** — [Yale Bright Star Catalog](http://tdc-www.harvard.edu/catalogs/bsc5.html) (BSC5), 8404 naked-eye stars. JSON conversion via [brettonw/YaleBrightStarCatalog](https://github.com/brettonw/YaleBrightStarCatalog).
+
+**Planetary ephemeris** — [astronomy-engine](https://github.com/cosinekitty/astronomy) by Don Cross · MIT License. VSOP87-based calculations accurate to ±1 arcminute.
 
 **Asteroid textures** — Procedurally generated and/or public-domain sources.
 
