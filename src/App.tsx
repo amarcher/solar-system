@@ -11,6 +11,9 @@ import { SolarSystemScene } from './components/scene/SolarSystemScene';
 import { PlanetDetail } from './components/detail/PlanetDetail';
 import { MoonDetail } from './components/detail/MoonDetail';
 import { SunDetail } from './components/detail/SunDetail';
+import { AstronomyProvider, useAstronomy } from './astronomy/AstronomyContext';
+import { ModeToggle } from './components/ui/ModeToggle';
+import { TimeControls } from './components/ui/TimeControls';
 import './App.css';
 
 function viewTransition(update: () => void, types: string[]) {
@@ -30,6 +33,7 @@ function getIsMobile() { return mobileQuery.matches; }
 
 function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
+  const { mode } = useAstronomy();
   const [showLabels, setShowLabels] = useState(true);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
@@ -344,10 +348,21 @@ function App() {
         />
       )}
 
+      {mode !== 'artistic' && <TimeControls />}
+      <ModeToggle />
+
       <Analytics />
       <SpeedInsights />
     </div>
   );
 }
 
-export default App;
+function AppWithProviders() {
+  return (
+    <AstronomyProvider>
+      <App />
+    </AstronomyProvider>
+  );
+}
+
+export default AppWithProviders;
