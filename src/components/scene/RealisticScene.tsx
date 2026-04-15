@@ -36,6 +36,9 @@ export function RealisticScene({
 
       {planets.map((planet) => {
         const isFocused = focusedPlanetId === planet.id;
+        // Hide Earth's moons when Artemis mission is active — it renders its own Moon
+        const missionHidesMoons = activeMission?.frame.kind === 'planet-local'
+          && activeMission.frame.planetId === planet.id;
         return (
           <RealisticPlanet
             key={planet.id}
@@ -44,7 +47,7 @@ export function RealisticScene({
             onClick={() => onPlanetClick(planet.id)}
             onMoonClick={(moonId) => onMoonClick(planet.id, moonId)}
             showLabel={showLabels && (!isZoomedIn || isFocused)}
-            showMoons={isFocused}
+            showMoons={isFocused && !missionHidesMoons}
             showMoonLabels={showLabels}
           />
         );

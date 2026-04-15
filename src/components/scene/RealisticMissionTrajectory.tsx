@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Line, Html } from '@react-three/drei';
-import { Group, Quaternion, Vector3 } from 'three';
+import { Color, Group, Quaternion, Vector3 } from 'three';
 import type { Mission, MissionEphemerisPoint } from '../../types/mission';
+import { usePlanetTexture } from '../../utils/textures';
 import { clearMissionPosition, setMissionPosition } from '../../utils/missionPositions';
 import { useAstronomy } from '../../astronomy/AstronomyContext';
 import * as AstronomyService from '../../astronomy/AstronomyService';
@@ -182,10 +183,7 @@ export function RealisticMissionTrajectory({ mission }: RealisticMissionTrajecto
 
       {/* Moon — positioned along +X at scaled Moon distance */}
       <group position={[VISIBLE_MOON_DIST, 0, 0]}>
-        <mesh>
-          <sphereGeometry args={[moonRadius, 24, 24]} />
-          <meshStandardMaterial color="#aaaaaa" roughness={0.8} />
-        </mesh>
+        <TexturedMoon radius={moonRadius} />
         <Html
           center
           position={[0, -(moonRadius + 0.12), 0]}
@@ -215,5 +213,37 @@ export function RealisticMissionTrajectory({ mission }: RealisticMissionTrajecto
         </mesh>
       </group>
     </group>
+  );
+}
+
+function TexturedMoon({ radius }: { radius: number }) {
+  const diffuseMap = usePlanetTexture('moon');
+  const meshRef = useRef<any>(null);
+  const tintColor = useMemo(() => {
+    if (diffuseMap) {
+      const c = new Color('#ffffff');
+      c.lerp(new Color('#c8c8c0'), 0.2);
+      return c;
+    }
+    return new Color('#c8c8c0');
+  }, [diffuseMap]);
+
+  useEffect(() => {
+    if (meshRef.current?.material && diffuseMap) {
+      meshRef.current.material.map = diffuseMap;
+      meshRef.current.material.needsUpdate = true;
+    }
+  }, [diffuseMap]);
+
+  return (
+    <mesh ref={meshRef}>
+      <sphereGeometry args={[radius, 32, 32]} />
+      <meshStandardMaterial
+        map={diffuseMap ?? undefined}
+        color={tintColor}
+        roughness={0.75}
+        metalness={0}
+      />
+    </mesh>
   );
 }
