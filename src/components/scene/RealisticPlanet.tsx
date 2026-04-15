@@ -24,7 +24,7 @@ const RECOMPUTE_THRESHOLD_MS = 1000;
 
 export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, showLabel = true, showMoons = false, showMoonLabels = true }: RealisticPlanetProps) {
   const groupRef = useRef<Group>(null);
-  const { timeRef, engineReady } = useAstronomy();
+  const { timeRef, engineReady, rate } = useAstronomy();
   const lastComputedTime = useRef(0);
   const cachedPos = useRef({ x: 0, y: 0, z: 0 });
 
@@ -55,7 +55,7 @@ export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, show
 
   return (
     <group ref={groupRef}>
-      <PlanetMesh planet={planet} onClick={onClick} showLabel={showLabel} showMoons={showMoons} />
+      <PlanetMesh planet={planet} onClick={onClick} showLabel={showLabel} showMoons={showMoons} timeScale={rate} paused={rate === 0} />
 
       {showMoons && moons.map((moon) => (
         <RealisticMoonOrbit

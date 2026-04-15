@@ -12,9 +12,11 @@ interface PlanetMeshProps {
   /** When true, moons are visible — shrink hit area so moon clicks get through */
   showMoons?: boolean;
   paused?: boolean;
+  /** Multiplier for rotation speed. 1 = normal artistic rate, 0 = paused. In orrery mode this is driven by the sim time rate. */
+  timeScale?: number;
 }
 
-export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = false, paused = false }: PlanetMeshProps) {
+export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = false, paused = false, timeScale = 1 }: PlanetMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const cloudRef = useRef<Mesh>(null);
   const diffuseMap = usePlanetTexture(planet.id);
@@ -22,16 +24,17 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
 
   useFrame((_, delta) => {
     if (paused) return;
+    const scaledDelta = delta * timeScale;
     if (meshRef.current) {
       const speed = planet.rotationPeriod !== 0 ? 0.3 / Math.abs(planet.rotationPeriod / 24) : 0.1;
       const direction = planet.rotationPeriod < 0 ? -1 : 1;
-      meshRef.current.rotation.y += delta * speed * direction;
+      meshRef.current.rotation.y += scaledDelta * speed * direction;
     }
     // Clouds rotate with the surface plus a slight drift
     if (cloudRef.current) {
       const speed = planet.rotationPeriod !== 0 ? 0.3 / Math.abs(planet.rotationPeriod / 24) : 0.1;
       const direction = planet.rotationPeriod < 0 ? -1 : 1;
-      cloudRef.current.rotation.y += delta * speed * direction + delta * 0.008;
+      cloudRef.current.rotation.y += scaledDelta * speed * direction + scaledDelta * 0.008;
     }
   });
 
