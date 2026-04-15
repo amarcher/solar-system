@@ -1,0 +1,102 @@
+.observer-picker {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 130;
+}
+
+.observer-picker__toggle {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 5px 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s, color 0.2s;
+}
+
+.observer-picker__toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.observer-picker__coords {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 0.7rem;
+}
+
+.observer-picker__panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 10px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.observer-picker__field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.observer-picker__field span {
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.observer-picker__field input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 5px;
+  padding: 4px 6px;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 0.7rem;
+  color: #fff;
+  outline: none;
+  color-scheme: dark;
+  width: 80px;
+}
+
+.observer-picker__field input:focus {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.observer-picker__geo-btn {
+  appearance: none;
+  background: rgba(100, 200, 150, 0.15);
+  border: 1px solid rgba(100, 200, 150, 0.25);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(100, 200, 150, 0.9);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.observer-picker__geo-btn:hover {
+  background: rgba(100, 200, 150, 0.25);
+}

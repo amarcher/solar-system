@@ -9,6 +9,10 @@ import { SunMesh } from './Sun';
 import { PlanetOrbit } from './PlanetOrbit';
 import { AsteroidBelt } from './AsteroidBelt';
 import { CameraRig } from './CameraRig';
+import { RealisticScene } from './RealisticScene';
+import { SkyScene } from './SkyScene';
+import { TerrestrialRig } from './TerrestrialRig';
+import { useAstronomy } from '../../astronomy/AstronomyContext';
 
 /**
  * Camera-relative fill light that activates when zoomed into a planet/moon.
@@ -48,6 +52,7 @@ interface SolarSystemSceneProps {
 }
 
 export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true }: SolarSystemSceneProps) {
+  const { mode } = useAstronomy();
   const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun' || nav.level === 'mission';
   const focusedPlanetId = (nav.level === 'planet' || nav.level === 'moon') ? nav.planetId : null;
   const paused = nav.level === 'mission';
@@ -67,57 +72,82 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
     <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
       <Canvas
         shadows="percentage"
-        camera={{ position: [0, 35, 50], fov: 50, near: 0.001, far: 500 }}
+        camera={{ position: [0, 35, 50], fov: 50, near: 0.001, far: 600 }}
         gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.75 }}
         aria-hidden="true"
       >
-        <ambientLight intensity={isZoomedIn ? 0.2 : 0.1} />
-        <FillLight active={isZoomedIn} />
-        <pointLight
-          position={[0, 0, 0]}
-          intensity={1.0}
-          color="#fff8ee"
-          decay={0}
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-          shadow-camera-near={0.5}
-          shadow-camera-far={60}
-          shadow-bias={-0.001}
-        />
-
-        <CelestialBackdrop />
-        <SunMesh onClick={onSunClick} showLabel={showLabels && !isZoomedIn} paused={paused} />
-        <AsteroidBelt paused={paused} />
-
-        {planets.map((planet) => {
-          const isFocused = focusedPlanetId === planet.id;
-          const planetMissions = missionsByPlanet[planet.id];
-          // Only render mission trajectories for the active mission's host
-          // planet, and only when the mission view is open.
-          const planetHostsActiveMission = nav.level === 'mission'
-            && planetMissions?.some((m) => m.id === nav.missionId);
-          const visibleMissions = planetHostsActiveMission ? planetMissions : undefined;
-          // Force-render moons for the mission's host planet so the Moon is
-          // visible alongside the trajectory.
-          const showThisPlanetMoons = isFocused || !!planetHostsActiveMission;
-          return (
-            <PlanetOrbit
-              key={planet.id}
-              planet={planet}
-              moons={moonsByPlanet[planet.id] || []}
-              missions={visibleMissions}
-              onClick={() => onPlanetClick(planet.id)}
-              onMoonClick={(moonId) => onMoonClick(planet.id, moonId)}
-              paused={paused}
-              showLabel={showLabels && (!isZoomedIn || isFocused)}
-              showMoonLabels={showLabels && isFocused}
-              showMoons={showThisPlanetMoons}
+        {mode !== 'sky' && (
+          <>
+            <ambientLight intensity={isZoomedIn ? 0.2 : 0.1} />
+            <FillLight active={isZoomedIn} />
+            <pointLight
+              position={[0, 0, 0]}
+              intensity={1.0}
+              color="#fff8ee"
+              decay={0}
+              castShadow
+              shadow-mapSize-width={1024}
+              shadow-mapSize-height={1024}
+              shadow-camera-near={0.5}
+              shadow-camera-far={60}
+              shadow-bias={-0.001}
             />
-          );
-        })}
+          </>
+        )}
 
-        <CameraRig nav={nav} planets={planets} />
+        {mode === 'artistic' ? (
+          <>
+            <CelestialBackdrop />
+            <SunMesh onClick={onSunClick} showLabel={showLabels && !isZoomedIn} paused={paused} />
+            <AsteroidBelt paused={paused} />
+
+            {planets.map((planet) => {
+              const isFocused = focusedPlanetId === planet.id;
+              const planetMissions = missionsByPlanet[planet.id];
+              const planetHostsActiveMission = nav.level === 'mission'
+                && planetMissions?.some((m) => m.id === nav.missionId);
+              const visibleMissions = planetHostsActiveMission ? planetMissions : undefined;
+              const showThisPlanetMoons = isFocused || !!planetHostsActiveMission;
+              return (
+                <PlanetOrbit
+                  key={planet.id}
+                  planet={planet}
+                  moons={moonsByPlanet[planet.id] || []}
+                  missions={visibleMissions}
+                  onClick={() => onPlanetClick(planet.id)}
+                  onMoonClick={(moonId) => onMoonClick(planet.id, moonId)}
+                  paused={paused}
+                  showLabel={showLabels && (!isZoomedIn || isFocused)}
+                  showMoonLabels={showLabels && isFocused}
+                  showMoons={showThisPlanetMoons}
+                />
+              );
+            })}
+          </>
+        ) : mode === 'orrery' ? (
+          <RealisticScene
+            planets={planets}
+            moonsByPlanet={moonsByPlanet}
+            nav={nav}
+            onPlanetClick={onPlanetClick}
+            onSunClick={onSunClick}
+            showLabels={showLabels}
+          />
+        ) : (
+          <SkyScene
+            planets={planets}
+            nav={nav}
+            onPlanetClick={onPlanetClick}
+            onSunClick={onSunClick}
+            showLabels={showLabels}
+          />
+        )}
+
+        {mode === 'sky' ? (
+          <TerrestrialRig />
+        ) : (
+          <CameraRig nav={nav} planets={planets} />
+        )}
 
         <EffectComposer>
           <Bloom

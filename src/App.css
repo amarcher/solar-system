@@ -61,6 +61,18 @@ body {
   align-items: center;
 }
 
+/* Hamburger toggle — hidden on desktop */
+.app__toolbar-toggle {
+  display: none;
+}
+
+.app__toolbar-items {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+
 .app__toolbar-btn {
   appearance: none;
   -webkit-appearance: none;
@@ -316,6 +328,42 @@ body {
   .app__toolbar {
     bottom: 12px;
     left: 12px;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+  }
+
+  .app__toolbar-toggle {
+    display: flex;
+    appearance: none;
+    -webkit-appearance: none;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .app__toolbar-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+
+  .app__toolbar-items {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+
+  .app__toolbar--open .app__toolbar-items {
+    display: flex;
   }
 
   .app__voice-error {

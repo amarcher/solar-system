@@ -1,0 +1,116 @@
+.time-controls {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 130;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.time-controls__display {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.time-controls__date {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.time-controls__time {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.time-controls__actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.time-controls__date-input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.8);
+  color-scheme: dark;
+  outline: none;
+}
+
+.time-controls__date-input:focus {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.time-controls__now-btn {
+  appearance: none;
+  background: rgba(100, 160, 255, 0.2);
+  border: 1px solid rgba(100, 160, 255, 0.3);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(100, 160, 255, 0.9);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.time-controls__now-btn:hover {
+  background: rgba(100, 160, 255, 0.3);
+}
+
+.time-controls__speed {
+  display: flex;
+  gap: 2px;
+}
+
+.time-controls__speed-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.time-controls__speed-btn:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.time-controls__speed-btn--active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+@media (max-width: 899px) {
+  .time-controls {
+    top: 8px;
+    padding: 6px 10px;
+  }
+
+  .time-controls__speed-btn {
+    padding: 2px 5px;
+    font-size: 0.6rem;
+  }
+}
