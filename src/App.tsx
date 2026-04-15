@@ -139,7 +139,7 @@ function App() {
     const artemis = getMissionById('artemis-2');
     if (artemis) {
       setDate(new Date(artemis.launchDate));
-      setRate(86400); // 1 day per second
+      setRate(3600); // 1 hour per second — mission plays in ~4 min, rotation stays smooth
     }
   }, [setDate, setRate]);
 
