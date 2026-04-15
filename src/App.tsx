@@ -14,6 +14,7 @@ import { SunDetail } from './components/detail/SunDetail';
 import { AstronomyProvider, useAstronomy } from './astronomy/AstronomyContext';
 import { ModeToggle } from './components/ui/ModeToggle';
 import { TimeControls } from './components/ui/TimeControls';
+import { ObserverPicker } from './components/ui/ObserverPicker';
 import './App.css';
 
 function viewTransition(update: () => void, types: string[]) {
@@ -349,6 +350,7 @@ function App() {
       )}
 
       {mode !== 'artistic' && <TimeControls />}
+      {mode === 'sky' && <ObserverPicker />}
       <ModeToggle />
 
       <Analytics />

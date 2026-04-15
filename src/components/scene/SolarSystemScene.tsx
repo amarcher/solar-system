@@ -10,6 +10,8 @@ import { PlanetOrbit } from './PlanetOrbit';
 import { AsteroidBelt } from './AsteroidBelt';
 import { CameraRig } from './CameraRig';
 import { RealisticScene } from './RealisticScene';
+import { SkyScene } from './SkyScene';
+import { TerrestrialRig } from './TerrestrialRig';
 import { useAstronomy } from '../../astronomy/AstronomyContext';
 
 /**
@@ -70,24 +72,28 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
     <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
       <Canvas
         shadows="percentage"
-        camera={{ position: [0, 35, 50], fov: 50, near: 0.001, far: 500 }}
+        camera={{ position: [0, 35, 50], fov: 50, near: 0.001, far: 600 }}
         gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.75 }}
         aria-hidden="true"
       >
-        <ambientLight intensity={isZoomedIn ? 0.2 : 0.1} />
-        <FillLight active={isZoomedIn} />
-        <pointLight
-          position={[0, 0, 0]}
-          intensity={1.0}
-          color="#fff8ee"
-          decay={0}
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-          shadow-camera-near={0.5}
-          shadow-camera-far={60}
-          shadow-bias={-0.001}
-        />
+        {mode !== 'sky' && (
+          <>
+            <ambientLight intensity={isZoomedIn ? 0.2 : 0.1} />
+            <FillLight active={isZoomedIn} />
+            <pointLight
+              position={[0, 0, 0]}
+              intensity={1.0}
+              color="#fff8ee"
+              decay={0}
+              castShadow
+              shadow-mapSize-width={1024}
+              shadow-mapSize-height={1024}
+              shadow-camera-near={0.5}
+              shadow-camera-far={60}
+              shadow-bias={-0.001}
+            />
+          </>
+        )}
 
         {mode === 'artistic' ? (
           <>
@@ -118,7 +124,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
               );
             })}
           </>
-        ) : (
+        ) : mode === 'orrery' ? (
           <RealisticScene
             planets={planets}
             moonsByPlanet={moonsByPlanet}
@@ -127,9 +133,21 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             onSunClick={onSunClick}
             showLabels={showLabels}
           />
+        ) : (
+          <SkyScene
+            planets={planets}
+            nav={nav}
+            onPlanetClick={onPlanetClick}
+            onSunClick={onSunClick}
+            showLabels={showLabels}
+          />
         )}
 
-        <CameraRig nav={nav} planets={planets} />
+        {mode === 'sky' ? (
+          <TerrestrialRig />
+        ) : (
+          <CameraRig nav={nav} planets={planets} />
+        )}
 
         <EffectComposer>
           <Bloom
