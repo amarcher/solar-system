@@ -10,6 +10,7 @@ import { Conversation } from '@elevenlabs/client';
 
 import type { Planet, Moon, NavigationState } from '../types/celestialBody';
 import type { Mission } from '../types/mission';
+import type { ViewMode, ObserverLocation } from '../astronomy/types';
 import { planets } from '../data/planets';
 import { getMoonsByPlanet, getMoonById } from '../data/moons';
 import { missions, getMissionById } from '../data/missions';
@@ -19,12 +20,18 @@ import { sun } from '../data/sun';
 
 interface ConversationCallbacks {
   currentNav: NavigationState;
+  currentMode: ViewMode;
+  currentObserver: ObserverLocation;
+  displayTime: Date;
   onNavigatePlanet: (planetId: string) => void;
   onNavigateMoon: (planetId: string, moonId: string) => void;
   onNavigateSun: () => void;
   onTrackMission: (missionId: string) => void;
   onGoBack: () => void;
   onPeelSunLayer: (layerIndex: number) => void;
+  onSwitchMode: (mode: ViewMode) => void;
+  onSetDate: (date: Date) => void;
+  onSetRate: (rate: number) => void;
 }
 
 export type VoiceStatus = 'off' | 'connecting' | 'connected' | 'error';
@@ -155,6 +162,48 @@ function buildSunContext(): string {
   ].join('\n');
 }
 
+function buildOrreryContext(displayTime: Date, nav: NavigationState): string {
+  const dateStr = displayTime.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const parts = [
+    `[MODE: ORRERY] The user is viewing the real-time orrery — planets are positioned at their true locations for ${dateStr}.`,
+    `This is a scientifically accurate view powered by the VSOP87 ephemeris (astronomy-engine).`,
+    `The user can scrub time forward/backward and change playback speed.`,
+  ];
+  if (nav.level === 'planet') {
+    const planet = planets.find(p => p.id === nav.planetId);
+    if (planet) {
+      const moons = getMoonsByPlanet(planet.id);
+      parts.push(``, `They're focused on ${planet.name} and can see its ${moons.length} moons orbiting at their real orbital periods.`);
+    }
+  }
+  parts.push(``, `You can navigate to any planet, moon, or the Sun — the navigation tools work in orrery mode too.`);
+  parts.push(`You can also suggest they switch to Sky mode to see the night sky from Earth, or back to Explore mode for the playful view.`);
+  return parts.join('\n');
+}
+
+function buildSkyContext(displayTime: Date, observer: ObserverLocation): string {
+  const dateStr = displayTime.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = displayTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const latDir = observer.latitude >= 0 ? 'N' : 'S';
+  const lngDir = observer.longitude >= 0 ? 'E' : 'W';
+  const locStr = `${Math.abs(observer.latitude).toFixed(1)}°${latDir}, ${Math.abs(observer.longitude).toFixed(1)}°${lngDir}`;
+
+  return [
+    `[MODE: SKY] The user is viewing the night sky as it appears from ${locStr} on ${dateStr} at ${timeStr}.`,
+    `They're looking up at the real sky with 8,400 stars from the Yale Bright Star Catalog positioned accurately.`,
+    `Planets and the Sun are shown at their true altitude/azimuth positions. Objects below the horizon are hidden.`,
+    `There's a compass on the ground showing N/E/S/W directions.`,
+    ``,
+    `In this mode, do NOT navigate or change the view. Instead:`,
+    `- Answer questions about what they can see in the sky`,
+    `- Point out bright stars, planets, or constellations that should be visible`,
+    `- Explain what they're looking at if they ask`,
+    `- Suggest they try different times or locations to see different skies`,
+    ``,
+    `If they want to explore a planet up close, suggest switching to Explore or Orrery mode.`,
+  ].join('\n');
+}
+
 function buildFirstMessage(nav: NavigationState): string | undefined {
   switch (nav.level) {
     case 'sun':
@@ -206,7 +255,7 @@ function buildContextForNav(nav: NavigationState): string | null {
   }
 }
 
-export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer }: ConversationCallbacks) {
+export function useSolarConversation({ currentNav, currentMode, currentObserver, displayTime, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate }: ConversationCallbacks) {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
 
   // Live Conversation instance from @elevenlabs/client. We hold this in
@@ -232,8 +281,16 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
   // closure even though clientTools are passed once at session start.
   // Without this, a tool call halfway through a session would fire
   // against stale React state.
-  const handlersRef = useRef({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer });
-  handlersRef.current = { onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer };
+  const handlersRef = useRef({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate });
+  handlersRef.current = { onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate };
+
+  // Keep mode/observer/time refs for contextual updates
+  const modeRef = useRef(currentMode);
+  modeRef.current = currentMode;
+  const observerRef = useRef(currentObserver);
+  observerRef.current = currentObserver;
+  const displayTimeRef = useRef(displayTime);
+  displayTimeRef.current = displayTime;
 
   // Abort flag for in-flight startSession. If the user clicks stop
   // while the start path is still awaiting Conversation.startSession,
@@ -318,6 +375,58 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
       } catch (err) {
         console.error('[voice] go_back failed:', err);
         return `Go back failed: ${(err as Error)?.message ?? 'unknown error'}`;
+      }
+    },
+    set_time: (params: { date?: unknown }) => {
+      console.log('[voice] set_time called:', params);
+      try {
+        const dateStr = String(params.date ?? '');
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return `Could not parse date "${dateStr}"`;
+        handlersRef.current.onSetDate(d);
+        return `Time set to ${d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+      } catch (err) {
+        return `Failed: ${(err as Error)?.message ?? 'unknown error'}`;
+      }
+    },
+    set_time_speed: (params: { speed?: unknown }) => {
+      console.log('[voice] set_time_speed called:', params);
+      try {
+        const speedStr = String(params.speed ?? '').toLowerCase();
+        const speedMap: Record<string, number> = {
+          paused: 0, pause: 0, stop: 0,
+          'real-time': 1, '1x': 1, normal: 1, realtime: 1,
+          '1 minute': 60, '1 min': 60,
+          '1 hour': 3600, '1 hr': 3600,
+          '1 day': 86400,
+          '1 month': 86400 * 30,
+        };
+        const rate = speedMap[speedStr] ?? parseFloat(speedStr);
+        if (isNaN(rate)) return `Unknown speed "${speedStr}". Try: paused, real-time, 1 hour, 1 day, 1 month`;
+        handlersRef.current.onSetRate(rate);
+        const labels: Record<number, string> = { 0: 'Paused', 1: '1x (real-time)', 60: '1 min/sec', 3600: '1 hr/sec', 86400: '1 day/sec' };
+        return `Time speed set to ${labels[rate] ?? `${rate}x`}`;
+      } catch (err) {
+        return `Failed: ${(err as Error)?.message ?? 'unknown error'}`;
+      }
+    },
+    switch_view_mode: (params: { mode?: unknown }) => {
+      console.log('[voice] switch_view_mode called:', params);
+      try {
+        const modeStr = String(params.mode ?? '').toLowerCase();
+        const modeMap: Record<string, ViewMode> = {
+          explore: 'artistic', artistic: 'artistic',
+          orrery: 'orrery', 'real-time': 'orrery', realistic: 'orrery',
+          sky: 'sky', 'night sky': 'sky', terrestrial: 'sky',
+        };
+        const target = modeMap[modeStr];
+        if (!target) return `Unknown mode "${modeStr}". Available: explore, orrery, sky`;
+        handlersRef.current.onSwitchMode(target);
+        const labels: Record<ViewMode, string> = { artistic: 'Explore', orrery: 'Orrery', sky: 'Sky' };
+        return `Switched to ${labels[target]} mode`;
+      } catch (err) {
+        console.error('[voice] switch_view_mode failed:', err);
+        return `Mode switch failed: ${(err as Error)?.message ?? 'unknown error'}`;
       }
     },
     peel_sun_layer: (params: { layer?: unknown }) => {
@@ -520,6 +629,24 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     );
   }, [agentId, rawStatus]);
 
+  const notifyModeChange = useCallback((mode: ViewMode) => {
+    if (!agentId || !convRef.current || rawStatus !== 'connected') return;
+    let ctx: string;
+    if (mode === 'orrery') {
+      ctx = buildOrreryContext(displayTimeRef.current, latestNavRef.current);
+    } else if (mode === 'sky') {
+      ctx = buildSkyContext(displayTimeRef.current, observerRef.current);
+    } else {
+      ctx = '[MODE: EXPLORE] The user switched back to the playful artistic view. ' +
+        'All navigation tools work normally. Encourage them to explore!';
+    }
+    try {
+      convRef.current.sendContextualUpdate(ctx);
+    } catch (err) {
+      console.error('[voice] sendContextualUpdate (mode) failed:', err);
+    }
+  }, [agentId, rawStatus]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -542,6 +669,7 @@ export function useSolarConversation({ currentNav, onNavigatePlanet, onNavigateM
     notifyNavChange,
     notifyNavClosed,
     notifyLayerChange,
+    notifyModeChange,
     toggle,
     agentId,
   };

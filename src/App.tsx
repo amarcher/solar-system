@@ -16,6 +16,7 @@ import { ModeToggle } from './components/ui/ModeToggle';
 import { TimeControls } from './components/ui/TimeControls';
 import { ObserverPicker } from './components/ui/ObserverPicker';
 import { useDeviceOrientation } from './astronomy/useDeviceOrientation';
+import { trackModeSwitch } from './utils/analytics';
 import './App.css';
 
 function viewTransition(update: () => void, types: string[]) {
@@ -35,7 +36,7 @@ function getIsMobile() { return mobileQuery.matches; }
 
 function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
-  const { mode, setDate, setRate, setObserver } = useAstronomy();
+  const { mode, setMode, setDate, setRate, setObserver, displayTime, observer } = useAstronomy();
   const [showLabels, setShowLabels] = useState(true);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
@@ -153,6 +154,9 @@ function App() {
 
   const voice = useSolarConversation({
     currentNav: nav,
+    currentMode: mode,
+    currentObserver: observer,
+    displayTime,
     onNavigatePlanet: handlePlanetClick,
     onNavigateMoon: (planetId, moonId) => {
       viewTransition(() => goToMoon(planetId, moonId), ['detail-open']);
@@ -163,12 +167,14 @@ function App() {
     },
     onGoBack: handleBack,
     onPeelSunLayer: (layerIndex: number) => {
-      // If not already on Sun detail, navigate there first
       if (nav.level !== 'sun') {
         handleSunClick();
       }
       setSunLayerOverride(layerIndex);
     },
+    onSwitchMode: setMode,
+    onSetDate: setDate,
+    onSetRate: setRate,
   });
 
   useEffect(() => {
@@ -176,6 +182,11 @@ function App() {
       voice.notifyNavChange(nav);
     }
   }, [nav]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    voice.notifyModeChange(mode);
+    trackModeSwitch(mode);
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Resolve current planet/moon from nav state
   const currentPlanet = (nav.level === 'planet' || nav.level === 'moon')
