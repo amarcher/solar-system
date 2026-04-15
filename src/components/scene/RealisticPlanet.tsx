@@ -55,7 +55,7 @@ export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, show
 
   return (
     <group ref={groupRef}>
-      <PlanetMesh planet={planet} onClick={onClick} showLabel={showLabel} showMoons={showMoons} timeScale={rate} paused={rate === 0} />
+      <PlanetMesh planet={planet} onClick={onClick} showLabel={showLabel} showMoons={showMoons} paused={rate === 0} />
 
       {showMoons && moons.map((moon) => (
         <RealisticMoonOrbit
