@@ -5,6 +5,8 @@ import { Color, DoubleSide, RingGeometry } from 'three';
 import type { Mesh } from 'three';
 import type { Planet } from '../../types/celestialBody';
 import { usePlanetTexture, useTexturePath, useRingTexture } from '../../utils/textures';
+import * as AstronomyService from '../../astronomy/AstronomyService';
+
 interface PlanetMeshProps {
   planet: Planet;
   onClick?: () => void;
@@ -16,11 +18,13 @@ interface PlanetMeshProps {
   timeScale?: number;
   /** When true, rotation is physically accurate: one full rotation per rotationPeriod of sim time. */
   useRealRotation?: boolean;
+  /** Simulation time ref for absolute rotation computation (orrery mode). */
+  timeRef?: React.RefObject<number>;
 }
 
 const TWO_PI = Math.PI * 2;
 
-export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = false, paused = false, timeScale = 1, useRealRotation = false }: PlanetMeshProps) {
+export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = false, paused = false, timeScale = 1, useRealRotation = false, timeRef }: PlanetMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const cloudRef = useRef<Mesh>(null);
   const diffuseMap = usePlanetTexture(planet.id);
@@ -29,22 +33,43 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
   useFrame((_, delta) => {
     if (paused) return;
 
-    if (useRealRotation) {
-      // Physically accurate: rotationPeriod is in hours.
-      // At timeScale=1 (real-time), delta seconds = delta seconds of sim time.
-      // At timeScale=3600 (1hr/s), delta seconds = delta*3600 seconds of sim time.
-      // One full rotation = rotationPeriod * 3600 seconds of sim time.
-      // Angular velocity = 2π / (rotationPeriod * 3600) rad per sim-second.
+    if (useRealRotation && timeRef) {
+      // Compute absolute rotation from simulation time so continents face
+      // the correct direction (e.g. sunlit side of Earth matches real life).
+      const simTimeMs = timeRef.current;
+
+      if (planet.id === 'earth' && AstronomyService.isReady()) {
+        // Use Greenwich Mean Sidereal Time for Earth — this tells us exactly
+        // how much Earth has rotated relative to the vernal equinox.
+        // GMST is in hours (0–24). Convert to radians.
+        // In Three.js SphereGeometry, the texture center (u=0.5 = prime meridian)
+        // maps to the +X direction at rotation.y=0.
+        // The heliocentric frame has +X toward the vernal equinox.
+        // So rotation.y = GMST_radians places Greenwich correctly.
+        const gmstHours = AstronomyService.getSiderealTime(new Date(simTimeMs));
+        const gmstRad = gmstHours * (TWO_PI / 24);
+        if (meshRef.current) meshRef.current.rotation.y = gmstRad;
+        if (cloudRef.current) cloudRef.current.rotation.y = gmstRad + simTimeMs * 0.0000000001;
+      } else {
+        // Other planets: compute rotation from J2000 epoch.
+        // We don't know their prime meridian orientation, but consistent
+        // rotation relative to time is still correct.
+        const J2000_MS = 946684800000; // 2000-01-01T00:00:00Z
+        const elapsed = simTimeMs - J2000_MS;
+        const periodMs = Math.abs(planet.rotationPeriod) * 3600 * 1000;
+        const direction = planet.rotationPeriod < 0 ? -1 : 1;
+        const rotation = periodMs > 0 ? (elapsed / periodMs) * TWO_PI * direction : 0;
+        if (meshRef.current) meshRef.current.rotation.y = rotation % TWO_PI;
+        if (cloudRef.current) cloudRef.current.rotation.y = rotation % TWO_PI;
+      }
+    } else if (useRealRotation) {
+      // Fallback: accumulate delta if no timeRef (shouldn't happen in orrery)
       const periodSec = Math.abs(planet.rotationPeriod) * 3600;
       const angularVel = periodSec > 0 ? TWO_PI / periodSec : 0;
       const direction = planet.rotationPeriod < 0 ? -1 : 1;
-      const simDelta = delta * timeScale; // sim-seconds elapsed this frame
-      if (meshRef.current) {
-        meshRef.current.rotation.y += simDelta * angularVel * direction;
-      }
-      if (cloudRef.current) {
-        cloudRef.current.rotation.y += simDelta * angularVel * direction + simDelta * 0.00001;
-      }
+      const simDelta = delta * timeScale;
+      if (meshRef.current) meshRef.current.rotation.y += simDelta * angularVel * direction;
+      if (cloudRef.current) cloudRef.current.rotation.y += simDelta * angularVel * direction;
     } else {
       // Artistic rotation (explore mode)
       const scaledDelta = delta * timeScale;
