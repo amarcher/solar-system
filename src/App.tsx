@@ -455,7 +455,12 @@ function App() {
         />
       )}
 
-      {mode !== 'artistic' && <TimeControls />}
+      {mode !== 'artistic' && (
+        <TimeControls
+          missionActive={orreryMissionActive}
+          onReplayMission={startOrreryMission}
+        />
+      )}
       {mode === 'sky' && (
         <>
           <ObserverPicker />

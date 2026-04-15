@@ -2,6 +2,12 @@ import { useCallback } from 'react';
 import { useAstronomy } from '../../astronomy/AstronomyContext';
 import './TimeControls.css';
 
+interface TimeControlsProps {
+  /** When set, shows a replay button for the mission */
+  onReplayMission?: () => void;
+  missionActive?: boolean;
+}
+
 const SPEED_OPTIONS = [
   { label: 'Paused', rate: 0 },
   { label: '1x', rate: 1 },
@@ -27,7 +33,7 @@ function formatTime(d: Date): string {
   });
 }
 
-export function TimeControls() {
+export function TimeControls({ onReplayMission, missionActive }: TimeControlsProps = {}) {
   const { displayTime, rate, setDate, setRate } = useAstronomy();
 
   const handleNow = useCallback(() => {
@@ -69,6 +75,21 @@ export function TimeControls() {
         >
           Now
         </button>
+
+        {missionActive && onReplayMission && (
+          <button
+            className="time-controls__replay-btn"
+            onClick={onReplayMission}
+            type="button"
+            title="Replay Artemis II from launch"
+          >
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="1 4 1 10 7 10" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+            Replay
+          </button>
+        )}
       </div>
 
       <div className="time-controls__speed" role="radiogroup" aria-label="Time speed">
