@@ -49,9 +49,12 @@ interface SolarSystemSceneProps {
   onMoonClick: (planetId: string, moonId: string) => void;
   onSunClick: () => void;
   showLabels?: boolean;
+  deviceOrientation?: boolean;
+  deviceHeadingRef?: React.RefObject<number | null>;
+  devicePitchRef?: React.RefObject<number | null>;
 }
 
-export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true }: SolarSystemSceneProps) {
+export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, deviceOrientation, deviceHeadingRef, devicePitchRef }: SolarSystemSceneProps) {
   const { mode } = useAstronomy();
   const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun' || nav.level === 'mission';
   const focusedPlanetId = (nav.level === 'planet' || nav.level === 'moon') ? nav.planetId : null;
@@ -144,7 +147,11 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         )}
 
         {mode === 'sky' ? (
-          <TerrestrialRig />
+          <TerrestrialRig
+            deviceOrientation={deviceOrientation}
+            headingRef={deviceHeadingRef}
+            pitchRef={devicePitchRef}
+          />
         ) : (
           <CameraRig nav={nav} planets={planets} />
         )}
