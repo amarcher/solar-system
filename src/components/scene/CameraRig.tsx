@@ -105,7 +105,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
         if (!flyInDone.current) {
           controls.smoothTime = 1.0;
           controls.moveTo(missionPos.x, missionPos.y, missionPos.z, true);
-          controls.dollyTo(3, true);
+          controls.dollyTo(0.8, true); // Close enough to see Earth-Moon-trajectory
           flyInDone.current = true;
           flyInTime.current = 0;
         } else {

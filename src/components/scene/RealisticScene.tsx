@@ -10,6 +10,7 @@ interface RealisticSceneProps {
   moonsByPlanet: Record<string, Moon[]>;
   nav: NavigationState;
   onPlanetClick: (planetId: string) => void;
+  onMoonClick: (planetId: string, moonId: string) => void;
   onSunClick: () => void;
   showLabels: boolean;
   activeMission?: Mission;
@@ -17,8 +18,10 @@ interface RealisticSceneProps {
 
 export function RealisticScene({
   planets,
+  moonsByPlanet,
   nav,
   onPlanetClick,
+  onMoonClick,
   onSunClick,
   showLabels,
   activeMission,
@@ -37,8 +40,11 @@ export function RealisticScene({
           <RealisticPlanet
             key={planet.id}
             planet={planet}
+            moons={moonsByPlanet[planet.id] || []}
             onClick={() => onPlanetClick(planet.id)}
+            onMoonClick={(moonId) => onMoonClick(planet.id, moonId)}
             showLabel={showLabels && (!isZoomedIn || isFocused)}
+            showMoons={isFocused}
           />
         );
       })}

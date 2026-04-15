@@ -75,8 +75,12 @@ function App() {
       // Stop device orientation tracking when leaving sky mode
       if (deviceOrientation.active) deviceOrientation.stop();
     }
-    // Exit mission mode when switching to orrery/sky — artistic missions only work in artistic mode
-    if (mode !== 'artistic' && nav.level === 'mission') {
+    // When switching from Explore (with Artemis active) to Orrery, auto-start orrery mission
+    if (mode === 'orrery' && nav.level === 'mission') {
+      goToSystem();
+      startOrreryMission();
+    } else if (mode !== 'artistic' && nav.level === 'mission') {
+      // Exit artistic mission mode for sky mode
       goToSystem();
     }
     // Clear orrery mission when leaving orrery mode
@@ -130,19 +134,22 @@ function App() {
     }
   }, [nav.level, goToSystem, goToMission]);
 
+  const startOrreryMission = useCallback(() => {
+    setOrreryMissionActive(true);
+    const artemis = getMissionById('artemis-2');
+    if (artemis) {
+      setDate(new Date(artemis.launchDate));
+      setRate(86400); // 1 day per second
+    }
+  }, [setDate, setRate]);
+
   const handleOrreryMissionToggle = useCallback(() => {
     if (orreryMissionActive) {
       setOrreryMissionActive(false);
     } else {
-      setOrreryMissionActive(true);
-      // Jump to launch and play at 1 day/sec (~10 day mission plays in ~10 sec)
-      const artemis = getMissionById('artemis-2');
-      if (artemis) {
-        setDate(new Date(artemis.launchDate));
-        setRate(86400); // 1 day per second
-      }
+      startOrreryMission();
     }
-  }, [orreryMissionActive, setDate, setRate]);
+  }, [orreryMissionActive, startOrreryMission]);
 
   const voice = useSolarConversation({
     currentNav: nav,
