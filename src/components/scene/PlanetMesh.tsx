@@ -12,11 +12,15 @@ interface PlanetMeshProps {
   /** When true, moons are visible — shrink hit area so moon clicks get through */
   showMoons?: boolean;
   paused?: boolean;
-  /** Multiplier for rotation speed. 1 = normal artistic rate, 0 = paused. In orrery mode this is driven by the sim time rate. */
+  /** Multiplier for rotation speed. Only used with artistic rotation. */
   timeScale?: number;
+  /** When true, rotation is physically accurate: one full rotation per rotationPeriod of sim time. */
+  useRealRotation?: boolean;
 }
 
-export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = false, paused = false, timeScale = 1 }: PlanetMeshProps) {
+const TWO_PI = Math.PI * 2;
+
+export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = false, paused = false, timeScale = 1, useRealRotation = false }: PlanetMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const cloudRef = useRef<Mesh>(null);
   const diffuseMap = usePlanetTexture(planet.id);
@@ -24,17 +28,36 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
 
   useFrame((_, delta) => {
     if (paused) return;
-    const scaledDelta = delta * timeScale;
-    if (meshRef.current) {
-      const speed = planet.rotationPeriod !== 0 ? 0.3 / Math.abs(planet.rotationPeriod / 24) : 0.1;
+
+    if (useRealRotation) {
+      // Physically accurate: rotationPeriod is in hours.
+      // At timeScale=1 (real-time), delta seconds = delta seconds of sim time.
+      // At timeScale=3600 (1hr/s), delta seconds = delta*3600 seconds of sim time.
+      // One full rotation = rotationPeriod * 3600 seconds of sim time.
+      // Angular velocity = 2π / (rotationPeriod * 3600) rad per sim-second.
+      const periodSec = Math.abs(planet.rotationPeriod) * 3600;
+      const angularVel = periodSec > 0 ? TWO_PI / periodSec : 0;
       const direction = planet.rotationPeriod < 0 ? -1 : 1;
-      meshRef.current.rotation.y += scaledDelta * speed * direction;
-    }
-    // Clouds rotate with the surface plus a slight drift
-    if (cloudRef.current) {
-      const speed = planet.rotationPeriod !== 0 ? 0.3 / Math.abs(planet.rotationPeriod / 24) : 0.1;
-      const direction = planet.rotationPeriod < 0 ? -1 : 1;
-      cloudRef.current.rotation.y += scaledDelta * speed * direction + scaledDelta * 0.008;
+      const simDelta = delta * timeScale; // sim-seconds elapsed this frame
+      if (meshRef.current) {
+        meshRef.current.rotation.y += simDelta * angularVel * direction;
+      }
+      if (cloudRef.current) {
+        cloudRef.current.rotation.y += simDelta * angularVel * direction + simDelta * 0.00001;
+      }
+    } else {
+      // Artistic rotation (explore mode)
+      const scaledDelta = delta * timeScale;
+      if (meshRef.current) {
+        const speed = planet.rotationPeriod !== 0 ? 0.3 / Math.abs(planet.rotationPeriod / 24) : 0.1;
+        const direction = planet.rotationPeriod < 0 ? -1 : 1;
+        meshRef.current.rotation.y += scaledDelta * speed * direction;
+      }
+      if (cloudRef.current) {
+        const speed = planet.rotationPeriod !== 0 ? 0.3 / Math.abs(planet.rotationPeriod / 24) : 0.1;
+        const direction = planet.rotationPeriod < 0 ? -1 : 1;
+        cloudRef.current.rotation.y += scaledDelta * speed * direction + scaledDelta * 0.008;
+      }
     }
   });
 
