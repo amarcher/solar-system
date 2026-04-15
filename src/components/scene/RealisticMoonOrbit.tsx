@@ -140,23 +140,25 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: Realisti
     groupRef.current.getWorldPosition(worldPos.current);
     setMoonPosition(moon.id, worldPos.current.x, worldPos.current.y, worldPos.current.z);
 
-    // Self-rotation — pauses when time is paused, otherwise runs at artistic speed
+    // Self-rotation — log-compressed time scale so it speeds up gently
     if (moonMeshRef.current && rate !== 0) {
+      const rotScale = rate <= 1 ? rate : Math.log10(rate + 1);
+      const scaledDelta = delta * rotScale;
       if (moon.chaoticRotation) {
         const seed = hashString(moon.id);
         const r1 = 0.2 + (seed % 100) / 500;
         const r2 = 0.15 + ((seed >> 8) % 100) / 400;
         const r3 = 0.1 + ((seed >> 16) % 100) / 600;
-        moonMeshRef.current.rotation.x += delta * r1;
-        moonMeshRef.current.rotation.y += delta * r2;
-        moonMeshRef.current.rotation.z += delta * r3;
+        moonMeshRef.current.rotation.x += scaledDelta * r1;
+        moonMeshRef.current.rotation.y += scaledDelta * r2;
+        moonMeshRef.current.rotation.z += scaledDelta * r3;
       } else {
         const periodHours = moon.rotationPeriod ?? (moon.orbitalPeriod * 24);
         const speed = periodHours !== 0 ? 0.3 / Math.abs(periodHours / 24) : 0.1;
         const direction =
           (moon.rotationPeriod !== undefined && moon.rotationPeriod < 0)
             ? -1 : (moon.retrograde ? -1 : 1);
-        moonMeshRef.current.rotation.y += delta * speed * direction;
+        moonMeshRef.current.rotation.y += scaledDelta * speed * direction;
       }
     }
   });
