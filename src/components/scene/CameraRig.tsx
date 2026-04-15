@@ -10,12 +10,14 @@ import type CameraControlsImpl from 'camera-controls';
 interface CameraRigProps {
   nav: NavigationState;
   planets: Planet[];
+  /** When set, camera continuously tracks this mission in orrery mode */
+  orreryMissionId?: string;
 }
 
 const SYSTEM_POSITION = { x: 0, y: 35, z: 50 };
 const SYSTEM_TARGET = { x: 0, y: 0, z: 0 };
 
-export function CameraRig({ nav, planets }: CameraRigProps) {
+export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
   const controlsRef = useRef<CameraControlsImpl>(null);
 
   const trackingPlanetId = useRef<string | null>(null);
@@ -96,6 +98,24 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
       }
     }
 
+    // --- Orrery mission: continuously track the spacecraft ---
+    if (orreryMissionId) {
+      const missionPos = getMissionPosition(orreryMissionId);
+      if (missionPos) {
+        if (!flyInDone.current) {
+          controls.smoothTime = 1.0;
+          controls.moveTo(missionPos.x, missionPos.y, missionPos.z, true);
+          controls.dollyTo(4, true); // Frame Earth-Moon-trajectory system
+          flyInDone.current = true;
+          flyInTime.current = 0;
+        } else {
+          // Continuously follow the moving spacecraft
+          controls.moveTo(missionPos.x, missionPos.y, missionPos.z, true);
+        }
+      }
+      return; // Skip other tracking
+    }
+
     // --- Track moving bodies ---
     if (trackingMissionId.current) {
       const missionPos = getMissionPosition(trackingMissionId.current);
@@ -144,6 +164,15 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
     }
   });
 
+  // Reset flyInDone when orrery mission changes
+  useEffect(() => {
+    if (orreryMissionId) {
+      flyInDone.current = false;
+      flyInTime.current = 0;
+      settled.current = false;
+    }
+  }, [orreryMissionId]);
+
   // Reset flyInDone when nav changes
   useEffect(() => {
     flyInDone.current = false;
@@ -154,7 +183,10 @@ export function CameraRig({ nav, planets }: CameraRigProps) {
   let minDist = 15;
   let maxDist = 100;
 
-  if (nav.level === 'sun') {
+  if (orreryMissionId) {
+    minDist = 1;
+    maxDist = 50;
+  } else if (nav.level === 'sun') {
     minDist = 2;
     maxDist = 15;
   } else if (nav.level === 'planet') {

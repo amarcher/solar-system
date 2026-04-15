@@ -16,6 +16,7 @@ import { ModeToggle } from './components/ui/ModeToggle';
 import { TimeControls } from './components/ui/TimeControls';
 import { ObserverPicker } from './components/ui/ObserverPicker';
 import { useDeviceOrientation } from './astronomy/useDeviceOrientation';
+import { trackModeSwitch } from './utils/analytics';
 import './App.css';
 
 function viewTransition(update: () => void, types: string[]) {
@@ -35,12 +36,13 @@ function getIsMobile() { return mobileQuery.matches; }
 
 function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
-  const { mode, setDate, setRate, setObserver } = useAstronomy();
+  const { mode, setMode, setDate, setRate, setObserver, displayTime, observer } = useAstronomy();
   const [showLabels, setShowLabels] = useState(true);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
   const [missionHudDismissed, setMissionHudDismissed] = useState(false);
   const [toolbarOpen, setToolbarOpen] = useState(false);
+  const [orreryMissionActive, setOrreryMissionActive] = useState(false);
   const deviceOrientation = useDeviceOrientation();
   const isMobile = useSyncExternalStore(subscribeToMobile, getIsMobile);
   const hideDetails = cinemaMode || isMobile;
@@ -73,6 +75,18 @@ function App() {
     } else {
       // Stop device orientation tracking when leaving sky mode
       if (deviceOrientation.active) deviceOrientation.stop();
+    }
+    // When switching from Explore (with Artemis active) to Orrery, auto-start orrery mission
+    if (mode === 'orrery' && nav.level === 'mission') {
+      goToSystem();
+      startOrreryMission();
+    } else if (mode !== 'artistic' && nav.level === 'mission') {
+      // Exit artistic mission mode for sky mode
+      goToSystem();
+    }
+    // Clear orrery mission when leaving orrery mode
+    if (mode !== 'orrery') {
+      setOrreryMissionActive(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
@@ -121,8 +135,28 @@ function App() {
     }
   }, [nav.level, goToSystem, goToMission]);
 
+  const startOrreryMission = useCallback(() => {
+    setOrreryMissionActive(true);
+    const artemis = getMissionById('artemis-2');
+    if (artemis) {
+      setDate(new Date(artemis.launchDate));
+      setRate(3600); // 1 hour per second — mission plays in ~4 min, rotation stays smooth
+    }
+  }, [setDate, setRate]);
+
+  const handleOrreryMissionToggle = useCallback(() => {
+    if (orreryMissionActive) {
+      setOrreryMissionActive(false);
+    } else {
+      startOrreryMission();
+    }
+  }, [orreryMissionActive, startOrreryMission]);
+
   const voice = useSolarConversation({
     currentNav: nav,
+    currentMode: mode,
+    currentObserver: observer,
+    displayTime,
     onNavigatePlanet: handlePlanetClick,
     onNavigateMoon: (planetId, moonId) => {
       viewTransition(() => goToMoon(planetId, moonId), ['detail-open']);
@@ -133,12 +167,14 @@ function App() {
     },
     onGoBack: handleBack,
     onPeelSunLayer: (layerIndex: number) => {
-      // If not already on Sun detail, navigate there first
       if (nav.level !== 'sun') {
         handleSunClick();
       }
       setSunLayerOverride(layerIndex);
     },
+    onSwitchMode: setMode,
+    onSetDate: setDate,
+    onSetRate: setRate,
   });
 
   useEffect(() => {
@@ -146,6 +182,11 @@ function App() {
       voice.notifyNavChange(nav);
     }
   }, [nav]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    voice.notifyModeChange(mode);
+    trackModeSwitch(mode);
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Resolve current planet/moon from nav state
   const currentPlanet = (nav.level === 'planet' || nav.level === 'moon')
@@ -208,6 +249,7 @@ function App() {
         deviceOrientation={deviceOrientation.active}
         deviceHeadingRef={deviceOrientation.headingRef}
         devicePitchRef={deviceOrientation.pitchRef}
+        orreryMission={orreryMissionActive ? getMissionById('artemis-2') : undefined}
       />
 
       <div className={`app__toolbar${toolbarOpen ? ' app__toolbar--open' : ''}`}>
@@ -258,20 +300,39 @@ function App() {
               <path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z" />
             </svg>
           </button>
-          <button
-            className={`app__toolbar-btn${nav.level === 'mission' ? ' app__toolbar-btn--mission-on' : ''}`}
-            onClick={() => { handleMissionToggle(); setToolbarOpen(false); }}
-            type="button"
-            aria-label={nav.level === 'mission' ? 'Exit mission tracker' : 'Track Artemis II mission'}
-            title={nav.level === 'mission' ? 'Exit mission tracker' : 'Track Artemis II mission'}
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-              <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
-              <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
-              <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
-            </svg>
-          </button>
+          {(mode === 'artistic' || mode === 'orrery') && (
+            <button
+              className={`app__toolbar-btn${(nav.level === 'mission' || orreryMissionActive) ? ' app__toolbar-btn--mission-on' : ''}`}
+              onClick={() => {
+                if (mode === 'orrery') {
+                  handleOrreryMissionToggle();
+                } else {
+                  handleMissionToggle();
+                }
+                setToolbarOpen(false);
+              }}
+              type="button"
+              aria-label={
+                orreryMissionActive ? 'Exit Artemis II replay' :
+                nav.level === 'mission' ? 'Exit mission tracker' :
+                mode === 'orrery' ? 'Replay Artemis II mission' :
+                'Track Artemis II mission'
+              }
+              title={
+                orreryMissionActive ? 'Exit Artemis II replay' :
+                nav.level === 'mission' ? 'Exit mission tracker' :
+                mode === 'orrery' ? 'Replay Artemis II mission' :
+                'Track Artemis II mission'
+              }
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+                <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+                <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+                <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+              </svg>
+            </button>
+          )}
           <button
             className={`app__toolbar-btn${cinemaMode ? ' app__toolbar-btn--active' : ''}`}
             onClick={() => { setCinemaMode(v => !v); setToolbarOpen(false); }}
@@ -405,7 +466,12 @@ function App() {
         />
       )}
 
-      {mode !== 'artistic' && <TimeControls />}
+      {mode !== 'artistic' && (
+        <TimeControls
+          missionActive={orreryMissionActive}
+          onReplayMission={startOrreryMission}
+        />
+      )}
       {mode === 'sky' && (
         <>
           <ObserverPicker />

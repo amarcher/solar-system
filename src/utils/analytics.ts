@@ -20,25 +20,31 @@ export function initAnalytics() {
 
 // ---------- Navigation Events ----------
 
-export function trackPlanetView(planetId: string) {
+export function trackPlanetView(planetId: string, viewMode?: string) {
   if (!initialized) return;
-  posthog.capture('planet_viewed', { planet_id: planetId });
+  posthog.capture('planet_viewed', { planet_id: planetId, view_mode: viewMode });
   fbq('track', 'ViewContent', { content_name: planetId, content_type: 'planet' });
-  gtag('event', 'planet_viewed', { planet_id: planetId });
+  gtag('event', 'planet_viewed', { planet_id: planetId, view_mode: viewMode });
 }
 
-export function trackMoonView(planetId: string, moonId: string) {
+export function trackMoonView(planetId: string, moonId: string, viewMode?: string) {
   if (!initialized) return;
-  posthog.capture('moon_viewed', { planet_id: planetId, moon_id: moonId });
+  posthog.capture('moon_viewed', { planet_id: planetId, moon_id: moonId, view_mode: viewMode });
   fbq('track', 'ViewContent', { content_name: moonId, content_type: 'moon' });
-  gtag('event', 'moon_viewed', { planet_id: planetId, moon_id: moonId });
+  gtag('event', 'moon_viewed', { planet_id: planetId, moon_id: moonId, view_mode: viewMode });
 }
 
-export function trackSunView() {
+export function trackSunView(viewMode?: string) {
   if (!initialized) return;
-  posthog.capture('sun_viewed');
+  posthog.capture('sun_viewed', { view_mode: viewMode });
   fbq('track', 'ViewContent', { content_name: 'sun', content_type: 'sun' });
-  gtag('event', 'sun_viewed');
+  gtag('event', 'sun_viewed', { view_mode: viewMode });
+}
+
+export function trackModeSwitch(mode: string) {
+  if (!initialized) return;
+  posthog.capture('mode_switched', { view_mode: mode });
+  gtag('event', 'mode_switched', { view_mode: mode });
 }
 
 export function trackVoiceAgentActivated() {
