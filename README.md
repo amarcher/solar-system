@@ -19,6 +19,9 @@ Part of a series of educational interactive apps — see also: [Periodic Table](
 - [x] **Phase 2c: Voice Agent** — `useSolarConversation` hook with 4 client tools (`navigate_to_planet`, `navigate_to_moon`, `navigate_to_sun`, `go_back`), contextual update builders for planets/moons/Sun
 
 - [x] **Astronomical Clock** — Three view modes (Explore / Orrery / Sky) powered by `astronomy-engine` VSOP87 ephemeris. Orrery shows real planetary positions for any date. Sky mode renders the actual night sky from any location on Earth with 8400 real stars, sidereal-time rotation, and compass-oriented horizon.
+- [x] **Time Controls** — Speed up/slow down orbits with preset playback rates, date picker to jump to any date, "Now" button to return to real time. Voice agent can also set time and speed.
+- [x] **Device Orientation (Sky Mode)** — Point phone at the sky, camera follows gyroscope/compass heading. Uses `DeviceOrientationEvent` with iOS permission flow.
+- [x] **Artemis Mission Replay** — In orrery mode, visualize the Artemis II mission trajectory near Earth with interpolated ephemeris data, Moon-direction alignment, and a scaled flight path.
 
 ### Up Next
 
@@ -32,10 +35,9 @@ Part of a series of educational interactive apps — see also: [Periodic Table](
 
 ### Future Ideas
 
-- Device orientation for sky mode — point phone at the sky, camera follows gyroscope/compass
 - Constellation lines overlay
 - Planet comparison mode — drag two planets side by side
-- AR mode — overlay planet info on camera feed
+- AR mode — overlay planet info on camera feed (device orientation done, camera feed overlay remaining)
 - Generalize the platform — human body explorer, world map explorer, etc.
 
 ---

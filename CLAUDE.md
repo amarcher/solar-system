@@ -96,6 +96,8 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 - `TerrestrialRig.tsx` — fixed-origin camera with alt-az panning (sky mode)
 - `HorizonPlane.tsx` — ground disc with N/E/S/W compass labels
 - `StarField.tsx` — 3000 instanced points with color variation (artistic mode)
+- `RealisticMissionTrajectory.tsx` — Artemis mission replay: interpolated ephemeris, scaled trajectory near Earth, Moon-direction alignment
+- `RealisticMoonOrbit.tsx` — realistic moon orbits using astronomy-engine geocentric positions
 - `AsteroidBelt.tsx` — 600 instanced dodecahedrons between Mars and Jupiter orbits
 
 ### Detail Overlays (`src/components/detail/`)
@@ -104,7 +106,7 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 - `SunDetail.tsx/css` — unique interactive layout with peelable layer visualization
 
 ### Voice Agent
-- `src/hooks/useSolarConversation.ts` — ElevenLabs voice session, contextual updates, 4 client tools
+- `src/hooks/useSolarConversation.ts` — ElevenLabs voice session, contextual updates, 7 client tools
 - `src/components/ui/VoiceAgent.tsx/css` — floating orb (space-themed orange gradient)
 
 ### UI (`src/components/ui/`)
@@ -127,9 +129,15 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 - `navigate_to_moon({ name })` — fuzzy-matches moon name across all planets
 - `navigate_to_sun()` — opens Sun detail
 - `go_back()` — returns to previous level
+- `switch_view_mode({ mode })` — switches between Explore / Orrery / Sky view modes
+- `set_time({ date })` — jumps the simulation clock to a specific date
+- `set_time_speed({ speed })` — sets simulation playback speed (paused, real-time, 1hr/sec, etc.)
 
 ### Context Updates
 Every navigation change sends a contextual update describing what the child sees on screen (3D scene state, property cards, moon list, fun facts). Built by `buildPlanetContext()`, `buildMoonContext()`, `buildSunContext()` in `useSolarConversation.ts`.
+
+### Analytics
+Navigation events (`trackPlanetView`, `trackMoonView`, `trackSunView`) include the current `view_mode` (artistic/orrery/sky). View mode switches are tracked separately via `trackModeSwitch`. See `src/utils/analytics.ts`.
 
 ### Setup
 - Agent config: `agent_configs/Solar-System-Explorer-Guide.json` (managed via `@elevenlabs/cli`)
