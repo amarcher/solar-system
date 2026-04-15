@@ -61,7 +61,8 @@ export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, show
         showLabel={showLabel}
         showMoons={showMoons}
         paused={rate === 0}
-        timeScale={rate <= 1 ? rate : Math.log10(rate + 1)}
+        timeScale={rate}
+        useRealRotation
       />
 
       {showMoons && moons.map((moon) => (

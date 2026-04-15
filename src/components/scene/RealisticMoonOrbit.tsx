@@ -140,25 +140,28 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: Realisti
     groupRef.current.getWorldPosition(worldPos.current);
     setMoonPosition(moon.id, worldPos.current.x, worldPos.current.y, worldPos.current.z);
 
-    // Self-rotation — log-compressed time scale so it speeds up gently
+    // Self-rotation — physically accurate, tied to sim time rate
     if (moonMeshRef.current && rate !== 0) {
-      const rotScale = rate <= 1 ? rate : Math.log10(rate + 1);
-      const scaledDelta = delta * rotScale;
+      const simDelta = delta * rate; // sim-seconds this frame
       if (moon.chaoticRotation) {
+        // Chaotic: scale tumble with time but keep it moderate
         const seed = hashString(moon.id);
         const r1 = 0.2 + (seed % 100) / 500;
         const r2 = 0.15 + ((seed >> 8) % 100) / 400;
         const r3 = 0.1 + ((seed >> 16) % 100) / 600;
-        moonMeshRef.current.rotation.x += scaledDelta * r1;
-        moonMeshRef.current.rotation.y += scaledDelta * r2;
-        moonMeshRef.current.rotation.z += scaledDelta * r3;
+        // Use sqrt of simDelta to keep tumble visible but not insane at high rates
+        const tumbleDelta = Math.sqrt(Math.abs(simDelta)) * Math.sign(simDelta);
+        moonMeshRef.current.rotation.x += tumbleDelta * r1;
+        moonMeshRef.current.rotation.y += tumbleDelta * r2;
+        moonMeshRef.current.rotation.z += tumbleDelta * r3;
       } else {
         const periodHours = moon.rotationPeriod ?? (moon.orbitalPeriod * 24);
-        const speed = periodHours !== 0 ? 0.3 / Math.abs(periodHours / 24) : 0.1;
+        const periodSec = Math.abs(periodHours) * 3600;
+        const angularVel = periodSec > 0 ? TWO_PI / periodSec : 0;
         const direction =
           (moon.rotationPeriod !== undefined && moon.rotationPeriod < 0)
             ? -1 : (moon.retrograde ? -1 : 1);
-        moonMeshRef.current.rotation.y += scaledDelta * speed * direction;
+        moonMeshRef.current.rotation.y += simDelta * angularVel * direction;
       }
     }
   });
