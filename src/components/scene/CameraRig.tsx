@@ -105,7 +105,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
         if (!flyInDone.current) {
           controls.smoothTime = 1.0;
           controls.moveTo(missionPos.x, missionPos.y, missionPos.z, true);
-          controls.dollyTo(0.8, true); // Close enough to see Earth-Moon-trajectory
+          controls.dollyTo(4, true); // Frame Earth-Moon-trajectory system
           flyInDone.current = true;
           flyInTime.current = 0;
         } else {
@@ -183,7 +183,10 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
   let minDist = 15;
   let maxDist = 100;
 
-  if (nav.level === 'sun') {
+  if (orreryMissionId) {
+    minDist = 1;
+    maxDist = 50;
+  } else if (nav.level === 'sun') {
     minDist = 2;
     maxDist = 15;
   } else if (nav.level === 'planet') {
