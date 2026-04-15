@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Line } from '@react-three/drei';
+import { Line, Html } from '@react-three/drei';
 import { Group, Quaternion, Vector3 } from 'three';
 import type { Mission, MissionEphemerisPoint } from '../../types/mission';
 import { clearMissionPosition, setMissionPosition } from '../../utils/missionPositions';
@@ -164,6 +164,12 @@ export function RealisticMissionTrajectory({ mission }: RealisticMissionTrajecto
     setMissionPosition(mission.id, worldPos.current.x, worldPos.current.y, worldPos.current.z);
   });
 
+  // Moon radius: proportional to the exaggerated scale
+  // Real Moon diameter ≈ 3474 km, Earth-Moon dist ≈ 384400 km
+  // Ratio: 3474/384400 ≈ 0.009, so at VISIBLE_MOON_DIST=1.5, Moon radius ≈ 0.014
+  // Exaggerate 8x so it's actually visible
+  const moonRadius = 0.11;
+
   return (
     <group ref={wrapperRef}>
       <Line
@@ -173,13 +179,36 @@ export function RealisticMissionTrajectory({ mission }: RealisticMissionTrajecto
         transparent
         opacity={0.6}
       />
+
+      {/* Moon — positioned along +X at scaled Moon distance */}
+      <group position={[VISIBLE_MOON_DIST, 0, 0]}>
+        <mesh>
+          <sphereGeometry args={[moonRadius, 24, 24]} />
+          <meshStandardMaterial color="#aaaaaa" roughness={0.8} />
+        </mesh>
+        <Html
+          center
+          position={[0, -(moonRadius + 0.12), 0]}
+          style={{
+            color: 'rgba(255, 255, 255, 0.7)',
+            fontSize: '10px',
+            fontFamily: "'Space Grotesk', sans-serif",
+            pointerEvents: 'none',
+            userSelect: 'none',
+            whiteSpace: 'nowrap',
+            textShadow: '0 1px 6px rgba(0,0,0,0.9)',
+          }}
+        >
+          Moon
+        </Html>
+      </group>
+
+      {/* Spacecraft */}
       <group ref={groupRef}>
-        {/* Spacecraft dot */}
         <mesh>
           <sphereGeometry args={[0.06, 8, 8]} />
           <meshBasicMaterial color={mission.color} />
         </mesh>
-        {/* Glow */}
         <mesh>
           <sphereGeometry args={[0.12, 8, 8]} />
           <meshBasicMaterial color={mission.color} transparent opacity={0.3} depthWrite={false} />

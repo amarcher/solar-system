@@ -155,7 +155,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             pitchRef={devicePitchRef}
           />
         ) : (
-          <CameraRig nav={nav} planets={planets} />
+          <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} />
         )}
 
         <EffectComposer>
