@@ -1,7 +1,9 @@
 import type { Moon, NavigationState, Planet } from '../../types/celestialBody';
+import type { Mission } from '../../types/mission';
 import { SunMesh } from './Sun';
 import { RealisticPlanet } from './RealisticPlanet';
 import { RealisticStarField } from './RealisticStarField';
+import { RealisticMissionTrajectory } from './RealisticMissionTrajectory';
 
 interface RealisticSceneProps {
   planets: Planet[];
@@ -10,6 +12,7 @@ interface RealisticSceneProps {
   onPlanetClick: (planetId: string) => void;
   onSunClick: () => void;
   showLabels: boolean;
+  activeMission?: Mission;
 }
 
 export function RealisticScene({
@@ -18,6 +21,7 @@ export function RealisticScene({
   onPlanetClick,
   onSunClick,
   showLabels,
+  activeMission,
 }: RealisticSceneProps) {
   const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun';
   const focusedPlanetId = (nav.level === 'planet' || nav.level === 'moon') ? nav.planetId : null;
@@ -38,6 +42,10 @@ export function RealisticScene({
           />
         );
       })}
+
+      {activeMission && (
+        <RealisticMissionTrajectory mission={activeMission} />
+      )}
     </>
   );
 }
