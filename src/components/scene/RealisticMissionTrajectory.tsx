@@ -71,15 +71,14 @@ export function RealisticMissionTrajectory({ mission }: RealisticMissionTrajecto
   const velVec = useRef(new Vector3());
   const quat = useRef(new Quaternion());
 
-  // The trajectory data's canonical scale: Moon is at ~2.0 scene units from Earth.
-  // We need to figure out the ratio between the canonical scene units and the
-  // orrery's log-compressed AU scale for the Earth-Moon distance.
-  // Earth-Moon distance ≈ 0.00257 AU
-  const EARTH_MOON_AU = 0.00257;
-  const orreryMoonDist = scaleAU(EARTH_MOON_AU);
-  // In the canonical data, Moon is at ~2.0 units
+  // The trajectory data uses canonical scene units where Moon ≈ 2.0 from Earth.
+  // In the orrery's log-compressed space, the real Earth-Moon distance (0.00257 AU)
+  // maps to ~0.055 units — invisible. We exaggerate the trajectory to be visually
+  // meaningful: scale it so the Moon-distance apogee is ~1.5 orrery units, which
+  // makes the flight path clearly visible near Earth without overwhelming the scene.
   const CANONICAL_MOON_DIST = 2.0;
-  const scaleFactor = orreryMoonDist / CANONICAL_MOON_DIST;
+  const VISIBLE_MOON_DIST = 1.5; // orrery units — visible but not huge
+  const scaleFactor = VISIBLE_MOON_DIST / CANONICAL_MOON_DIST;
 
   // Pre-scale all line points
   const linePoints = useMemo<[number, number, number][]>(
@@ -175,14 +174,14 @@ export function RealisticMissionTrajectory({ mission }: RealisticMissionTrajecto
         opacity={0.6}
       />
       <group ref={groupRef}>
-        {/* Spacecraft dot — simpler than the full Orion model at this scale */}
+        {/* Spacecraft dot */}
         <mesh>
-          <sphereGeometry args={[0.03, 8, 8]} />
+          <sphereGeometry args={[0.06, 8, 8]} />
           <meshBasicMaterial color={mission.color} />
         </mesh>
         {/* Glow */}
         <mesh>
-          <sphereGeometry args={[0.06, 8, 8]} />
+          <sphereGeometry args={[0.12, 8, 8]} />
           <meshBasicMaterial color={mission.color} transparent opacity={0.3} depthWrite={false} />
         </mesh>
       </group>
