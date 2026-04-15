@@ -193,7 +193,7 @@ function ProceduralRings({ planet }: { planet: Planet }) {
 
   // Remap UVs so U goes radially from inner→outer edge (for 1D ring texture)
   const geometry = useMemo(() => {
-    const geo = new RingGeometry(innerR, outerR, 128, 1);
+    const geo = new RingGeometry(innerR, outerR, 128, 4);
     const uvs = geo.attributes.uv;
     const pos = geo.attributes.position;
     for (let i = 0; i < uvs.count; i++) {
