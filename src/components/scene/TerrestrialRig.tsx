@@ -60,13 +60,13 @@ export function TerrestrialRig({ deviceOrientation, headingRef, pitchRef }: Terr
     // So azimuth = -(heading - 90) in radians = (90 - heading) * DEG2RAD
     const azimuth = (90 - heading) * DEG2RAD;
 
-    // Beta (phone tilt): 0=flat on table, 90=upright, >90=leaning back
-    // When phone is upright (90°), user is looking at the horizon (polar = 90°)
-    // When phone is flat (0°), user is looking at zenith (polar = 0°)
-    // When phone is tilted back (>90°), user is looking below horizon
+    // Beta (phone tilt): 0=flat on table, 90=upright, >90=tilting toward ground
     // CameraControls polarAngle: 0 = looking up (+Y), PI = looking down (-Y)
-    // Mapping: polar = (90 - beta) * DEG2RAD, clamped to [0, PI]
-    const polar = Math.max(0, Math.min(Math.PI, (90 - beta) * DEG2RAD));
+    // Direct mapping: beta° → polar radians
+    //   flat (0°)   → polar=0   → zenith  ✓
+    //   upright (90°) → polar=π/2 → horizon ✓
+    //   tilted down (>90°) → polar>π/2 → below horizon ✓
+    const polar = Math.max(0, Math.min(Math.PI, beta * DEG2RAD));
 
     // Apply smoothly — CameraControls will lerp
     controls.rotateTo(azimuth, polar, false);
