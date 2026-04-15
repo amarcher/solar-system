@@ -1,7 +1,7 @@
 import type { Moon, NavigationState, Planet } from '../../types/celestialBody';
-import { CelestialBackdrop } from './CelestialBackdrop';
 import { SunMesh } from './Sun';
 import { RealisticPlanet } from './RealisticPlanet';
+import { RealisticStarField } from './RealisticStarField';
 
 interface RealisticSceneProps {
   planets: Planet[];
@@ -24,7 +24,7 @@ export function RealisticScene({
 
   return (
     <>
-      <CelestialBackdrop />
+      <RealisticStarField />
       <SunMesh onClick={onSunClick} showLabel={showLabels && !isZoomedIn} paused={false} />
 
       {planets.map((planet) => {
