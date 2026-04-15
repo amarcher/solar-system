@@ -16,12 +16,13 @@ interface RealisticPlanetProps {
   onMoonClick?: (moonId: string) => void;
   showLabel?: boolean;
   showMoons?: boolean;
+  showMoonLabels?: boolean;
 }
 
 /** Minimum recompute interval in ms of simulation time. */
 const RECOMPUTE_THRESHOLD_MS = 1000;
 
-export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, showLabel = true, showMoons = false }: RealisticPlanetProps) {
+export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, showLabel = true, showMoons = false, showMoonLabels = true }: RealisticPlanetProps) {
   const groupRef = useRef<Group>(null);
   const { timeRef, engineReady } = useAstronomy();
   const lastComputedTime = useRef(0);
@@ -61,7 +62,7 @@ export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, show
           key={moon.id}
           moon={moon}
           onClick={() => onMoonClick?.(moon.id)}
-          showLabel
+          showLabel={showMoonLabels}
         />
       ))}
     </group>

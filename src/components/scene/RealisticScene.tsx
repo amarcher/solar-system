@@ -45,6 +45,7 @@ export function RealisticScene({
             onMoonClick={(moonId) => onMoonClick(planet.id, moonId)}
             showLabel={showLabels && (!isZoomedIn || isFocused)}
             showMoons={isFocused}
+            showMoonLabels={showLabels}
           />
         );
       })}
