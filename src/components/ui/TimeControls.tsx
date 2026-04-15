@@ -11,7 +11,7 @@ interface TimeControlsProps {
 const SPEED_OPTIONS = [
   { label: 'Paused', rate: 0 },
   { label: '1x', rate: 1 },
-  { label: '1 min/s', rate: 60 },
+  { label: '10 min/s', rate: 600 },
   { label: '1 hr/s', rate: 3600 },
   { label: '1 day/s', rate: 86400 },
   { label: '1 mo/s', rate: 86400 * 30 },

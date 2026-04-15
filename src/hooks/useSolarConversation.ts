@@ -396,15 +396,15 @@ export function useSolarConversation({ currentNav, currentMode, currentObserver,
         const speedMap: Record<string, number> = {
           paused: 0, pause: 0, stop: 0,
           'real-time': 1, '1x': 1, normal: 1, realtime: 1,
-          '1 minute': 60, '1 min': 60,
+          '10 minutes': 600, '10 min': 600,
           '1 hour': 3600, '1 hr': 3600,
           '1 day': 86400,
           '1 month': 86400 * 30,
         };
         const rate = speedMap[speedStr] ?? parseFloat(speedStr);
-        if (isNaN(rate)) return `Unknown speed "${speedStr}". Try: paused, real-time, 1 hour, 1 day, 1 month`;
+        if (isNaN(rate)) return `Unknown speed "${speedStr}". Try: paused, real-time, 10 min, 1 hour, 1 day, 1 month`;
         handlersRef.current.onSetRate(rate);
-        const labels: Record<number, string> = { 0: 'Paused', 1: '1x (real-time)', 60: '1 min/sec', 3600: '1 hr/sec', 86400: '1 day/sec' };
+        const labels: Record<number, string> = { 0: 'Paused', 1: '1x (real-time)', 600: '10 min/sec', 3600: '1 hr/sec', 86400: '1 day/sec' };
         return `Time speed set to ${labels[rate] ?? `${rate}x`}`;
       } catch (err) {
         return `Failed: ${(err as Error)?.message ?? 'unknown error'}`;
