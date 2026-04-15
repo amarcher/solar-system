@@ -15,6 +15,7 @@ import { AstronomyProvider, useAstronomy } from './astronomy/AstronomyContext';
 import { ModeToggle } from './components/ui/ModeToggle';
 import { TimeControls } from './components/ui/TimeControls';
 import { ObserverPicker } from './components/ui/ObserverPicker';
+import { useDeviceOrientation } from './astronomy/useDeviceOrientation';
 import './App.css';
 
 function viewTransition(update: () => void, types: string[]) {
@@ -40,6 +41,7 @@ function App() {
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
   const [missionHudDismissed, setMissionHudDismissed] = useState(false);
   const [toolbarOpen, setToolbarOpen] = useState(false);
+  const deviceOrientation = useDeviceOrientation();
   const isMobile = useSyncExternalStore(subscribeToMobile, getIsMobile);
   const hideDetails = cinemaMode || isMobile;
 
@@ -68,6 +70,9 @@ function App() {
           { timeout: 5000 },
         );
       }
+    } else {
+      // Stop device orientation tracking when leaving sky mode
+      if (deviceOrientation.active) deviceOrientation.stop();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
@@ -200,6 +205,9 @@ function App() {
         onMoonClick={handleSceneMoonClick}
         onSunClick={handleSunClick}
         showLabels={showLabels}
+        deviceOrientation={deviceOrientation.active}
+        deviceHeadingRef={deviceOrientation.headingRef}
+        devicePitchRef={deviceOrientation.pitchRef}
       />
 
       <div className={`app__toolbar${toolbarOpen ? ' app__toolbar--open' : ''}`}>
@@ -398,7 +406,31 @@ function App() {
       )}
 
       {mode !== 'artistic' && <TimeControls />}
-      {mode === 'sky' && <ObserverPicker />}
+      {mode === 'sky' && (
+        <>
+          <ObserverPicker />
+          {deviceOrientation.supported && (
+            <button
+              className={`app__device-orient-btn${deviceOrientation.active ? ' app__device-orient-btn--active' : ''}`}
+              onClick={deviceOrientation.active ? deviceOrientation.stop : deviceOrientation.start}
+              type="button"
+              title={deviceOrientation.active ? 'Disable compass tracking' : 'Point phone at sky'}
+              aria-label={deviceOrientation.active ? 'Disable compass tracking' : 'Point phone at sky'}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill={deviceOrientation.active ? 'currentColor' : 'none'} />
+              </svg>
+              <span>{deviceOrientation.active ? 'Tracking' : 'Compass'}</span>
+            </button>
+          )}
+          {deviceOrientation.denied && (
+            <div className="app__device-orient-denied">
+              Compass access denied. Enable in browser settings.
+            </div>
+          )}
+        </>
+      )}
       <ModeToggle />
 
       <Analytics />

@@ -126,6 +126,63 @@ body {
   color: hsl(20, 95%, 72%);
 }
 
+/* Device orientation compass button — appears in sky mode next to observer picker */
+.app__device-orient-btn {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 130;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 5px 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.app__device-orient-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.app__device-orient-btn--active {
+  color: hsl(200, 90%, 65%);
+  border-color: hsla(200, 90%, 65%, 0.4);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.app__device-orient-denied {
+  position: fixed;
+  bottom: 135px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 130;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.65rem;
+  color: rgba(255, 100, 100, 0.8);
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .app__device-orient-btn {
+    bottom: 92px;
+  }
+
+  .app__device-orient-denied {
+    bottom: 125px;
+  }
+}
+
 /* Credits attribution link — fixed bottom-right, low-opacity so it's
    discoverable without competing with the 3D scene. Required for CC BY 4.0
    compliance on bundled textures and the Orion 3D model. */
