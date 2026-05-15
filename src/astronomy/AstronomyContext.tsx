@@ -35,7 +35,7 @@ export function useAstronomy(): AstronomyContextValue {
 }
 
 export function AstronomyProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeRaw] = useState<ViewMode>('artistic');
+  const [mode, setModeRaw] = useState<ViewMode>('orrery');
   const [engineReady, setEngineReady] = useState(false);
   const [observer, setObserver] = useState<ObserverLocation>(DEFAULT_OBSERVER);
 
@@ -78,13 +78,27 @@ export function AstronomyProvider({ children }: { children: ReactNode }) {
     setRateState(r);
   }, []);
 
+  const ensureEngineReady = useCallback(() => {
+    if (AstronomyService.isReady()) {
+      setEngineReady(true);
+      return;
+    }
+    AstronomyService.preload().then(() => setEngineReady(true));
+  }, []);
+
+  useEffect(() => {
+    if (mode !== 'artistic') {
+      ensureEngineReady();
+    }
+  }, [ensureEngineReady, mode]);
+
   // Lazy-load the astronomy engine when switching away from artistic mode.
   const setMode = useCallback((m: ViewMode) => {
     setModeRaw(m);
-    if (m !== 'artistic' && !AstronomyService.isReady()) {
-      AstronomyService.preload().then(() => setEngineReady(true));
+    if (m !== 'artistic') {
+      ensureEngineReady();
     }
-  }, []);
+  }, [ensureEngineReady]);
 
   // Sync engineReady if already loaded (e.g. hot-reload).
   useEffect(() => {

@@ -30,14 +30,21 @@ describe('AstronomyService', () => {
       expect(dist).toBeLessThan(1.02);
     });
 
-    it('returns positions for all supported planets', () => {
-      const bodies = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+    it('returns positions for all supported planets and dwarf planets', () => {
+      const bodies = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'ceres'];
       const date = new Date('2024-06-15T12:00:00Z');
       for (const body of bodies) {
         const pos = getHeliocentricPosition(body, date);
         const dist = Math.sqrt(pos.x ** 2 + pos.y ** 2 + pos.z ** 2);
         expect(dist, `${body} should have nonzero distance from Sun`).toBeGreaterThan(0);
       }
+    });
+
+    it('places Ceres in the asteroid belt instead of at the Sun', () => {
+      const pos = getHeliocentricPosition('ceres', new Date('2026-05-15T00:00:00Z'));
+      const dist = Math.sqrt(pos.x ** 2 + pos.y ** 2 + pos.z ** 2);
+      expect(dist).toBeGreaterThan(2.5);
+      expect(dist).toBeLessThan(3.1);
     });
 
     it('Mars is further from the Sun than Earth', () => {
