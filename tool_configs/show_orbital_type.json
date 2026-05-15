@@ -1,0 +1,38 @@
+{
+    "type": "client",
+    "name": "show_orbital_type",
+    "description": "Highlight only one type of orbital (s, p, d, or f) on the 3D atom model to show its distinct shape. Use when the child asks about orbital shapes or types.",
+    "response_timeout_secs": 30,
+    "disable_interruptions": false,
+    "force_pre_tool_speech": false,
+    "assignments": [],
+    "tool_call_sound_behavior": "auto",
+    "tool_error_handling_mode": "auto",
+    "parameters": {
+        "type": "object",
+        "required": [
+            "type"
+        ],
+        "description": "Parameters for the client tool",
+        "properties": {
+            "type": {
+                "type": "string",
+                "description": "The orbital type to highlight",
+                "enum": [
+                    "s",
+                    "p",
+                    "d",
+                    "f"
+                ],
+                "is_system_provided": false,
+                "dynamic_variable": "",
+                "constant_value": ""
+            }
+        }
+    },
+    "expects_response": true,
+    "dynamic_variables": {
+        "dynamicVariablePlaceholders": {}
+    },
+    "execution_mode": "immediate"
+}

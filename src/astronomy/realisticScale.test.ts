@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scaleAU, scaleRealisticRadius } from './realisticScale';
+import { scaleAU, scaleAUVector, scaleRealisticRadius } from './realisticScale';
 
 describe('scaleAU', () => {
   it('returns 0 for 0 AU', () => {
@@ -29,6 +29,30 @@ describe('scaleAU', () => {
   it('handles negative values (sign preserved)', () => {
     expect(scaleAU(-1)).toBeLessThan(0);
     expect(Math.abs(scaleAU(-1))).toBeCloseTo(Math.abs(scaleAU(1)));
+  });
+});
+
+describe('scaleAUVector', () => {
+  it('returns the origin unchanged', () => {
+    expect(scaleAUVector(0, 0, 0)).toEqual({ x: 0, y: 0, z: 0 });
+  });
+
+  it('compresses distance while preserving vector direction', () => {
+    const scaled = scaleAUVector(0.6, 0, 0.8);
+    const originalLength = Math.hypot(0.6, 0, 0.8);
+    const scaledLength = Math.hypot(scaled.x, scaled.y, scaled.z);
+
+    expect(scaledLength).toBeCloseTo(scaleAU(originalLength));
+    expect(scaled.x / scaled.z).toBeCloseTo(0.6 / 0.8);
+  });
+
+  it('keeps equal-radius points at equal scene distances', () => {
+    const axis = scaleAUVector(1, 0, 0);
+    const diagonal = scaleAUVector(Math.SQRT1_2, 0, Math.SQRT1_2);
+
+    expect(Math.hypot(axis.x, axis.y, axis.z)).toBeCloseTo(
+      Math.hypot(diagonal.x, diagonal.y, diagonal.z),
+    );
   });
 });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { ViewMode } from './types';
 import { DEFAULT_OBSERVER } from './types';
-import { scaleAU } from './realisticScale';
+import { scaleAU, scaleAUVector } from './realisticScale';
 
 describe('ViewMode type', () => {
   it('accepts artistic, orrery, and sky as valid modes', () => {
@@ -79,6 +79,23 @@ describe('scaleAU ordering for mission-relevant distances', () => {
     const scaled = values.map(scaleAU);
     for (let i = 1; i < scaled.length; i++) {
       expect(scaled[i]).toBeGreaterThan(scaled[i - 1]);
+    }
+  });
+
+  it('radial vector scaling keeps a circular orbit circular', () => {
+    const orbitRadiusAU = 1;
+    const samples = Array.from({ length: 16 }, (_, i) => {
+      const angle = (i / 16) * Math.PI * 2;
+      const scene = scaleAUVector(
+        Math.cos(angle) * orbitRadiusAU,
+        0,
+        Math.sin(angle) * orbitRadiusAU,
+      );
+      return Math.hypot(scene.x, scene.y, scene.z);
+    });
+
+    for (const radius of samples) {
+      expect(radius).toBeCloseTo(samples[0], 10);
     }
   });
 });

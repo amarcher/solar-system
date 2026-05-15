@@ -1,0 +1,19 @@
+{
+    "name": "switch_view_mode",
+    "description": "Switch between the three view modes of the solar system app. 'explore' is the playful artistic mode with animated orbits — great for kids. 'orrery' shows planets at their real positions for any date/time using astronomical calculations — perfect for seeing where planets actually are right now. 'sky' shows the real night sky from the user's location on Earth — they can look around and see actual stars, planets, and the Moon positioned accurately. Use this when the user asks to see the real positions, the night sky, the orrery, or wants to go back to the fun animated view.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "description": "The view mode to switch to",
+        "properties": {
+            "mode": {
+                "type": "string",
+                "description": "The mode to switch to: 'explore' (playful animated view), 'orrery' (real planetary positions), or 'sky' (night sky from Earth)",
+                "enum": ["explore", "orrery", "sky"]
+            }
+        },
+        "required": ["mode"]
+    }
+}

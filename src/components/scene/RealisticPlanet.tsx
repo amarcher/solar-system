@@ -7,7 +7,7 @@ import { RealisticMoonOrbit } from './RealisticMoonOrbit';
 import { setPlanetPosition } from '../../utils/planetPositions';
 import { useAstronomy } from '../../astronomy/AstronomyContext';
 import * as AstronomyService from '../../astronomy/AstronomyService';
-import { scaleAU } from '../../astronomy/realisticScale';
+import { scaleAUVector } from '../../astronomy/realisticScale';
 
 interface RealisticPlanetProps {
   planet: Planet;
@@ -37,9 +37,14 @@ export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, show
       lastComputedTime.current = now;
       try {
         const helio = AstronomyService.getHeliocentricPosition(planet.id, new Date(now));
-        cachedPos.current.x = scaleAU(helio.x);
-        cachedPos.current.y = scaleAU(helio.z); // ecliptic z → scene y (for slight elevation)
-        cachedPos.current.z = scaleAU(-helio.y); // ecliptic y → scene -z (top-down view: x-right, z-toward camera)
+        const scenePos = scaleAUVector(
+          helio.x,
+          helio.z, // ecliptic z → scene y (for slight elevation)
+          -helio.y, // ecliptic y → scene -z (top-down view: x-right, z-toward camera)
+        );
+        cachedPos.current.x = scenePos.x;
+        cachedPos.current.y = scenePos.y;
+        cachedPos.current.z = scenePos.z;
       } catch {
         // Body not supported (e.g. Ceres) — use artistic fallback position
       }

@@ -1,0 +1,22 @@
+{
+    "type": "client",
+    "name": "read_letter_aloud",
+    "description": "Read the animal's letter aloud using the animal's voice. Use when the child asks to hear the letter read to them, or asks 'read it to me', 'what does it say', etc.",
+    "response_timeout_secs": 30,
+    "disable_interruptions": false,
+    "force_pre_tool_speech": false,
+    "assignments": [],
+    "tool_call_sound_behavior": "auto",
+    "tool_error_handling_mode": "auto",
+    "parameters": {
+        "type": "object",
+        "required": [],
+        "description": "Parameters for the client tool",
+        "properties": {}
+    },
+    "expects_response": true,
+    "dynamic_variables": {
+        "dynamicVariablePlaceholders": {}
+    },
+    "execution_mode": "immediate"
+}
