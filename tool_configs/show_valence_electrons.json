@@ -1,0 +1,22 @@
+{
+    "type": "client",
+    "name": "show_valence_electrons",
+    "description": "Highlight only the valence (outermost) electrons on the 3D atom model, dimming inner shells. Use when the child asks about bonding, reactivity, or outermost electrons.",
+    "response_timeout_secs": 30,
+    "disable_interruptions": false,
+    "force_pre_tool_speech": false,
+    "assignments": [],
+    "tool_call_sound_behavior": "auto",
+    "tool_error_handling_mode": "auto",
+    "parameters": {
+        "type": "object",
+        "required": [],
+        "description": "No parameters needed",
+        "properties": {}
+    },
+    "expects_response": true,
+    "dynamic_variables": {
+        "dynamicVariablePlaceholders": {}
+    },
+    "execution_mode": "immediate"
+}

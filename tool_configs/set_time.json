@@ -1,0 +1,18 @@
+{
+    "name": "set_time",
+    "description": "Set the simulation date/time in orrery or sky mode. This jumps the view to show where planets were (or will be) on a specific date. Works in orrery mode (planets move to their real positions for that date) and sky mode (the night sky updates to show what was visible at that time and location). Use when the user asks 'show me the sky on my birthday', 'where were the planets in 1969', 'what did the sky look like on July 4th', etc.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "description": "The date to jump to",
+        "properties": {
+            "date": {
+                "type": "string",
+                "description": "An ISO 8601 date string or natural date like '2024-07-04', '1969-07-20T20:17:00Z', 'December 25 2030'. The app will parse it."
+            }
+        },
+        "required": ["date"]
+    }
+}

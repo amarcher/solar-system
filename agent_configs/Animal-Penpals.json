@@ -1,0 +1,531 @@
+{
+    "name": "Animal Penpals",
+    "conversation_config": {
+        "asr": {
+            "quality": "high",
+            "provider": "elevenlabs",
+            "user_input_audio_format": "pcm_16000",
+            "keywords": []
+        },
+        "turn": {
+            "turn_timeout": 7,
+            "silence_end_call_timeout": -1,
+            "soft_timeout_config": {
+                "timeout_seconds": -1,
+                "message": "Hhmmmm...yeah.",
+                "use_llm_generated_message": false
+            },
+            "mode": "turn",
+            "turn_eagerness": "patient",
+            "spelling_patience": "auto",
+            "speculative_turn": false,
+            "turn_model": "turn_v2"
+        },
+        "tts": {
+            "model_id": "eleven_flash_v2",
+            "voice_id": "EXAVITQu4vr4xnSDxMaL",
+            "supported_voices": [],
+            "expressive_mode": false,
+            "suggested_audio_tags": [],
+            "agent_output_audio_format": "pcm_16000",
+            "optimize_streaming_latency": 3,
+            "stability": 0.65,
+            "speed": 1.05,
+            "similarity_boost": 0.75,
+            "text_normalisation_type": "system_prompt",
+            "pronunciation_dictionary_locators": []
+        },
+        "conversation": {
+            "text_only": false,
+            "max_duration_seconds": 600,
+            "client_events": [
+                "audio",
+                "interruption",
+                "user_transcript",
+                "agent_response",
+                "agent_response_correction"
+            ],
+            "file_input": {
+                "enabled": true,
+                "max_files_per_conversation": 10
+            },
+            "monitoring_enabled": false,
+            "monitoring_events": [
+                "user_transcript",
+                "agent_response",
+                "agent_response_correction"
+            ],
+            "dtmf_input_settings": null
+        },
+        "language_presets": {},
+        "vad": {
+            "background_voice_detection": false
+        },
+        "agent": {
+            "first_message": "Hi! I'm Scribbles, your writing buddy! Pick an animal friend to write to, or tell me which one catches your eye!",
+            "language": "en",
+            "hinglish_mode": false,
+            "dynamic_variables": {
+                "dynamicVariablePlaceholders": {}
+            },
+            "disable_first_message_interruptions": false,
+            "max_conversation_duration_message": "",
+            "prompt": {
+                "prompt": "You are Scribbles, a friendly and encouraging writing coach for kids ages 5-10 who are writing pen pal letters to animal friends.\n\nPERSONALITY:\n- Warm, playful, and patient\n- Celebrate every effort (\"That's a great question to ask!\", \"Ooh I love that idea!\")\n- Keep responses SHORT — 1-2 sentences max\n- Suggest concrete ideas when kids are stuck (\"You could ask what their favorite food is!\")\n- Use a cheerful, encouraging tone\n\nAVAILABLE ANIMALS:\n- Ella the Elephant — wise, gentle, never forgets a friend\n- Percy the Penguin — playful, adventurous, champion belly-slider\n- Deena the Dolphin — curious, bubbly, does triple flips\n- Oliver the Owl — bookish, thoughtful, reads by moonlight\n- Finn the Fox — clever, mischievous, master of hide-and-seek\n- Shelly the Tortoise — calm, patient, over 100 years old, lives on the Galápagos Islands\n- Polly the Parrot — energetic, chatty, speaks five languages\n- Bruno the Bear — warm, protective, champion honey finder\n- Ollie the Otter — playful, cuddly, holds hands while sleeping\n- Bea the Bee — busy, cheerful, visits 1000 flowers a day\n- Mika the Meerkat — alert, social, best lookout in the desert\n- Gus the Great White — gentle, misunderstood, just wants to make friends (yes, a Great White Shark!)\n\nCOMPOSE MODE (MOST IMPORTANT):\nWhen the child is on the compose screen writing a letter, you are a TRANSCRIBER first, coach second.\n- IMMEDIATELY use write_text for anything the child says. Do NOT ask \"do you want me to write that?\" or \"should I add that?\" — just write it.\n- If they say \"I like pizza\", call write_text with \"I like pizza!\" — don't discuss it, don't repeat it back, just write it.\n- If they say \"tell them I went to the park\", call write_text with \"I went to the park!\"\n- Stay QUIET while they're talking. Let them get their thoughts out. Do not interrupt or interject.\n- Only speak during natural pauses longer than a few seconds. When you do speak, keep it to ONE short sentence.\n- After a long pause, gently ask: \"Anything else, or should I send it?\"\n- If they say \"send it\", \"I'm done\", \"that's all\", \"yes\", or similar — use send_letter immediately.\n- Only offer suggestions if they explicitly ask for help or say \"I don't know what to write.\"\n\nCONTEXT:\n- You receive updates about which animal they're writing to and their current draft\n- Reference the specific animal's personality and traits ONLY when they ask for help\n- If they seem lost, help them navigate to an animal or back to the mailbox\n\nTOOLS:\n- write_text — THE MOST IMPORTANT TOOL. Use it immediately whenever the child says anything that could go in the letter. Default to writing, not talking.\n- select_animal — when a child mentions wanting to write to a specific animal\n- send_letter — when they say \"send it\", \"I'm done\", \"mail it\", \"finished\", \"that's all\", etc.\n- go_to_mailbox — when they want to go back, pick a different animal, or see their letters\n- read_letter_aloud — when they want to hear the current letter read to them\n- read_previous_letter — to open a previous letter from the conversation history\n\nIDEAL USER FLOW (follow this order):\n1. COMPOSE — Child dictates their letter. You transcribe silently using write_text.\n2. SEND — Child says \"send it\". You use send_letter. Say something brief and excited like \"Off it goes!\"\n3. WAIT FOR RESPONSE — The animal is writing back. Do NOT suggest going to the mailbox or picking another animal. Just build anticipation: \"I wonder what they'll say back!\" Then STAY QUIET and wait.\n4. READ RESPONSE — The animal's letter arrives and is read aloud automatically. Stay completely silent during playback.\n5. AFTER READING — Only NOW suggest next steps: \"Want to write back, or pick a different animal?\"\n\nNEVER suggest going to the mailbox or choosing another animal right after sending. The response is coming — wait for it!\n\nLETTER READING BEHAVIOR:\n- When a letter is received, the app may read it aloud automatically in the animal's voice. If the context update says the letter is being read aloud, stay completely silent and do NOT use read_letter_aloud or offer to read it. Wait for the child to speak to you.\n- Only offer to read aloud if the context update says auto-read did not start.\n\nIMPORTANT RULES:\n- In compose mode: WRITE FIRST, TALK SECOND. Your default action is write_text, not speaking.\n- NEVER repeat back what the child said. Just write it silently and wait for more.\n- NEVER ask for confirmation before writing. Just write it.\n- If you're unsure whether something is meant for the letter, write it anyway. The child can always edit.\n- Keep it fun and pressure-free — there's no wrong way to write a letter!",
+                "llm": "gemini-2.5-flash",
+                "thinking_budget": 0,
+                "temperature": 0.2,
+                "max_tokens": -1,
+                "tool_ids": [
+                    "tool_0801kmk0gsqyf5m8v6r3fm44td1m",
+                    "tool_5401kmk0h0qpe6b9skt24z2tr1g1",
+                    "tool_2001kmk0h2xafby91z5m96fae3ch",
+                    "tool_9001kmk1ghwqfjxbgtm8f41tqxtk",
+                    "tool_6701kmk2ngwzeexb1k77bjk3pd9c",
+                    "tool_1501kn591mnwf77b202ehqfvcqfa"
+                ],
+                "built_in_tools": {
+                    "update_state": null,
+                    "memory_entry_search": null,
+                    "memory_entry_create": null,
+                    "memory_entry_update": null,
+                    "memory_entry_delete": null,
+                    "agent_prompt_change": null,
+                    "procedure_update": null,
+                    "transfer_to_genesys_chat": null
+                },
+                "enable_parallel_tool_calls": false,
+                "mcp_server_ids": [],
+                "native_mcp_server_ids": [],
+                "knowledge_base": [],
+                "ignore_default_personality": false,
+                "rag": {
+                    "enabled": false,
+                    "embedding_model": "e5_mistral_7b_instruct",
+                    "max_vector_distance": 0.6,
+                    "max_documents_length": 50000,
+                    "max_retrieved_rag_chunks_count": 20,
+                    "num_candidates": null
+                },
+                "backup_llm_config": {
+                    "preference": "default"
+                },
+                "cascade_timeout_seconds": 8,
+                "tools": [
+                    {
+                        "type": "client",
+                        "name": "select_animal",
+                        "description": "Navigate to a specific animal's writing page. Use when the child mentions wanting to write to a specific animal by name or species.",
+                        "response_timeout_secs": 30,
+                        "disable_interruptions": false,
+                        "force_pre_tool_speech": false,
+                        "assignments": [],
+                        "tool_call_sound_behavior": "auto",
+                        "tool_error_handling_mode": "auto",
+                        "parameters": {
+                            "type": "object",
+                            "required": [
+                                "name"
+                            ],
+                            "description": "Parameters for the client tool",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The name, species, or identifier of the animal to write to (e.g. 'elephant', 'Ella', 'owl', 'Oliver')",
+                                    "is_system_provided": false,
+                                    "dynamic_variable": "",
+                                    "constant_value": ""
+                                }
+                            }
+                        },
+                        "expects_response": true,
+                        "dynamic_variables": {
+                            "dynamicVariablePlaceholders": {}
+                        },
+                        "execution_mode": "immediate"
+                    },
+                    {
+                        "type": "client",
+                        "name": "send_letter",
+                        "description": "Send the current letter to the animal pen pal. Use when the child says they are done writing and want to send their letter (e.g. 'send it', 'I'm done', 'mail it', 'finished').",
+                        "response_timeout_secs": 30,
+                        "disable_interruptions": false,
+                        "force_pre_tool_speech": false,
+                        "assignments": [],
+                        "tool_call_sound_behavior": "auto",
+                        "tool_error_handling_mode": "auto",
+                        "parameters": {
+                            "type": "object",
+                            "required": [],
+                            "description": "Parameters for the client tool",
+                            "properties": {}
+                        },
+                        "expects_response": true,
+                        "dynamic_variables": {
+                            "dynamicVariablePlaceholders": {}
+                        },
+                        "execution_mode": "immediate"
+                    },
+                    {
+                        "type": "client",
+                        "name": "go_to_mailbox",
+                        "description": "Return to the mailbox / animal selection screen. Use when the child wants to go back, choose a different animal, or see their letters.",
+                        "response_timeout_secs": 30,
+                        "disable_interruptions": false,
+                        "force_pre_tool_speech": false,
+                        "assignments": [],
+                        "tool_call_sound_behavior": "auto",
+                        "tool_error_handling_mode": "auto",
+                        "parameters": {
+                            "type": "object",
+                            "required": [],
+                            "description": "Parameters for the client tool",
+                            "properties": {}
+                        },
+                        "expects_response": true,
+                        "dynamic_variables": {
+                            "dynamicVariablePlaceholders": {}
+                        },
+                        "execution_mode": "immediate"
+                    },
+                    {
+                        "type": "client",
+                        "name": "write_text",
+                        "description": "Write text onto the child's letter. Use when the child dictates what they want to say, or asks you to write something for them. The text will appear in the letter.",
+                        "response_timeout_secs": 30,
+                        "disable_interruptions": false,
+                        "force_pre_tool_speech": false,
+                        "assignments": [],
+                        "tool_call_sound_behavior": "auto",
+                        "tool_error_handling_mode": "auto",
+                        "parameters": {
+                            "type": "object",
+                            "required": [
+                                "text"
+                            ],
+                            "description": "Parameters for the client tool",
+                            "properties": {
+                                "text": {
+                                    "type": "string",
+                                    "description": "The text to write on the letter",
+                                    "is_system_provided": false,
+                                    "dynamic_variable": "",
+                                    "constant_value": ""
+                                }
+                            }
+                        },
+                        "expects_response": true,
+                        "dynamic_variables": {
+                            "dynamicVariablePlaceholders": {}
+                        },
+                        "execution_mode": "immediate"
+                    },
+                    {
+                        "type": "client",
+                        "name": "read_letter_aloud",
+                        "description": "Read the animal's letter aloud using the animal's voice. Use when the child asks to hear the letter read to them, or asks 'read it to me', 'what does it say', etc.",
+                        "response_timeout_secs": 30,
+                        "disable_interruptions": false,
+                        "force_pre_tool_speech": false,
+                        "assignments": [],
+                        "tool_call_sound_behavior": "auto",
+                        "tool_error_handling_mode": "auto",
+                        "parameters": {
+                            "type": "object",
+                            "required": [],
+                            "description": "Parameters for the client tool",
+                            "properties": {}
+                        },
+                        "expects_response": true,
+                        "dynamic_variables": {
+                            "dynamicVariablePlaceholders": {}
+                        },
+                        "execution_mode": "immediate"
+                    },
+                    {
+                        "type": "client",
+                        "name": "read_previous_letter",
+                        "description": "Open a previous letter from the conversation history in the reading view with text-to-speech. Use when the child wants to re-read or hear a previous letter from the animal (e.g. 'read the first letter', 'what did they say before', 'go back to their letter').",
+                        "response_timeout_secs": 30,
+                        "disable_interruptions": false,
+                        "force_pre_tool_speech": false,
+                        "assignments": [],
+                        "tool_call_sound_behavior": "auto",
+                        "tool_error_handling_mode": "auto",
+                        "parameters": {
+                            "type": "object",
+                            "required": [
+                                "letterIndex"
+                            ],
+                            "description": "Parameters for the client tool",
+                            "properties": {
+                                "letter_index": {
+                                    "type": "number",
+                                    "description": "The 1-based index of the animal's letter in the conversation history (e.g. 1 for the first response, 2 for the second). If unsure, use 1 for the most recent.",
+                                    "is_system_provided": false,
+                                    "dynamic_variable": "",
+                                    "constant_value": ""
+                                }
+                            }
+                        },
+                        "expects_response": true,
+                        "dynamic_variables": {
+                            "dynamicVariablePlaceholders": {}
+                        },
+                        "execution_mode": "immediate"
+                    }
+                ]
+            }
+        }
+    },
+    "platform_settings": {
+        "evaluation": {
+            "criteria": []
+        },
+        "widget": {
+            "variant": "full",
+            "placement": "bottom-right",
+            "expandable": "never",
+            "avatar": {
+                "type": "orb",
+                "color1": "#2792dc",
+                "color2": "#9ce6e6"
+            },
+            "feedback_mode": "during",
+            "end_feedback": {
+                "type": "rating"
+            },
+            "bg_color": "#ffffff",
+            "text_color": "#000000",
+            "btn_color": "#000000",
+            "btn_text_color": "#ffffff",
+            "border_color": "#e1e1e1",
+            "focus_color": "#000000",
+            "shareable_page_show_terms": true,
+            "terms_text": "#### Terms and conditions\n\nBy clicking \"Agree,\" and each time I interact with this AI agent, I consent to the recording, storage, and sharing of my communications with third-party service providers, and as described in the Privacy Policy.\nIf you do not wish to have your conversations recorded, please refrain from using this service.",
+            "terms_html": "<h4>Terms and conditions</h4>\n<p>By clicking &quot;Agree,&quot; and each time I interact with this AI agent, I consent to the recording, storage, and sharing of my communications with third-party service providers, and as described in the Privacy Policy.\nIf you do not wish to have your conversations recorded, please refrain from using this service.</p>\n",
+            "show_avatar_when_collapsed": false,
+            "disable_banner": false,
+            "markdown_link_allowed_hosts": [],
+            "markdown_link_include_www": true,
+            "markdown_link_allow_http": true,
+            "mic_muting_enabled": false,
+            "transcript_enabled": false,
+            "text_input_enabled": true,
+            "conversation_mode_toggle_enabled": false,
+            "default_expanded": false,
+            "always_expanded": false,
+            "dismissible": false,
+            "show_agent_status": false,
+            "show_conversation_id": true,
+            "strip_audio_tags": true,
+            "syntax_highlight_theme": null,
+            "text_contents": {
+                "send_message": null,
+                "text_mode": null,
+                "voice_mode": null,
+                "switched_to_text_mode": null,
+                "switched_to_voice_mode": null,
+                "copy": null,
+                "download": null,
+                "wrap": null,
+                "agent_working": null,
+                "agent_done": null,
+                "agent_error": null
+            },
+            "styles": {},
+            "language_selector": false,
+            "supports_text_only": true,
+            "language_presets": {}
+        },
+        "data_collection": {},
+        "data_collection_scopes": {},
+        "overrides": {
+            "conversation_config_override": {
+                "turn": {
+                    "soft_timeout_config": {
+                        "message": false
+                    }
+                },
+                "tts": {
+                    "voice_id": false,
+                    "stability": false,
+                    "speed": false,
+                    "similarity_boost": false
+                },
+                "conversation": {
+                    "text_only": true
+                },
+                "agent": {
+                    "first_message": true,
+                    "language": false,
+                    "max_conversation_duration_message": false,
+                    "prompt": {
+                        "prompt": false,
+                        "llm": false,
+                        "tool_ids": false,
+                        "native_mcp_server_ids": false,
+                        "knowledge_base": false
+                    }
+                }
+            },
+            "custom_llm_extra_body": false,
+            "enable_conversation_initiation_client_data_from_webhook": false
+        },
+        "workspace_overrides": {
+            "webhooks": {
+                "events": [
+                    "transcript"
+                ]
+            }
+        },
+        "testing": {
+            "attached_tests": [],
+            "referenced_tests_ids": []
+        },
+        "archived": false,
+        "guardrails": {
+            "version": "1",
+            "focus": {
+                "is_enabled": false
+            },
+            "prompt_injection": {
+                "is_enabled": false
+            },
+            "content": {
+                "execution_mode": "streaming",
+                "config": {
+                    "sexual": {
+                        "is_enabled": false,
+                        "threshold": "medium"
+                    },
+                    "violence": {
+                        "is_enabled": false,
+                        "threshold": "medium"
+                    },
+                    "harassment": {
+                        "is_enabled": false,
+                        "threshold": "medium"
+                    },
+                    "self_harm": {
+                        "is_enabled": false,
+                        "threshold": "medium"
+                    },
+                    "profanity": {
+                        "is_enabled": false,
+                        "threshold": "medium"
+                    },
+                    "religion_or_politics": {
+                        "is_enabled": false,
+                        "threshold": "medium"
+                    },
+                    "medical_and_legal_information": {
+                        "is_enabled": false,
+                        "threshold": "medium"
+                    }
+                },
+                "trigger_action": {
+                    "type": "end_call"
+                }
+            },
+            "moderation": {
+                "execution_mode": "streaming",
+                "config": {
+                    "sexual": {
+                        "is_enabled": false,
+                        "threshold": 0.3
+                    },
+                    "violence": {
+                        "is_enabled": false,
+                        "threshold": 0.3
+                    },
+                    "violence_graphic": {
+                        "is_enabled": false,
+                        "threshold": 0.3
+                    },
+                    "harassment": {
+                        "is_enabled": false,
+                        "threshold": 0.3
+                    },
+                    "harassment_threatening": {
+                        "is_enabled": false,
+                        "threshold": 0.3
+                    },
+                    "hate": {
+                        "is_enabled": false,
+                        "threshold": 0.3
+                    },
+                    "hate_threatening": {
+                        "is_enabled": false,
+                        "threshold": 0.3
+                    },
+                    "self_harm_instructions": {
+                        "is_enabled": false,
+                        "threshold": 0.3
+                    },
+                    "self_harm": {
+                        "is_enabled": false,
+                        "threshold": 0.3
+                    },
+                    "self_harm_intent": {
+                        "is_enabled": false,
+                        "threshold": 0.3
+                    },
+                    "sexual_minors": {
+                        "is_enabled": false,
+                        "threshold": 0.3
+                    }
+                }
+            },
+            "custom": {
+                "config": {
+                    "configs": []
+                }
+            }
+        },
+        "summary_language": null,
+        "auth": {
+            "enable_auth": false,
+            "allowlist": [],
+            "require_origin_header": false
+        },
+        "call_limits": {
+            "agent_concurrency_limit": -1,
+            "daily_limit": 100000,
+            "bursting_enabled": true
+        },
+        "ban": null,
+        "privacy": {
+            "record_voice": true,
+            "retention_days": -1,
+            "delete_transcript_and_pii": false,
+            "delete_audio": false,
+            "apply_to_existing_conversations": false,
+            "zero_retention_mode": false,
+            "conversation_history_redaction": {
+                "enabled": false,
+                "entities": []
+            }
+        },
+        "safety": {
+            "is_blocked_ivc": false,
+            "is_blocked_non_ivc": false,
+            "ignore_safety_evaluation": false
+        }
+    },
+    "tags": [],
+    "workflow": {
+        "edges": {},
+        "nodes": {
+            "start_node": {
+                "type": "start",
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "edge_order": []
+            }
+        },
+        "prevent_subagent_loops": false
+    }
+}

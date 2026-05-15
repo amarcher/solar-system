@@ -1,0 +1,32 @@
+{
+    "type": "client",
+    "name": "write_text",
+    "description": "Write text onto the child's letter. Use when the child dictates what they want to say, or asks you to write something for them. The text will appear in the letter.",
+    "response_timeout_secs": 30,
+    "disable_interruptions": false,
+    "force_pre_tool_speech": false,
+    "assignments": [],
+    "tool_call_sound_behavior": "auto",
+    "tool_error_handling_mode": "auto",
+    "parameters": {
+        "type": "object",
+        "required": [
+            "text"
+        ],
+        "description": "Parameters for the client tool",
+        "properties": {
+            "text": {
+                "type": "string",
+                "description": "The text to write on the letter",
+                "is_system_provided": false,
+                "dynamic_variable": "",
+                "constant_value": ""
+            }
+        }
+    },
+    "expects_response": true,
+    "dynamic_variables": {
+        "dynamicVariablePlaceholders": {}
+    },
+    "execution_mode": "immediate"
+}

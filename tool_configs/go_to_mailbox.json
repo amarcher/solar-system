@@ -1,0 +1,22 @@
+{
+    "type": "client",
+    "name": "go_to_mailbox",
+    "description": "Return to the mailbox / animal selection screen. Use when the child wants to go back, choose a different animal, or see their letters.",
+    "response_timeout_secs": 30,
+    "disable_interruptions": false,
+    "force_pre_tool_speech": false,
+    "assignments": [],
+    "tool_call_sound_behavior": "auto",
+    "tool_error_handling_mode": "auto",
+    "parameters": {
+        "type": "object",
+        "required": [],
+        "description": "Parameters for the client tool",
+        "properties": {}
+    },
+    "expects_response": true,
+    "dynamic_variables": {
+        "dynamicVariablePlaceholders": {}
+    },
+    "execution_mode": "immediate"
+}

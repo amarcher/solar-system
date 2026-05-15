@@ -1,0 +1,19 @@
+{
+    "name": "set_time_speed",
+    "description": "Control how fast time moves in orrery or sky mode. 'paused' freezes time, 'real-time' or '1x' runs at normal speed, '1 hour' makes one hour pass per second, '1 day' makes one day pass per second. Use when the user asks to speed up, slow down, pause, or resume time — e.g. 'speed it up', 'pause', 'make it go faster', 'show me a whole year', 'go back to normal speed'.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "description": "The time speed to set",
+        "properties": {
+            "speed": {
+                "type": "string",
+                "description": "Time speed: 'paused', 'real-time', '1x', '1 minute', '1 hour', '1 day', '1 month', or a numeric multiplier like '3600'",
+                "enum": ["paused", "real-time", "1x", "1 minute", "1 hour", "1 day", "1 month"]
+            }
+        },
+        "required": ["speed"]
+    }
+}

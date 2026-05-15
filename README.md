@@ -18,7 +18,7 @@ Part of a series of educational interactive apps — see also: [Periodic Table](
 - [x] **Phase 2b: Sun + Moon Detail** — `SunDetail` with interactive peelable layers (corona → core), `MoonDetail` with back navigation
 - [x] **Phase 2c: Voice Agent** — `useSolarConversation` hook with 4 client tools (`navigate_to_planet`, `navigate_to_moon`, `navigate_to_sun`, `go_back`), contextual update builders for planets/moons/Sun
 
-- [x] **Astronomical Clock** — Three view modes (Explore / Orrery / Sky) powered by `astronomy-engine` VSOP87 ephemeris. Orrery shows real planetary positions for any date. Sky mode renders the actual night sky from any location on Earth with 8400 real stars, sidereal-time rotation, and compass-oriented horizon.
+- [x] **Astronomical Clock** — Three view modes (Explore / Orrery / Sky) powered by `astronomy-engine` VSOP87 ephemeris. Orrery shows real planetary positions for any date with radial log-compressed AU scaling so accelerated orbits keep their true shape. Sky mode renders the actual night sky from any location on Earth with 8400 real stars, sidereal-time rotation, and compass-oriented horizon.
 - [x] **Time Controls** — Speed up/slow down orbits with preset playback rates, date picker to jump to any date, "Now" button to return to real time. Voice agent can also set time and speed.
 - [x] **Device Orientation (Sky Mode)** — Point phone at the sky, camera follows gyroscope/compass heading. Uses `DeviceOrientationEvent` with iOS permission flow.
 - [x] **Artemis Mission Replay** — In orrery mode, visualize the Artemis II mission trajectory near Earth with interpolated ephemeris data, Moon-direction alignment, and a scaled flight path.
@@ -88,6 +88,10 @@ To add videos:
 - **The Sun**: Special entity with 6 interactive layers (Corona → Chromosphere → Photosphere → Convective Zone → Radiative Zone → Core)
 
 All scientific data should be verified against NASA/JPL sources.
+
+## Orrery Scaling
+
+Orrery mode uses true `astronomy-engine` heliocentric ephemeris vectors, then maps those AU positions into scene units with radial log compression. Compress the vector distance from the Sun, not each coordinate independently; per-axis log compression visibly warps circular and elliptical paths into squarish orbits at high time acceleration.
 
 ---
 

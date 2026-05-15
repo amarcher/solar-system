@@ -7,7 +7,7 @@ import { usePlanetTexture } from '../../utils/textures';
 import { clearMissionPosition, setMissionPosition } from '../../utils/missionPositions';
 import { useAstronomy } from '../../astronomy/AstronomyContext';
 import * as AstronomyService from '../../astronomy/AstronomyService';
-import { scaleAU } from '../../astronomy/realisticScale';
+import { scaleAUVector } from '../../astronomy/realisticScale';
 
 interface RealisticMissionTrajectoryProps {
   mission: Mission;
@@ -136,10 +136,15 @@ export function RealisticMissionTrajectory({ mission }: RealisticMissionTrajecto
     // Position the wrapper at Earth's location in the orrery
     try {
       const earthHelio = AstronomyService.getHeliocentricPosition('earth', simDate);
+      const earthScenePos = scaleAUVector(
+        earthHelio.x,
+        earthHelio.z,
+        -earthHelio.y,
+      );
       wrapperRef.current.position.set(
-        scaleAU(earthHelio.x),
-        scaleAU(earthHelio.z),
-        scaleAU(-earthHelio.y),
+        earthScenePos.x,
+        earthScenePos.y,
+        earthScenePos.z,
       );
     } catch { /* engine not ready */ }
 

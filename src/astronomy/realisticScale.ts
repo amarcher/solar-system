@@ -7,6 +7,26 @@ export function scaleAU(au: number): number {
 }
 
 /**
+ * Log-compress an AU position vector radially.
+ *
+ * Applying scaleAU to each axis independently turns circular/elliptical orbits
+ * into squarish paths. This preserves the direction from the Sun and compresses
+ * only the distance.
+ */
+export function scaleAUVector(x: number, y: number, z: number): { x: number; y: number; z: number } {
+  const distance = Math.hypot(x, y, z);
+  if (distance === 0) return { x: 0, y: 0, z: 0 };
+
+  const scaledDistance = scaleAU(distance);
+  const factor = scaledDistance / distance;
+  return {
+    x: x * factor,
+    y: y * factor,
+    z: z * factor,
+  };
+}
+
+/**
  * Planet visual radius in orrery mode.
  * Exaggerated 50× from true proportion so planets remain visible.
  */

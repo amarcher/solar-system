@@ -1,0 +1,22 @@
+{
+    "type": "client",
+    "name": "send_letter",
+    "description": "Send the current letter to the animal pen pal. Use when the child says they are done writing and want to send their letter (e.g. 'send it', 'I'm done', 'mail it', 'finished').",
+    "response_timeout_secs": 30,
+    "disable_interruptions": false,
+    "force_pre_tool_speech": false,
+    "assignments": [],
+    "tool_call_sound_behavior": "auto",
+    "tool_error_handling_mode": "auto",
+    "parameters": {
+        "type": "object",
+        "required": [],
+        "description": "Parameters for the client tool",
+        "properties": {}
+    },
+    "expects_response": true,
+    "dynamic_variables": {
+        "dynamicVariablePlaceholders": {}
+    },
+    "execution_mode": "immediate"
+}

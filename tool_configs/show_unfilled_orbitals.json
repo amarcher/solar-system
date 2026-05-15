@@ -1,0 +1,22 @@
+{
+    "type": "client",
+    "name": "show_unfilled_orbitals",
+    "description": "Show ghost electrons in unfilled valence orbital slots on the 3D atom model. This visually explains chemical reactivity by showing where electrons are missing. Use when discussing reactivity, bonding capacity, or why elements form compounds.",
+    "response_timeout_secs": 30,
+    "disable_interruptions": false,
+    "force_pre_tool_speech": false,
+    "assignments": [],
+    "tool_call_sound_behavior": "auto",
+    "tool_error_handling_mode": "auto",
+    "parameters": {
+        "type": "object",
+        "required": [],
+        "description": "No parameters needed",
+        "properties": {}
+    },
+    "expects_response": true,
+    "dynamic_variables": {
+        "dynamicVariablePlaceholders": {}
+    },
+    "execution_mode": "immediate"
+}
