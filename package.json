@@ -11,7 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@elevenlabs/react": "^1.1.0",
+    "@elevenlabs/react": "^1.6.3",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@react-three/postprocessing": "^3.0.4",
