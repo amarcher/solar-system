@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AdditiveBlending, Points as ThreePoints } from 'three';
+import { useFrame } from '@react-three/fiber';
+import { AdditiveBlending, Points as ThreePoints, PointsMaterial } from 'three';
 import { loadStarCatalog, type StarCatalog } from '../../data/stars';
 
 const DEG2RAD = Math.PI / 180;
@@ -44,13 +45,29 @@ function equatorialToCartesian(raDeg: number, decDeg: number, radius: number): [
   ];
 }
 
-export function RealisticStarField() {
+interface RealisticStarFieldProps {
+  /**
+   * 0 = stars at full brightness, 1 = fully washed out. Sky mode drives this
+   * with the daylight level so stars fade out when the Sun is up.
+   */
+  dimRef?: React.RefObject<number>;
+}
+
+const BASE_OPACITY = 0.9;
+
+export function RealisticStarField({ dimRef }: RealisticStarFieldProps = {}) {
   const [catalog, setCatalog] = useState<StarCatalog | null>(null);
   const pointsRef = useRef<ThreePoints>(null);
 
   useEffect(() => {
     loadStarCatalog().then(setCatalog);
   }, []);
+
+  useFrame(() => {
+    if (!dimRef || !pointsRef.current) return;
+    const material = pointsRef.current.material as PointsMaterial;
+    material.opacity = BASE_OPACITY * (1 - dimRef.current);
+  });
 
   const { positions, colors, sizes } = useMemo(() => {
     if (!catalog) return { positions: null, colors: null, sizes: null };

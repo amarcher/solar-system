@@ -109,6 +109,8 @@ Orrery mode uses true `astronomy-engine` heliocentric ephemeris vectors, then ma
 
 **Planetary ephemeris** — [astronomy-engine](https://github.com/cosinekitty/astronomy) by Don Cross · MIT License. VSOP87-based calculations accurate to ±1 arcminute.
 
+**Constellation line figures** — [d3-celestial](https://github.com/ofrohn/d3-celestial) by Olaf Frohn · BSD-3-Clause, derived from Stellarium's Western sky culture.
+
 **Asteroid textures** — Procedurally generated and/or public-domain sources.
 
 **Voice agent** — Powered by [ElevenLabs Conversational AI](https://elevenlabs.io).

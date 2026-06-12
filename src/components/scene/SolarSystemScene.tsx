@@ -156,6 +156,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             planets={planets}
             nav={nav}
             onPlanetClick={onPlanetClick}
+            onMoonClick={onMoonClick}
             onSunClick={onSunClick}
             showLabels={showLabels}
           />

@@ -16,20 +16,22 @@ const DIRECTIONS = [
 export function HorizonPlane() {
   return (
     <group>
-      {/* Ground plane — very faint disc */}
-      <mesh rotation-x={-Math.PI / 2} position-y={-0.1}>
+      {/* Ground plane. renderOrder puts it after the stars/constellation
+          figures so below-horizon objects don't bleed through the ground —
+          seeing stars "underground" read as a bug, not a feature. */}
+      <mesh rotation-x={-Math.PI / 2} position-y={-0.1} renderOrder={2}>
         <circleGeometry args={[RADIUS, 64]} />
         <meshBasicMaterial
           color="#0a1020"
           transparent
-          opacity={0.85}
+          opacity={0.97}
           side={DoubleSide}
           depthWrite={false}
         />
       </mesh>
 
       {/* Horizon glow ring */}
-      <mesh rotation-x={-Math.PI / 2} position-y={-0.05}>
+      <mesh rotation-x={-Math.PI / 2} position-y={-0.05} renderOrder={3}>
         <ringGeometry args={[RADIUS - 2, RADIUS, 128]} />
         <meshBasicMaterial
           color="#1a3050"

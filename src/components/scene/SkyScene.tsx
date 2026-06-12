@@ -1,5 +1,6 @@
-import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useEffect, useRef, useState } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import { Color } from 'three';
 import type { Group } from 'three';
 import { Html } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
@@ -7,6 +8,7 @@ import { useAstronomy } from '../../astronomy/AstronomyContext';
 import * as AstronomyService from '../../astronomy/AstronomyService';
 import { RealisticStarField } from './RealisticStarField';
 import { HorizonPlane } from './HorizonPlane';
+import { ConstellationLines } from './ConstellationLines';
 import { setPlanetPosition } from '../../utils/planetPositions';
 
 const DEG2RAD = Math.PI / 180;
@@ -15,10 +17,17 @@ const SKY_RADIUS = 150;
 /** Minimum recompute interval in ms of simulation time. */
 const RECOMPUTE_THRESHOLD_MS = 2000;
 
+// Sky background by sun altitude: full night below -12° (astronomical-ish
+// twilight), full day above +5°.
+const NIGHT_SKY = new Color('#050510');
+const TWILIGHT_SKY = new Color('#243054');
+const DAY_SKY = new Color('#7fb2e6');
+
 interface SkySceneProps {
   planets: Planet[];
   nav: NavigationState;
   onPlanetClick: (planetId: string) => void;
+  onMoonClick?: (planetId: string, moonId: string) => void;
   onSunClick?: () => void;
   showLabels: boolean;
 }
@@ -40,7 +49,7 @@ function horizonToCartesian(altDeg: number, azDeg: number, radius: number): [num
 }
 
 /**
- * Visual size for a planet dot in the sky, based on visual magnitude.
+ * Visual size for a body dot in the sky, based on visual magnitude.
  */
 function magToSize(name: string): number {
   // Simplified — just make recognizable dots
@@ -62,14 +71,40 @@ function planetColor(id: string): string {
   return colors[id] ?? '#ffffff';
 }
 
-export function SkyScene({ planets, onPlanetClick, showLabels }: SkySceneProps) {
+const labelStyle = (color: string): React.CSSProperties => ({
+  color,
+  fontSize: '10px',
+  fontFamily: "'Space Grotesk', sans-serif",
+  pointerEvents: 'none',
+  userSelect: 'none',
+  whiteSpace: 'nowrap',
+  textShadow: '0 1px 6px rgba(0,0,0,0.9)',
+});
+
+export function SkyScene({ planets, onPlanetClick, onMoonClick, showLabels }: SkySceneProps) {
   const { timeRef, observer, engineReady } = useAstronomy();
+  const { scene } = useThree();
   const starGroupRef = useRef<Group>(null);
   const lastComputedTime = useRef(0);
 
-  // Refs for planet body meshes — we'll update positions in useFrame
+  // Refs for body meshes — positions update imperatively in useFrame
   const bodyRefs = useRef<Map<string, Group>>(new Map());
   const sunRef = useRef<Group>(null);
+  const moonRef = useRef<Group>(null);
+
+  // 0 = night, 1 = full day. Drives sky color and star/figure fading.
+  const daylightRef = useRef(0);
+  const skyColor = useRef(new Color().copy(NIGHT_SKY));
+
+  // Which bodies are above the horizon — gates the HTML labels, which
+  // (unlike the meshes) don't follow three.js visibility.
+  const [aboveHorizon, setAboveHorizon] = useState<Set<string>>(() => new Set());
+
+  // Own the scene background while sky mode is mounted.
+  useEffect(() => {
+    scene.background = skyColor.current;
+    return () => { scene.background = null; };
+  }, [scene]);
 
   useFrame(() => {
     if (!engineReady) return;
@@ -98,17 +133,35 @@ export function SkyScene({ planets, onPlanetClick, showLabels }: SkySceneProps) 
       } catch { /* engine not ready */ }
     }
 
-    // Update planet positions in horizontal coords
+    // Update body positions in horizontal coords
     if (needsRecompute) {
       lastComputedTime.current = now;
       const date = new Date(now);
+      const nextAbove = new Set<string>();
 
-      // Sun
+      // Sun — its altitude also drives the day/night sky
       if (sunRef.current) {
         try {
           const hor = AstronomyService.getHorizontalPosition('sun', date, observer);
           const [x, y, z] = horizonToCartesian(hor.altitude, hor.azimuth, SKY_RADIUS * 0.95);
           sunRef.current.position.set(x, y, z);
+          sunRef.current.visible = hor.altitude > -2;
+          if (sunRef.current.visible) nextAbove.add('sun');
+
+          // Daylight: 0 below -12° sun altitude, 1 above +5°, smooth in between
+          const t = Math.min(1, Math.max(0, (hor.altitude + 12) / 17));
+          daylightRef.current = t * t * (3 - 2 * t);
+        } catch { /* ignore */ }
+      }
+
+      // The Moon — the body kids look for first
+      if (moonRef.current) {
+        try {
+          const hor = AstronomyService.getHorizontalPosition('moon', date, observer);
+          const [x, y, z] = horizonToCartesian(hor.altitude, hor.azimuth, SKY_RADIUS * 0.93);
+          moonRef.current.position.set(x, y, z);
+          moonRef.current.visible = hor.altitude > -2;
+          if (moonRef.current.visible) nextAbove.add('moon');
         } catch { /* ignore */ }
       }
 
@@ -123,10 +176,26 @@ export function SkyScene({ planets, onPlanetClick, showLabels }: SkySceneProps) 
           setPlanetPosition(planet.id, x, y, z);
           // Hide if below horizon
           ref.visible = hor.altitude > -2;
+          if (ref.visible) nextAbove.add(planet.id);
         } catch {
           ref.visible = false;
         }
       }
+
+      setAboveHorizon((prev) => {
+        if (prev.size === nextAbove.size && [...nextAbove].every((id) => prev.has(id))) {
+          return prev;
+        }
+        return nextAbove;
+      });
+    }
+
+    // Blend the sky color toward the current daylight level every frame
+    const d = daylightRef.current;
+    if (d < 0.5) {
+      skyColor.current.lerpColors(NIGHT_SKY, TWILIGHT_SKY, d * 2);
+    } else {
+      skyColor.current.lerpColors(TWILIGHT_SKY, DAY_SKY, (d - 0.5) * 2);
     }
   });
 
@@ -137,9 +206,11 @@ export function SkyScene({ planets, onPlanetClick, showLabels }: SkySceneProps) 
 
   return (
     <>
-      {/* Stars — rotated by sidereal time + observer latitude */}
+      {/* Stars + constellation figures — rotated by sidereal time + latitude,
+          faded out by daylight */}
       <group ref={starGroupRef}>
-        <RealisticStarField />
+        <RealisticStarField dimRef={daylightRef} />
+        <ConstellationLines showNames={showLabels} dimRef={daylightRef} />
       </group>
 
       {/* Sun */}
@@ -153,13 +224,22 @@ export function SkyScene({ planets, onPlanetClick, showLabels }: SkySceneProps) 
           <sphereGeometry args={[5, 16, 16]} />
           <meshBasicMaterial color="#ffdd88" transparent opacity={0.15} depthWrite={false} />
         </mesh>
-        {showLabels && (
-          <Html center position={[0, -5, 0]} style={{
-            color: '#ffdd88', fontSize: '11px', fontFamily: "'Space Grotesk', sans-serif",
-            pointerEvents: 'none', userSelect: 'none', whiteSpace: 'nowrap',
-            textShadow: '0 1px 6px rgba(0,0,0,0.9)',
-          }}>
+        {showLabels && aboveHorizon.has('sun') && (
+          <Html center position={[0, -5, 0]} style={labelStyle('#ffdd88')}>
             Sun
+          </Html>
+        )}
+      </group>
+
+      {/* The Moon */}
+      <group ref={moonRef}>
+        <mesh onClick={(e) => { e.stopPropagation(); onMoonClick?.('earth', 'moon'); }}>
+          <sphereGeometry args={[magToSize('moon'), 16, 16]} />
+          <meshBasicMaterial color="#d8d8d0" />
+        </mesh>
+        {showLabels && aboveHorizon.has('moon') && (
+          <Html center position={[0, -(magToSize('moon') + 1.5), 0]} style={labelStyle('rgba(255,255,255,0.75)')}>
+            The Moon
           </Html>
         )}
       </group>
@@ -171,13 +251,8 @@ export function SkyScene({ planets, onPlanetClick, showLabels }: SkySceneProps) 
             <sphereGeometry args={[magToSize(planet.id), 12, 12]} />
             <meshBasicMaterial color={planetColor(planet.id)} />
           </mesh>
-          {showLabels && (
-            <Html center position={[0, -(magToSize(planet.id) + 1.5), 0]} style={{
-              color: 'rgba(255,255,255,0.7)', fontSize: '10px',
-              fontFamily: "'Space Grotesk', sans-serif",
-              pointerEvents: 'none', userSelect: 'none', whiteSpace: 'nowrap',
-              textShadow: '0 1px 6px rgba(0,0,0,0.9)',
-            }}>
+          {showLabels && aboveHorizon.has(planet.id) && (
+            <Html center position={[0, -(magToSize(planet.id) + 1.5), 0]} style={labelStyle('rgba(255,255,255,0.7)')}>
               {planet.name}
             </Html>
           )}
