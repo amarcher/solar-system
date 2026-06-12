@@ -168,14 +168,14 @@ export const planets: Planet[] = [
     orbitalPeriod: 10759.22,
     rotationPeriod: 10.66,
     distanceFromSun: 9.537,
-    numberOfMoons: 146,
+    numberOfMoons: 274,
     hasRings: true,
     axialTilt: 26.73,
     atmosphereComposition: '96.3% hydrogen, 3.25% helium, trace methane, ammonia, ethane',
     discoveredBy: null,
     yearDiscovered: null,
     summary:
-      'Saturn is the sixth planet from the Sun and the second largest in the solar system. It is famous for its stunning ring system, made of billions of chunks of ice and rock. Saturn is the least dense planet — it is so light that it would float on water if there were an ocean big enough to hold it. It has 146 known moons, more than any other planet.',
+      'Saturn is the sixth planet from the Sun and the second largest in the solar system. It is famous for its stunning ring system, made of billions of chunks of ice and rock. Saturn is the least dense planet — it is so light that it would float on water if there were an ocean big enough to hold it. It has 274 known moons, more than any other planet.',
     funFacts: [
       'Saturn is the only planet in the solar system that could float on water — it is less dense than water, like a giant cosmic pool toy!',
       'Saturn\'s rings are incredibly wide — stretching nearly 300,000 km across — but also incredibly thin, often less than 100 metres thick, like a piece of paper.',
@@ -210,7 +210,7 @@ export const planets: Planet[] = [
     funFacts: [
       'Uranus is tipped over so far on its side that its poles actually face the Sun — scientists think a massive collision long ago knocked it sideways.',
       'The methane in Uranus\'s atmosphere absorbs red light and reflects blue-green light, giving the planet its distinctive cyan color.',
-      'Uranus is the coldest planet in the solar system, with temperatures dropping to −224 °C — even colder than Neptune, which is much farther from the Sun.',
+      'The coldest temperature ever measured at any planet was recorded at Uranus: a bone-chilling −224 °C! On average, though, faraway Neptune is slightly colder.',
       'All 28 of Uranus\'s known moons are named after characters from the plays of William Shakespeare and the poems of Alexander Pope — including Titania, Oberon, and Puck.',
     ],
     orbitRadius: 33,

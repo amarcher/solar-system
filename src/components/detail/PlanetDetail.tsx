@@ -94,13 +94,13 @@ export function PlanetDetail({ planet, onClose, onMoonClick }: PlanetDetailProps
           </div>
 
           <div className="detail__properties detail__content">
-            <PropertyCard label="Diameter" value={`${planet.diameter.toLocaleString()} km`} />
-            <PropertyCard label="Mass" value={planet.mass} />
-            <PropertyCard label="Gravity" value={`${planet.gravity} m/s²`} />
+            <PropertyCard label="Diameter" value={`${planet.diameter.toLocaleString()} km`} hint={diameterHint(planet)} />
+            <PropertyCard label="Mass" value={planet.mass} hint={massHint(planet)} />
+            <PropertyCard label="Gravity" value={`${planet.gravity} m/s²`} hint={gravityHint(planet)} />
             <PropertyCard label="Temperature" value={`${planet.meanTemperature}°C`} />
             <PropertyCard label="Day Length" value={formatDayLength(planet.rotationPeriod)} />
             <PropertyCard label="Year Length" value={formatYearLength(planet.orbitalPeriod)} />
-            <PropertyCard label="Distance" value={`${planet.distanceFromSun} AU`} />
+            <PropertyCard label="Distance" value={`${planet.distanceFromSun} AU`} hint={lightTimeHint(planet)} />
             <PropertyCard label="Axial Tilt" value={`${planet.axialTilt}°`} />
           </div>
 
@@ -157,13 +157,52 @@ export function PlanetDetail({ planet, onClose, onMoonClick }: PlanetDetailProps
   );
 }
 
-function PropertyCard({ label, value }: { label: string; value: string }) {
+function PropertyCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="detail__prop-card">
       <span className="detail__prop-label">{label}</span>
       <span className="detail__prop-value">{value}</span>
+      {hint && <span className="detail__prop-hint">{hint}</span>}
     </div>
   );
+}
+
+const EARTH_DIAMETER_KM = 12756;
+const EARTH_GRAVITY = 9.81;
+/** Light travels 1 AU in about 8.32 minutes. */
+const LIGHT_MINUTES_PER_AU = 8.317;
+
+function diameterHint(planet: Planet): string | undefined {
+  if (planet.id === 'earth') return undefined;
+  const ratio = planet.diameter / EARTH_DIAMETER_KM;
+  if (ratio >= 1.5) return `${ratio.toFixed(ratio >= 4 ? 0 : 1)} Earths wide`;
+  if (ratio >= 0.85) return 'about as wide as Earth';
+  return `1/${Math.round(1 / ratio)} as wide as Earth`;
+}
+
+function massHint(planet: Planet): string | undefined {
+  if (planet.id === 'earth') return undefined;
+  // Derive mass ratio from surface gravity and radius: m ∝ g·r²
+  const ratio =
+    (planet.gravity * planet.diameter * planet.diameter) /
+    (EARTH_GRAVITY * EARTH_DIAMETER_KM * EARTH_DIAMETER_KM);
+  if (ratio >= 1.5) return `as heavy as ${Math.round(ratio)} Earths`;
+  if (ratio >= 0.85) return 'about as heavy as Earth';
+  return `1/${Math.round(1 / ratio)} of Earth's mass`;
+}
+
+function gravityHint(planet: Planet): string | undefined {
+  if (planet.id === 'earth') return undefined;
+  const factor = planet.gravity / EARTH_GRAVITY;
+  if (factor < 0.95) return `jump ${(1 / factor).toFixed(factor < 0.2 ? 0 : 1)}× higher than on Earth!`;
+  if (factor <= 1.05) return 'you would feel right at home';
+  return `you would feel ${factor.toFixed(1)}× heavier`;
+}
+
+function lightTimeHint(planet: Planet): string {
+  const minutes = planet.distanceFromSun * LIGHT_MINUTES_PER_AU;
+  if (minutes < 90) return `sunlight takes ${Math.round(minutes)} min to get here`;
+  return `sunlight takes ${(minutes / 60).toFixed(1)} hours to get here`;
 }
 
 function formatDayLength(hours: number): string {
