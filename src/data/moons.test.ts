@@ -17,7 +17,7 @@ describe('moon rotation data', () => {
   it('chaotic rotators are flagged correctly', () => {
     const chaotic = moons.filter(m => m.chaoticRotation);
     const chaoticIds = chaotic.map(m => m.id).sort();
-    expect(chaoticIds).toEqual(['hydra', 'hyperion', 'nix']);
+    expect(chaoticIds).toEqual(['hydra', 'hyperion', 'kerberos', 'nix', 'styx']);
   });
 
   it('Nereid has an explicit fast rotation period', () => {
