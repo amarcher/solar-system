@@ -1,6 +1,7 @@
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+import './SceneLabels.css';
 import { Color, Vector3, SphereGeometry, type Group, type Mesh } from 'three';
 import type { Moon } from '../../types/celestialBody';
 import { useAstronomy } from '../../astronomy/AstronomyContext';
@@ -211,18 +212,16 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: Realisti
           <Html
             position={[0, -(visualRadius + 0.15), 0]}
             center
-            style={{
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontSize: '9px',
-              fontFamily: "'Space Grotesk', sans-serif",
-              whiteSpace: 'nowrap',
-              pointerEvents: 'none',
-              userSelect: 'none',
-              textShadow: '0 1px 4px rgba(0, 0, 0, 0.9)',
-              letterSpacing: '0.03em',
-            }}
+            style={{ pointerEvents: 'none' }}
           >
-            {moon.name}
+            <button
+              type="button"
+              className="scene-label scene-label--moon"
+              aria-label={`Explore ${moon.name}`}
+              onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+            >
+              {moon.name}
+            </button>
           </Html>
         )}
       </group>

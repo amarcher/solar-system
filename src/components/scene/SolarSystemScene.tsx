@@ -13,6 +13,7 @@ import { RealisticScene } from './RealisticScene';
 import { SkyScene } from './SkyScene';
 import { TerrestrialRig } from './TerrestrialRig';
 import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 /**
  * Camera-relative fill light that activates when zoomed into a planet/moon.
@@ -57,9 +58,10 @@ interface SolarSystemSceneProps {
 
 export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission }: SolarSystemSceneProps) {
   const { mode } = useAstronomy();
+  const reducedMotion = useReducedMotion();
   const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun' || nav.level === 'mission';
   const focusedPlanetId = (nav.level === 'planet' || nav.level === 'moon') ? nav.planetId : null;
-  const paused = nav.level === 'mission';
+  const paused = nav.level === 'mission' || reducedMotion;
 
   // Group missions by their frame planet so each PlanetOrbit gets only its own.
   const missionsByPlanet = useMemo(() => {
@@ -75,11 +77,14 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
       <Canvas
-        shadows="percentage"
         camera={{ position: [0, 35, 50], fov: 50, near: 0.001, far: 600 }}
         gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.75 }}
-        aria-hidden="true"
+        // Hide only the canvas itself from assistive tech — NOT the container,
+        // which also hosts the <Html> label buttons that must stay reachable.
+        onCreated={({ gl }) => gl.domElement.setAttribute('aria-hidden', 'true')}
       >
+        {/* No shadow maps: the only shadow in the scene (planet → rings) is
+            computed analytically in the ring shader. See PlanetMesh.tsx. */}
         {mode !== 'sky' && (
           <>
             <ambientLight intensity={isZoomedIn ? 0.2 : 0.1} />
@@ -89,12 +94,6 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
               intensity={1.0}
               color="#fff8ee"
               decay={0}
-              castShadow
-              shadow-mapSize-width={1024}
-              shadow-mapSize-height={1024}
-              shadow-camera-near={0.5}
-              shadow-camera-far={60}
-              shadow-bias={-0.001}
             />
           </>
         )}
@@ -102,8 +101,19 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         {mode === 'artistic' ? (
           <>
             <CelestialBackdrop />
-            <SunMesh onClick={onSunClick} showLabel={showLabels && !isZoomedIn} paused={paused} />
-            <AsteroidBelt paused={paused} />
+            {/* When a detail view is open, hide everything except the focused
+                body so background planets don't photobomb the framing. Bodies
+                stay mounted (orbit angles persist) — just invisible. */}
+            <group visible={!isZoomedIn || nav.level === 'sun'}>
+              <SunMesh
+                onClick={isZoomedIn && nav.level !== 'sun' ? undefined : onSunClick}
+                showLabel={showLabels && !isZoomedIn}
+                paused={paused}
+              />
+            </group>
+            <group visible={!isZoomedIn}>
+              <AsteroidBelt paused={paused} />
+            </group>
 
             {planets.map((planet) => {
               const isFocused = focusedPlanetId === planet.id;
@@ -112,18 +122,20 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
                 && planetMissions?.some((m) => m.id === nav.missionId);
               const visibleMissions = planetHostsActiveMission ? planetMissions : undefined;
               const showThisPlanetMoons = isFocused || !!planetHostsActiveMission;
+              const isVisible = !isZoomedIn || isFocused || !!planetHostsActiveMission;
               return (
                 <PlanetOrbit
                   key={planet.id}
                   planet={planet}
                   moons={moonsByPlanet[planet.id] || []}
                   missions={visibleMissions}
-                  onClick={() => onPlanetClick(planet.id)}
+                  onClick={isVisible ? () => onPlanetClick(planet.id) : undefined}
                   onMoonClick={(moonId) => onMoonClick(planet.id, moonId)}
                   paused={paused}
                   showLabel={showLabels && (!isZoomedIn || isFocused)}
                   showMoonLabels={showLabels && isFocused}
                   showMoons={showThisPlanetMoons}
+                  visible={isVisible}
                 />
               );
             })}
@@ -159,14 +171,16 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
           <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} />
         )}
 
-        <EffectComposer>
-          <Bloom
-            intensity={1.2}
-            luminanceThreshold={0.9}
-            luminanceSmoothing={0.3}
-            mipmapBlur
-          />
-        </EffectComposer>
+        {!reducedMotion && (
+          <EffectComposer>
+            <Bloom
+              intensity={1.2}
+              luminanceThreshold={0.9}
+              luminanceSmoothing={0.3}
+              mipmapBlur
+            />
+          </EffectComposer>
+        )}
       </Canvas>
     </div>
   );

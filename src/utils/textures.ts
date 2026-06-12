@@ -169,6 +169,7 @@ export function useRingTexture(planetId: 'saturn' | 'uranus'): Texture {
     }
 
     const texture = new CanvasTexture(canvas);
+    texture.colorSpace = SRGBColorSpace;
     texture.wrapS = RepeatWrapping;
     texture.needsUpdate = true;
     return texture;

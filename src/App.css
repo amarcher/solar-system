@@ -49,6 +49,48 @@ body {
   margin-top: 6px;
 }
 
+/* Scene loading indicator — shown while the astronomy engine lazy-loads */
+.app__scene-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+  /* Delay appearance so fast loads never flash a spinner */
+  opacity: 0;
+  animation: scene-loading-appear 0.3s ease-out 0.25s forwards;
+}
+
+.app__scene-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-top-color: rgba(255, 215, 130, 0.8);
+  animation: scene-loading-spin 0.9s linear infinite;
+}
+
+@keyframes scene-loading-appear {
+  to { opacity: 1; }
+}
+
+@keyframes scene-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app__scene-loading-spinner {
+    animation-duration: 2.5s;
+  }
+}
+
 /* Bottom-left toolbar (label toggle + cinema toggle) */
 .app__toolbar {
   position: fixed;

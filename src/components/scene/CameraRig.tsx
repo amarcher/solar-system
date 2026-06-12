@@ -5,6 +5,8 @@ import type { NavigationState, Planet } from '../../types/celestialBody';
 import { getPlanetPosition, getMoonPosition } from '../../utils/planetPositions';
 import { getMissionPosition } from '../../utils/missionPositions';
 import { getMoonById } from '../../data/moons';
+import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import type CameraControlsImpl from 'camera-controls';
 
 interface CameraRigProps {
@@ -14,11 +16,18 @@ interface CameraRigProps {
   orreryMissionId?: string;
 }
 
-const SYSTEM_POSITION = { x: 0, y: 35, z: 50 };
+// Artistic orbits span ~40 units; the log-compressed orrery only ~13.
+// Each mode gets a default framing that fills the viewport with the system.
+const SYSTEM_POSITION_ARTISTIC = { x: 0, y: 35, z: 50 };
+const SYSTEM_POSITION_ORRERY = { x: 0, y: 15, z: 21 };
 const SYSTEM_TARGET = { x: 0, y: 0, z: 0 };
 
 export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
   const controlsRef = useRef<CameraControlsImpl>(null);
+  const { mode } = useAstronomy();
+  const reducedMotion = useReducedMotion();
+  // With reduced motion, camera transitions snap instead of flying.
+  const flightSmoothTime = reducedMotion ? 0.05 : 1.0;
 
   const trackingPlanetId = useRef<string | null>(null);
   const trackingMoonId = useRef<string | null>(null);
@@ -47,9 +56,10 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
       // Normalize azimuth to prevent unwinding accumulated orbit rotations
       const TWO_PI = Math.PI * 2;
       controls.azimuthAngle = ((controls.azimuthAngle % TWO_PI) + TWO_PI) % TWO_PI;
-      controls.smoothTime = 1.0;
+      controls.smoothTime = flightSmoothTime;
+      const systemPos = mode === 'orrery' ? SYSTEM_POSITION_ORRERY : SYSTEM_POSITION_ARTISTIC;
       controls.setLookAt(
-        SYSTEM_POSITION.x, SYSTEM_POSITION.y, SYSTEM_POSITION.z,
+        systemPos.x, systemPos.y, systemPos.z,
         SYSTEM_TARGET.x, SYSTEM_TARGET.y, SYSTEM_TARGET.z,
         true,
       );
@@ -61,7 +71,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
       trackingMissionId.current = null;
       const TWO_PI = Math.PI * 2;
       controls.azimuthAngle = ((controls.azimuthAngle % TWO_PI) + TWO_PI) % TWO_PI;
-      controls.smoothTime = 1.0;
+      controls.smoothTime = flightSmoothTime;
       controls.setLookAt(0, 2, 6, 0, 0, 0, true);
       settled.current = true;
     } else if (nav.level === 'planet') {
@@ -80,7 +90,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
       // Fly-in triggered once mission position is registered
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navKey]);
+  }, [navKey, mode]);
 
   const flyInDone = useRef(false);
   const flyInTime = useRef(0);
@@ -103,7 +113,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
       const missionPos = getMissionPosition(orreryMissionId);
       if (missionPos) {
         if (!flyInDone.current) {
-          controls.smoothTime = 1.0;
+          controls.smoothTime = flightSmoothTime;
           controls.moveTo(missionPos.x, missionPos.y, missionPos.z, true);
           controls.dollyTo(4, true); // Frame Earth-Moon-trajectory system
           flyInDone.current = true;
@@ -120,7 +130,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
     if (trackingMissionId.current) {
       const missionPos = getMissionPosition(trackingMissionId.current);
       if (missionPos && !flyInDone.current) {
-        controls.smoothTime = 1.0;
+        controls.smoothTime = flightSmoothTime;
         controls.moveTo(missionPos.x, missionPos.y, missionPos.z, true);
         controls.dollyTo(0.12, true);
         flyInDone.current = true;
@@ -135,7 +145,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
         if (!flyInDone.current) {
           const moonRadius = Math.max(moon.diameter / 8000, 0.06);
           const dist = moonRadius * 8 + 0.5;
-          controls.smoothTime = 1.0;
+          controls.smoothTime = flightSmoothTime;
           controls.moveTo(moonPos.x, moonPos.y, moonPos.z, true);
           controls.dollyTo(dist, true);
           flyInDone.current = true;
@@ -151,7 +161,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
       if (planet && pos) {
         if (!flyInDone.current) {
           const dist = planet.visualRadius * 5 + 2;
-          controls.smoothTime = 1.0;
+          controls.smoothTime = flightSmoothTime;
           controls.moveTo(pos.x, pos.y, pos.z, true);
           controls.dollyTo(dist, true);
           flyInDone.current = true;
@@ -180,7 +190,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
   }, [navKey]);
 
   // Distance constraints per nav level
-  let minDist = 15;
+  let minDist = mode === 'orrery' ? 3 : 15;
   let maxDist = 100;
 
   if (orreryMissionId) {
