@@ -79,34 +79,35 @@
     <!-- Google Search Console -->
     <meta name="google-site-verification" content="Uhq_UhJ-g1mKnAt2gTsCgjnhv10O0y-ptgNf_RCkKBQ" />
 
-    <!-- Google Analytics 4 -->
+    <!-- Child-directed treatment: this app targets ages 6-14 (see JSON-LD
+         audience below), so analytics and ads run in COPPA-safe mode —
+         no ad personalization, no Google signals, redacted ads data. -->
+    <meta name="rating" content="general" />
+
+    <!-- Google Analytics 4 (child-directed configuration) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-08ZM00YY22"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-08ZM00YY22');
+      gtag('set', 'ads_data_redaction', true);
+      gtag('config', 'G-08ZM00YY22', {
+        allow_google_signals: false,
+        allow_ad_personalization_signals: false
+      });
     </script>
 
-    <!-- Google AdSense -->
+    <!-- Google AdSense (tagged for child-directed treatment, non-personalized ads only) -->
+    <script>
+      window.adsbygoogle = window.adsbygoogle || [];
+      window.adsbygoogle.requestNonPersonalizedAds = 1;
+      window.adsbygoogle.push({ params: { tag_for_child_directed_treatment: 1 } });
+    </script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477" crossorigin="anonymous"></script>
 
-    <!-- Meta Pixel -->
-    <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '1287534399914168');
-      fbq('track', 'PageView');
-    </script>
-    <noscript><img height="1" width="1" style="display:none"
-      src="https://www.facebook.com/tr?id=1287534399914168&ev=PageView&noscript=1"
-    /></noscript>
+    <!-- Meta Pixel removed: Meta offers no child-directed mode and its terms
+         prohibit pixels on child-directed sites. (Also fixes the Vite parse
+         warning from the noscript fallback in <head>.) -->
   </head>
   <body>
     <div id="root"></div>
