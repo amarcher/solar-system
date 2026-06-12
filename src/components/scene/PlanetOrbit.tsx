@@ -19,9 +19,11 @@ interface PlanetOrbitProps {
   showLabel?: boolean;
   showMoonLabels?: boolean;
   showMoons?: boolean;
+  /** When false the whole orbit group is hidden (but stays mounted so the orbit angle persists). */
+  visible?: boolean;
 }
 
-export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoonClick, paused, showLabel = true, showMoonLabels = true, showMoons = false }: PlanetOrbitProps) {
+export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoonClick, paused, showLabel = true, showMoonLabels = true, showMoons = false, visible = true }: PlanetOrbitProps) {
   const groupRef = useRef<Group>(null);
   const angleRef = useRef(Math.random() * Math.PI * 2); // Random starting position
 
@@ -39,7 +41,7 @@ export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoon
   });
 
   return (
-    <>
+    <group visible={visible}>
       {/* Orbit ring */}
       <mesh rotation-x={Math.PI / 2}>
         <ringGeometry args={[planet.orbitRadius - 0.02, planet.orbitRadius + 0.02, 128]} />
@@ -71,6 +73,6 @@ export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoon
           <MissionTrajectory key={mission.id} mission={mission} />
         ))}
       </group>
-    </>
+    </group>
   );
 }

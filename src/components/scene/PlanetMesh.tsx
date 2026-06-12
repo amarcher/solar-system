@@ -6,6 +6,7 @@ import type { Mesh } from 'three';
 import type { Planet } from '../../types/celestialBody';
 import { usePlanetTexture, useTexturePath, useRingTexture } from '../../utils/textures';
 import * as AstronomyService from '../../astronomy/AstronomyService';
+import './SceneLabels.css';
 
 interface PlanetMeshProps {
   planet: Planet;
@@ -140,7 +141,6 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
         {/* Planet sphere */}
         <mesh
           ref={meshRef}
-          castShadow
           onClick={(e) => { e.stopPropagation(); onClick?.(); }}
         >
           <sphereGeometry args={[planet.visualRadius, segments, segments]} />
@@ -165,48 +165,98 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
           </mesh>
         )}
 
-        {/* Rings */}
+        {/* Rings — Saturn and Uranus only. Jupiter's and Neptune's real rings
+            are far too faint to see at this scale; rendering them was reading
+            as "Jupiter looks like Saturn", which is the wrong thing to teach. */}
         {planet.hasRings && (planet.id === 'saturn' || planet.id === 'uranus') && (
           <ProceduralRings planet={planet} />
         )}
-
-        {/* Rings for other ringed planets (Jupiter, Neptune — very faint) */}
-        {planet.hasRings && planet.id !== 'saturn' && planet.id !== 'uranus' && (
-          <mesh rotation-x={Math.PI / 2}>
-            <ringGeometry args={[planet.visualRadius * 1.4, planet.visualRadius * 2.0, 64]} />
-            <meshBasicMaterial
-              color={planet.color}
-              transparent
-              opacity={0.05}
-              side={DoubleSide}
-              depthWrite={false}
-            />
-          </mesh>
-        )}
       </group>
 
-      {/* Name label — outside tilt group so it stays upright */}
+      {/* Name label — outside tilt group so it stays upright.
+          A real <button> so the planet is clickable and keyboard-reachable
+          even though the mesh itself is a tiny moving target. */}
       {showLabel && (
         <Html
           position={[0, -(planet.visualRadius + 0.3), 0]}
           center
-          style={{
-            color: 'rgba(255, 255, 255, 0.7)',
-            fontSize: '11px',
-            fontFamily: "'Space Grotesk', sans-serif",
-            whiteSpace: 'nowrap',
-            pointerEvents: 'none',
-            userSelect: 'none',
-            textShadow: '0 1px 6px rgba(0, 0, 0, 0.9)',
-            letterSpacing: '0.03em',
-          }}
+          style={{ pointerEvents: 'none' }}
         >
-          {planet.name}
+          <button
+            type="button"
+            className="scene-label"
+            aria-label={`Explore ${planet.name}`}
+            onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+          >
+            {planet.name}
+          </button>
         </Html>
       )}
     </group>
   );
 }
+
+/**
+ * Ring shader with an analytic planet shadow.
+ *
+ * The previous implementation used the renderer's shadow maps
+ * (planet castShadow → ring receiveShadow). A 1024px point-light cube map
+ * stretched over the whole system meant the thin ring spanned only a few
+ * shadow texels at system-view distances, so entire rings randomly resolved
+ * as "in shadow" and blinked out as the camera moved.
+ *
+ * Since the Sun is a known point at the origin and the planet is a sphere of
+ * known radius at the ring's center, the shadow is computed analytically per
+ * fragment instead: a ray-sphere test from the fragment toward the Sun.
+ * Resolution-independent, never flickers, and gives a soft penumbra for free.
+ */
+const RING_VERTEX_SHADER = /* glsl */ `
+  varying vec2 vUv;
+  varying vec3 vWorldPos;
+  varying vec3 vCenter;
+
+  void main() {
+    vUv = uv;
+    vec4 wp = modelMatrix * vec4(position, 1.0);
+    vWorldPos = wp.xyz;
+    vCenter = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+    gl_Position = projectionMatrix * viewMatrix * wp;
+  }
+`;
+
+const RING_FRAGMENT_SHADER = /* glsl */ `
+  uniform sampler2D uMap;
+  uniform float uPlanetRadius;
+  uniform vec3 uSunPos;
+  varying vec2 vUv;
+  varying vec3 vWorldPos;
+  varying vec3 vCenter;
+
+  void main() {
+    vec4 tex = texture2D(uMap, vUv);
+
+    // Ray-sphere occlusion: does the segment fragment→Sun pass through the planet?
+    vec3 toSun = uSunPos - vWorldPos;
+    float distToSun = length(toSun);
+    vec3 dir = toSun / max(distToSun, 1e-6);
+    vec3 toCenter = vCenter - vWorldPos;
+    float t = dot(toCenter, dir);
+    float lit = 1.0;
+    if (t > 0.0 && t < distToSun) {
+      float d = length(toCenter - dir * t);
+      // Soft penumbra across the last ~15% of the planet radius
+      lit = smoothstep(uPlanetRadius * 0.92, uPlanetRadius * 1.08, d);
+    }
+
+    // Shadowed ring keeps a little planetshine/ambient so it reads as shadow,
+    // not a hole in the ring.
+    float light = 0.3 + 0.7 * lit;
+    gl_FragColor = vec4(tex.rgb * light, tex.a);
+
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+  }
+`;
 
 function ProceduralRings({ planet }: { planet: Planet }) {
   const ringTexture = useRingTexture(planet.id as 'saturn' | 'uranus');
@@ -232,19 +282,21 @@ function ProceduralRings({ planet }: { planet: Planet }) {
     return geo;
   }, [innerR, outerR]);
 
+  const uniforms = useMemo(() => ({
+    uMap: { value: ringTexture },
+    uPlanetRadius: { value: planet.visualRadius },
+    uSunPos: { value: [0, 0, 0] },
+  }), [ringTexture, planet.visualRadius]);
+
   return (
-    <mesh
-      receiveShadow
-      rotation-x={Math.PI / 2}
-      geometry={geometry}
-    >
-      <meshStandardMaterial
-        map={ringTexture}
+    <mesh rotation-x={Math.PI / 2} geometry={geometry}>
+      <shaderMaterial
+        vertexShader={RING_VERTEX_SHADER}
+        fragmentShader={RING_FRAGMENT_SHADER}
+        uniforms={uniforms}
         transparent
         side={DoubleSide}
         depthWrite={false}
-        roughness={1}
-        metalness={0}
       />
     </mesh>
   );

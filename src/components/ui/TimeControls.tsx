@@ -61,6 +61,8 @@ export function TimeControls({ onReplayMission, missionActive }: TimeControlsPro
       <div className="time-controls__actions">
         <input
           type="date"
+          id="time-controls-date"
+          name="simulation-date"
           className="time-controls__date-input"
           value={dateInputValue}
           onChange={handleDateChange}

@@ -36,7 +36,7 @@ function getIsMobile() { return mobileQuery.matches; }
 
 function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
-  const { mode, setMode, setDate, setRate, setObserver, displayTime, observer } = useAstronomy();
+  const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady } = useAstronomy();
   const [showLabels, setShowLabels] = useState(true);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
@@ -235,6 +235,15 @@ function App() {
              'Click any planet to explore'}
           </p>
         </header>
+      )}
+
+      {/* Orrery/Sky positions come from the lazy-loaded astronomy engine —
+          without this the first paint is a black void with no explanation. */}
+      {mode !== 'artistic' && !engineReady && (
+        <div className="app__scene-loading" role="status">
+          <span className="app__scene-loading-spinner" aria-hidden="true" />
+          Calculating planet positions…
+        </div>
       )}
 
       <SolarSystemScene

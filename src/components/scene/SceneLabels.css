@@ -1,0 +1,48 @@
+/* Shared styles for in-scene body labels (rendered via drei <Html>).
+   Labels are real <button>s so planets/moons are clickable and
+   keyboard-reachable even when the 3D mesh is a tiny moving target. */
+
+.scene-label {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 3px 8px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-family: 'Space Grotesk', sans-serif;
+  white-space: nowrap;
+  user-select: none;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 0.15s, background 0.15s;
+}
+
+.scene-label:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.scene-label:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 1px;
+  color: #ffffff;
+}
+
+.scene-label--sun {
+  color: rgba(255, 215, 0, 0.8);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.scene-label--sun:hover {
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.12);
+}
+
+.scene-label--moon {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.65);
+}

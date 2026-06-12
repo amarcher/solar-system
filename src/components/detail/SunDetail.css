@@ -1,7 +1,7 @@
 .sun-detail {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 200; /* above floating chrome (mode toggle, toolbar @ 130) */
   color: #e8e8f0;
   overflow: hidden;
 }
