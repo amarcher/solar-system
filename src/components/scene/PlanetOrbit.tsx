@@ -29,7 +29,9 @@ export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoon
 
   useFrame((_, delta) => {
     if (!paused) {
-      angleRef.current += delta * planet.orbitSpeed;
+      // Decreasing angle = counterclockwise from above, matching prograde
+      // planet spin and the real solar system viewed from the north.
+      angleRef.current -= delta * planet.orbitSpeed;
     }
     if (groupRef.current) {
       const x = Math.cos(angleRef.current) * planet.orbitRadius;

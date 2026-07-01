@@ -97,7 +97,9 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: Realisti
 
   const radius = moon.orbitRadius;
   const visualRadius = Math.max(moon.diameter / 25000, 0.04);
-  const retrograde = moon.retrograde ? -1 : 1;
+  // Positive angle = clockwise from above (+X toward +Z), so prograde moons
+  // need a decreasing angle to match prograde planet spin (+rotation.y).
+  const orbitDirection = moon.retrograde ? 1 : -1;
 
   const diffuseMap = usePlanetTexture(moon.id);
   const moonColor = MOON_COLORS[moon.id] || '#aaaaaa';
@@ -132,7 +134,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: Realisti
     const j2000Ms = 946728000000;
     const elapsedDays = (simTime - j2000Ms) / 86_400_000;
     const orbitsCompleted = elapsedDays / moon.orbitalPeriod;
-    const angle = (orbitsCompleted * TWO_PI * retrograde) % TWO_PI;
+    const angle = (orbitsCompleted * TWO_PI * orbitDirection) % TWO_PI;
 
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
