@@ -1,4 +1,4 @@
-import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useAstronomy } from '../../astronomy/useAstronomy';
 import type { ViewMode } from '../../astronomy/types';
 import './ModeToggle.css';
 

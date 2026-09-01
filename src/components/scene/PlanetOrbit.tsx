@@ -8,6 +8,14 @@ import { MoonOrbit } from './MoonOrbit';
 import { MissionTrajectory } from './MissionTrajectory';
 import { setPlanetPosition } from '../../utils/planetPositions';
 
+function startingAngle(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (Math.imul(31, hash) + id.charCodeAt(i)) | 0;
+  }
+  return ((hash >>> 0) / 4294967296) * Math.PI * 2;
+}
+
 interface PlanetOrbitProps {
   planet: Planet;
   moons?: Moon[];
@@ -25,7 +33,7 @@ interface PlanetOrbitProps {
 
 export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoonClick, paused, showLabel = true, showMoonLabels = true, showMoons = false, visible = true }: PlanetOrbitProps) {
   const groupRef = useRef<Group>(null);
-  const angleRef = useRef(Math.random() * Math.PI * 2); // Random starting position
+  const angleRef = useRef(startingAngle(planet.id));
 
   useFrame((_, delta) => {
     if (!paused) {

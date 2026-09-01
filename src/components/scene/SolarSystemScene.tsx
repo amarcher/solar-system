@@ -12,7 +12,7 @@ import { CameraRig } from './CameraRig';
 import { RealisticScene } from './RealisticScene';
 import { SkyScene } from './SkyScene';
 import { TerrestrialRig } from './TerrestrialRig';
-import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useAstronomy } from '../../astronomy/useAstronomy';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 /**
@@ -60,6 +60,10 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
   const { mode } = useAstronomy();
   const reducedMotion = useReducedMotion();
   const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun' || nav.level === 'mission';
+  // Planet and moon detail views keep the full system visible so kids can
+  // orbit the camera around the focused body and understand its surroundings.
+  // Sun and mission views retain their purpose-built isolated framing.
+  const hidesSystemContext = nav.level === 'sun' || nav.level === 'mission';
   const focusedPlanetId = (nav.level === 'planet' || nav.level === 'moon') ? nav.planetId : null;
   const paused = nav.level === 'mission' || reducedMotion;
 
@@ -101,17 +105,14 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         {mode === 'artistic' ? (
           <>
             <CelestialBackdrop />
-            {/* When a detail view is open, hide everything except the focused
-                body so background planets don't photobomb the framing. Bodies
-                stay mounted (orbit angles persist) — just invisible. */}
-            <group visible={!isZoomedIn || nav.level === 'sun'}>
+            <group visible={!hidesSystemContext || nav.level === 'sun'}>
               <SunMesh
-                onClick={isZoomedIn && nav.level !== 'sun' ? undefined : onSunClick}
+                onClick={hidesSystemContext && nav.level !== 'sun' ? undefined : onSunClick}
                 showLabel={showLabels && !isZoomedIn}
                 paused={paused}
               />
             </group>
-            <group visible={!isZoomedIn}>
+            <group visible={!hidesSystemContext}>
               <AsteroidBelt paused={paused} />
             </group>
 
@@ -122,7 +123,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
                 && planetMissions?.some((m) => m.id === nav.missionId);
               const visibleMissions = planetHostsActiveMission ? planetMissions : undefined;
               const showThisPlanetMoons = isFocused || !!planetHostsActiveMission;
-              const isVisible = !isZoomedIn || isFocused || !!planetHostsActiveMission;
+              const isVisible = !hidesSystemContext || isFocused || !!planetHostsActiveMission;
               return (
                 <PlanetOrbit
                   key={planet.id}

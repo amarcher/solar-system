@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Color } from 'three';
-import type { Group } from 'three';
+import type { Group, Scene } from 'three';
 import { Html } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
-import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useAstronomy } from '../../astronomy/useAstronomy';
 import * as AstronomyService from '../../astronomy/AstronomyService';
 import { RealisticStarField } from './RealisticStarField';
 import { HorizonPlane } from './HorizonPlane';
@@ -22,6 +22,14 @@ const RECOMPUTE_THRESHOLD_MS = 2000;
 const NIGHT_SKY = new Color('#050510');
 const TWILIGHT_SKY = new Color('#243054');
 const DAY_SKY = new Color('#7fb2e6');
+
+function applySkyBackground(scene: Scene, color: Color): () => void {
+  const previousBackground = scene.background;
+  scene.background = color;
+  return () => {
+    if (scene.background === color) scene.background = previousBackground;
+  };
+}
 
 interface SkySceneProps {
   planets: Planet[];
@@ -101,10 +109,7 @@ export function SkyScene({ planets, onPlanetClick, onMoonClick, showLabels }: Sk
   const [aboveHorizon, setAboveHorizon] = useState<Set<string>>(() => new Set());
 
   // Own the scene background while sky mode is mounted.
-  useEffect(() => {
-    scene.background = skyColor.current;
-    return () => { scene.background = null; };
-  }, [scene]);
+  useEffect(() => applySkyBackground(scene, skyColor.current), [scene]);
 
   useFrame(() => {
     if (!engineReady) return;

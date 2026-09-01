@@ -1,5 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+type DeviceOrientationPermissionState = 'granted' | 'denied';
+
+interface DeviceOrientationPermissionApi {
+  requestPermission?: () => Promise<DeviceOrientationPermissionState>;
+}
+
+interface DeviceOrientationEventWithCompass extends DeviceOrientationEvent {
+  webkitCompassHeading?: number;
+}
+
+function getDeviceOrientationConstructor(): (typeof DeviceOrientationEvent & DeviceOrientationPermissionApi) | null {
+  if (typeof DeviceOrientationEvent === 'undefined') return null;
+  return DeviceOrientationEvent as typeof DeviceOrientationEvent & DeviceOrientationPermissionApi;
+}
+
 export interface DeviceOrientationState {
   /** Compass heading in degrees (0=N, 90=E, 180=S, 270=W). null if unavailable. */
   heading: number | null;
@@ -22,7 +37,7 @@ export interface DeviceOrientationState {
 }
 
 function needsPermissionRequest(): boolean {
-  return typeof (DeviceOrientationEvent as any).requestPermission === 'function';
+  return typeof getDeviceOrientationConstructor()?.requestPermission === 'function';
 }
 
 function isSupported(): boolean {
@@ -45,7 +60,7 @@ export function useDeviceOrientation(): DeviceOrientationState {
     if (e.alpha !== null) {
       // webkitCompassHeading gives true-north heading on iOS
       // On Android, alpha is degrees from initial heading; we use 360-alpha as approximate compass
-      const compassHeading = (e as any).webkitCompassHeading ?? (360 - e.alpha);
+      const compassHeading = (e as DeviceOrientationEventWithCompass).webkitCompassHeading ?? (360 - e.alpha);
       headingRef.current = compassHeading % 360;
     }
 
@@ -68,8 +83,9 @@ export function useDeviceOrientation(): DeviceOrientationState {
     if (!supported) return;
 
     if (needsPermissionRequest()) {
-      (DeviceOrientationEvent as any).requestPermission()
-        .then((state: string) => {
+      const orientationConstructor = getDeviceOrientationConstructor();
+      orientationConstructor?.requestPermission?.()
+        .then((state) => {
           if (state === 'granted') {
             window.addEventListener('deviceorientation', handleOrientation, true);
             setActive(true);

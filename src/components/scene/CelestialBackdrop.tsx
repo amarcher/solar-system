@@ -1,9 +1,26 @@
 import { useEffect, useMemo } from 'react';
 import { useThree, useLoader } from '@react-three/fiber';
 import { TextureLoader, EquirectangularReflectionMapping, SRGBColorSpace } from 'three';
+import type { Scene, Texture } from 'three';
 import { texturePath } from '../../utils/textures';
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+function applyCelestialBackdrop(scene: Scene, texture: Texture): () => void {
+  texture.mapping = EquirectangularReflectionMapping;
+  texture.colorSpace = SRGBColorSpace;
+  const previousBackground = scene.background;
+  const previousIntensity = scene.backgroundIntensity;
+  scene.background = texture;
+  scene.backgroundIntensity = 0.5;
+
+  return () => {
+    if (scene.background === texture) {
+      scene.background = previousBackground;
+      scene.backgroundIntensity = previousIntensity;
+    }
+  };
+}
 
 /**
  * Immersive Milky Way backdrop. Loads the equirectangular JPG directly via
@@ -29,18 +46,7 @@ export function CelestialBackdrop() {
   const texture = useLoader(TextureLoader, file);
   const { scene } = useThree();
 
-  useEffect(() => {
-    texture.mapping = EquirectangularReflectionMapping;
-    texture.colorSpace = SRGBColorSpace;
-    const prevBackground = scene.background;
-    const prevIntensity = scene.backgroundIntensity;
-    scene.background = texture;
-    scene.backgroundIntensity = 0.5;
-    return () => {
-      scene.background = prevBackground;
-      scene.backgroundIntensity = prevIntensity;
-    };
-  }, [texture, scene]);
+  useEffect(() => applyCelestialBackdrop(scene, texture), [texture, scene]);
 
   return null;
 }

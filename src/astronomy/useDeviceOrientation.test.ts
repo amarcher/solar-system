@@ -12,47 +12,53 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 const originalDeviceOrientationEvent = globalThis.DeviceOrientationEvent;
 
 afterEach(() => {
-  (globalThis as any).DeviceOrientationEvent = originalDeviceOrientationEvent;
+  Reflect.set(globalThis, 'DeviceOrientationEvent', originalDeviceOrientationEvent);
   vi.restoreAllMocks();
   vi.resetModules();
 });
 
 describe('useDeviceOrientation — isSupported detection', () => {
   it('returns true when DeviceOrientationEvent exists', async () => {
-    (globalThis as any).DeviceOrientationEvent = class {};
+    Reflect.set(globalThis, 'DeviceOrientationEvent', class {});
     // Re-import to pick up the global state at import time
     const mod = await import('./useDeviceOrientation');
     expect(mod.useDeviceOrientation).toBeTypeOf('function');
   });
 
   it('DeviceOrientationEvent is defined in test environment when set', () => {
-    (globalThis as any).DeviceOrientationEvent = class {};
+    Reflect.set(globalThis, 'DeviceOrientationEvent', class {});
     expect(typeof DeviceOrientationEvent).toBe('function');
   });
 
   it('DeviceOrientationEvent can be removed to simulate unsupported', () => {
-    delete (globalThis as any).DeviceOrientationEvent;
+    Reflect.deleteProperty(globalThis, 'DeviceOrientationEvent');
     expect(typeof globalThis.DeviceOrientationEvent).toBe('undefined');
   });
 });
 
 describe('useDeviceOrientation — needsPermissionRequest detection', () => {
   it('detects iOS-style requestPermission method', () => {
-    (globalThis as any).DeviceOrientationEvent = class {
+    Reflect.set(globalThis, 'DeviceOrientationEvent', class {
       static requestPermission = vi.fn().mockResolvedValue('granted');
+    });
+    const orientationConstructor = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+      requestPermission?: () => Promise<'granted' | 'denied'>;
     };
-    expect(typeof (DeviceOrientationEvent as any).requestPermission).toBe('function');
+    expect(typeof orientationConstructor.requestPermission).toBe('function');
   });
 
   it('non-iOS devices lack requestPermission', () => {
-    (globalThis as any).DeviceOrientationEvent = class {};
-    expect((DeviceOrientationEvent as any).requestPermission).toBeUndefined();
+    Reflect.set(globalThis, 'DeviceOrientationEvent', class {});
+    const orientationConstructor = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+      requestPermission?: () => Promise<'granted' | 'denied'>;
+    };
+    expect(orientationConstructor.requestPermission).toBeUndefined();
   });
 });
 
 describe('useDeviceOrientation — DeviceOrientationState interface', () => {
   it('exports the hook with correct return type shape', async () => {
-    (globalThis as any).DeviceOrientationEvent = class {};
+    Reflect.set(globalThis, 'DeviceOrientationEvent', class {});
     await import('./useDeviceOrientation');
     // Verify the type definition is exported
     type State = import('./useDeviceOrientation').DeviceOrientationState;

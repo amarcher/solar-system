@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useAstronomy } from '../../astronomy/useAstronomy';
 import './ObserverPicker.css';
 
 export function ObserverPicker() {

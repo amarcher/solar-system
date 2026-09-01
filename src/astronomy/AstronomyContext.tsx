@@ -1,46 +1,19 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { ViewMode, ObserverLocation } from './types';
 import { DEFAULT_OBSERVER } from './types';
 import * as AstronomyService from './AstronomyService';
+import { AstronomyCtx } from './useAstronomy';
 
-interface AstronomyContextValue {
-  // ── View mode ──
-  mode: ViewMode;
-  setMode: (mode: ViewMode) => void;
-
-  // ── Simulation time ──
-  /** Display-ready time (updated ~1Hz for UI). Use timeRef for per-frame reads. */
-  displayTime: Date;
-  /** Ref to current epoch ms — read this in useFrame for zero-rerender position updates. */
-  timeRef: React.RefObject<number>;
-  rate: number;
-  setDate: (d: Date) => void;
-  setRate: (r: number) => void;
-
-  // ── Observer ──
-  observer: ObserverLocation;
-  setObserver: (loc: ObserverLocation) => void;
-
-  // ── Engine state ──
-  engineReady: boolean;
-}
-
-const AstronomyCtx = createContext<AstronomyContextValue | null>(null);
-
-export function useAstronomy(): AstronomyContextValue {
-  const ctx = useContext(AstronomyCtx);
-  if (!ctx) throw new Error('useAstronomy must be used within <AstronomyProvider>');
-  return ctx;
-}
+const INITIAL_SIM_TIME_MS = Date.now();
 
 export function AstronomyProvider({ children }: { children: ReactNode }) {
   const [mode, setModeRaw] = useState<ViewMode>('orrery');
-  const [engineReady, setEngineReady] = useState(false);
+  const [engineReady, setEngineReady] = useState(AstronomyService.isReady);
   const [observer, setObserver] = useState<ObserverLocation>(DEFAULT_OBSERVER);
 
   // Time state: ref for per-frame reads, useState for 1Hz UI updates.
-  const timeRef = useRef<number>(Date.now());
+  const timeRef = useRef<number>(INITIAL_SIM_TIME_MS);
   const rateRef = useRef<number>(1);
   const [displayTime, setDisplayTime] = useState(() => new Date());
   const [rate, setRateState] = useState(1);
@@ -79,10 +52,6 @@ export function AstronomyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const ensureEngineReady = useCallback(() => {
-    if (AstronomyService.isReady()) {
-      setEngineReady(true);
-      return;
-    }
     AstronomyService.preload().then(() => setEngineReady(true));
   }, []);
 
@@ -99,11 +68,6 @@ export function AstronomyProvider({ children }: { children: ReactNode }) {
       ensureEngineReady();
     }
   }, [ensureEngineReady]);
-
-  // Sync engineReady if already loaded (e.g. hot-reload).
-  useEffect(() => {
-    if (AstronomyService.isReady()) setEngineReady(true);
-  }, []);
 
   return (
     <AstronomyCtx.Provider

@@ -5,7 +5,7 @@ import type { NavigationState, Planet } from '../../types/celestialBody';
 import { getPlanetPosition, getMoonPosition } from '../../utils/planetPositions';
 import { getMissionPosition } from '../../utils/missionPositions';
 import { getMoonById } from '../../data/moons';
-import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useAstronomy } from '../../astronomy/useAstronomy';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import type CameraControlsImpl from 'camera-controls';
 

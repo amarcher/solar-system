@@ -2,9 +2,9 @@ import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import './SceneLabels.css';
-import { Color, Vector3, SphereGeometry, type Group, type Mesh } from 'three';
+import { Color, Vector3, SphereGeometry, type Group, type Mesh, type MeshStandardMaterial } from 'three';
 import type { Moon } from '../../types/celestialBody';
-import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useAstronomy } from '../../astronomy/useAstronomy';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
 
@@ -115,7 +115,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: Realisti
 
   useEffect(() => {
     if (moonMeshRef.current?.material && diffuseMap) {
-      const mat = moonMeshRef.current.material as any;
+      const mat = moonMeshRef.current.material as MeshStandardMaterial;
       mat.map = diffuseMap;
       mat.needsUpdate = true;
     }
