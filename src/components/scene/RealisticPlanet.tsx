@@ -5,7 +5,7 @@ import type { Moon, Planet } from '../../types/celestialBody';
 import { PlanetMesh } from './PlanetMesh';
 import { RealisticMoonOrbit } from './RealisticMoonOrbit';
 import { setPlanetPosition } from '../../utils/planetPositions';
-import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useAstronomy } from '../../astronomy/useAstronomy';
 import * as AstronomyService from '../../astronomy/AstronomyService';
 import { scaleAUVector } from '../../astronomy/realisticScale';
 

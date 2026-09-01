@@ -55,7 +55,7 @@ export function trackVoiceAgentActivated() {
 }
 
 // Track engagement milestone: user explored N planets in this session
-let planetsExploredThisSession = new Set<string>();
+const planetsExploredThisSession = new Set<string>();
 
 export function trackExplorationMilestone(planetId: string) {
   if (!initialized) return;

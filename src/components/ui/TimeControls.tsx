@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useAstronomy } from '../../astronomy/useAstronomy';
 import './TimeControls.css';
 
 interface TimeControlsProps {

@@ -7,10 +7,12 @@ import { SunMesh } from './Sun';
 import { RealisticPlanet } from './RealisticPlanet';
 import { RealisticStarField } from './RealisticStarField';
 import { RealisticMissionTrajectory } from './RealisticMissionTrajectory';
-import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useAstronomy } from '../../astronomy/useAstronomy';
 import * as AstronomyService from '../../astronomy/AstronomyService';
 import { scaleAUVector } from '../../astronomy/realisticScale';
 import { getPlanetPosition } from '../../utils/planetPositions';
+
+const ORBIT_SAMPLE_EPOCH_MS = Date.now();
 
 interface RealisticSceneProps {
   planets: Planet[];
@@ -37,10 +39,9 @@ function OrbitPath({ planet }: { planet: Planet }) {
     try {
       const SAMPLES = 192;
       const periodMs = planet.orbitalPeriod * 86_400_000;
-      const now = Date.now();
       const pts = new Float32Array(SAMPLES * 3);
       for (let i = 0; i < SAMPLES; i++) {
-        const date = new Date(now + (periodMs * i) / SAMPLES);
+        const date = new Date(ORBIT_SAMPLE_EPOCH_MS + (periodMs * i) / SAMPLES);
         const helio = AstronomyService.getHeliocentricPosition(planet.id, date);
         const p = scaleAUVector(helio.x, helio.z, -helio.y);
         pts[i * 3] = p.x;
@@ -142,22 +143,26 @@ export function RealisticScene({
   activeMission,
 }: RealisticSceneProps) {
   const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun';
+  // Keep the real solar-system geometry visible around a focused planet or
+  // moon. This lets the camera reveal the Sun and neighboring bodies in their
+  // actual relative directions while detail UI is open.
+  const hidesSystemContext = nav.level === 'sun';
   const focusedPlanetId = (nav.level === 'planet' || nav.level === 'moon') ? nav.planetId : null;
   const collidingLabels = useLabelCollisions(planets, showLabels && !isZoomedIn);
 
   return (
     <>
       <RealisticStarField />
-      <group visible={!isZoomedIn || nav.level === 'sun'}>
+      <group>
         <SunMesh
-          onClick={isZoomedIn && nav.level !== 'sun' ? undefined : onSunClick}
+          onClick={onSunClick}
           showLabel={showLabels && !isZoomedIn}
           paused={false}
         />
       </group>
 
-      {/* Orbit paths give the orrery its structure — hidden while zoomed in */}
-      <group visible={!isZoomedIn}>
+      {/* Orbit paths preserve spatial context around a focused planet/moon. */}
+      <group visible={!hidesSystemContext}>
         {planets.map((planet) => (
           <OrbitPath key={planet.id} planet={planet} />
         ))}
@@ -168,7 +173,7 @@ export function RealisticScene({
         // Hide Earth's moons when Artemis mission is active — it renders its own Moon
         const missionHidesMoons = activeMission?.frame.kind === 'planet-local'
           && activeMission.frame.planetId === planet.id;
-        const isVisible = !isZoomedIn || isFocused;
+        const isVisible = !hidesSystemContext || isFocused;
         return (
           <group key={planet.id} visible={isVisible}>
             <RealisticPlanet

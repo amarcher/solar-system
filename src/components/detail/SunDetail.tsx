@@ -11,17 +11,11 @@ interface SunDetailProps {
 export function SunDetail({ onClose, onLayerChange, activeLayerOverride }: SunDetailProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const [activeLayer, setActiveLayer] = useState(0);
-
-  // Allow voice agent to control the active layer
-  useEffect(() => {
-    if (activeLayerOverride != null && activeLayerOverride !== activeLayer) {
-      setActiveLayer(activeLayerOverride);
-    }
-  }, [activeLayerOverride]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [selectedLayer, setSelectedLayer] = useState(0);
+  const activeLayer = activeLayerOverride ?? selectedLayer;
 
   const handleLayerClick = (i: number) => {
-    setActiveLayer(i);
+    setSelectedLayer(i);
     onLayerChange?.(i);
   };
 

@@ -2,7 +2,7 @@ import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { Color, DoubleSide, RingGeometry } from 'three';
-import type { Mesh } from 'three';
+import type { Mesh, MeshStandardMaterial } from 'three';
 import type { Planet } from '../../types/celestialBody';
 import { usePlanetTexture, useTexturePath, useRingTexture } from '../../utils/textures';
 import * as AstronomyService from '../../astronomy/AstronomyService';
@@ -107,7 +107,7 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
   // Imperatively apply the texture when it finishes loading.
   useEffect(() => {
     if (meshRef.current?.material && diffuseMap) {
-      const mat = meshRef.current.material as any;
+      const mat = meshRef.current.material as MeshStandardMaterial;
       mat.map = diffuseMap;
       mat.needsUpdate = true;
     }

@@ -11,7 +11,8 @@ import { SolarSystemScene } from './components/scene/SolarSystemScene';
 import { PlanetDetail } from './components/detail/PlanetDetail';
 import { MoonDetail } from './components/detail/MoonDetail';
 import { SunDetail } from './components/detail/SunDetail';
-import { AstronomyProvider, useAstronomy } from './astronomy/AstronomyContext';
+import { AstronomyProvider } from './astronomy/AstronomyContext';
+import { useAstronomy } from './astronomy/useAstronomy';
 import { ModeToggle } from './components/ui/ModeToggle';
 import { TimeControls } from './components/ui/TimeControls';
 import { ObserverPicker } from './components/ui/ObserverPicker';
@@ -24,7 +25,7 @@ function viewTransition(update: () => void, types: string[]) {
     update();
     return;
   }
-  (document as any).startViewTransition({ update, types });
+  document.startViewTransition({ update, types });
 }
 
 const mobileQuery = window.matchMedia('(max-width: 899px)');

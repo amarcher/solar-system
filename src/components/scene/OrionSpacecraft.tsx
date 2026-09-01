@@ -56,7 +56,7 @@ const ARRAY_THK = 0.08;
 export function OrionSpacecraft({ accentColor = '#ff8a3d' }: OrionSpacecraftProps) {
   return (
     <Suspense fallback={<OrionPrimitives accentColor={accentColor} />}>
-      <OrionFromGLTF accentColor={accentColor} />
+      <OrionFromGLTF />
     </Suspense>
   );
 }
@@ -80,7 +80,7 @@ const TARGET_LENGTH = 0.022; // scene units — desired total spacecraft length
 // direction expected by MissionTrajectory).
 const MODEL_ROTATION: [number, number, number] = [Math.PI / 2, 0, 0];
 
-function OrionFromGLTF(_props: OrionSpacecraftProps) {
+function OrionFromGLTF() {
   const { scene } = useGLTF('/models/orion.glb');
 
   // Clone so multiple instances don't share mutated transforms
@@ -258,4 +258,3 @@ function OrionPrimitives({ accentColor = '#ff8a3d' }: OrionSpacecraftProps) {
     </group>
   );
 }
-

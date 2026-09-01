@@ -4,6 +4,11 @@ import { TextureLoader, Texture, SRGBColorSpace, CanvasTexture, RepeatWrapping }
 const loader = new TextureLoader();
 const textureCache = new Map<string, Texture | null>();
 
+interface TextureLoadState {
+  key: string;
+  texture: Texture | null;
+}
+
 export const CDN_URL = import.meta.env.VITE_TEXTURE_CDN_URL as string | undefined;
 
 /**
@@ -38,17 +43,19 @@ export function texturePath(path: string): string {
  * Returns null if no texture file exists (falls back to solid color).
  */
 export function usePlanetTexture(planetId: string): Texture | null {
-  const [texture, setTexture] = useState<Texture | null>(() =>
-    textureCache.get(planetId) ?? null,
+  const [loadState, setLoadState] = useState<TextureLoadState | null>(() =>
+    textureCache.has(planetId)
+      ? { key: planetId, texture: textureCache.get(planetId) ?? null }
+      : null,
   );
-  const [loaded, setLoaded] = useState(() => textureCache.has(planetId));
+  const hasCachedTexture = textureCache.has(planetId);
+  const texture = hasCachedTexture
+    ? textureCache.get(planetId) ?? null
+    : loadState?.key === planetId ? loadState.texture : null;
+  const loaded = hasCachedTexture || loadState?.key === planetId;
 
   useEffect(() => {
-    if (textureCache.has(planetId)) {
-      setTexture(textureCache.get(planetId) ?? null);
-      setLoaded(true);
-      return;
-    }
+    if (textureCache.has(planetId)) return;
 
     let cancelled = false;
     const path = `/textures/2k/${planetId}_diffuse.jpg`;
@@ -59,8 +66,7 @@ export function usePlanetTexture(planetId: string): Texture | null {
         if (cancelled) return;
         tex.colorSpace = SRGBColorSpace;
         textureCache.set(planetId, tex);
-        setTexture(tex);
-        setLoaded(true);
+        setLoadState({ key: planetId, texture: tex });
 
         // Optional background upgrade to 8K. Gated behind an explicit
         // opt-in AND a per-planet allowlist so we don't 404-spam the
@@ -73,7 +79,7 @@ export function usePlanetTexture(planetId: string): Texture | null {
               if (cancelled) return;
               hiTex.colorSpace = SRGBColorSpace;
               textureCache.set(planetId, hiTex);
-              setTexture(hiTex);
+              setLoadState({ key: planetId, texture: hiTex });
               tex.dispose();
             },
             undefined,
@@ -86,8 +92,7 @@ export function usePlanetTexture(planetId: string): Texture | null {
         // No texture file found — solid color fallback
         if (!cancelled) {
           textureCache.set(planetId, null);
-          setTexture(null);
-          setLoaded(true);
+          setLoadState({ key: planetId, texture: null });
         }
       },
     );
@@ -103,15 +108,17 @@ export function usePlanetTexture(planetId: string): Texture | null {
  * Returns null while loading or if the file doesn't exist.
  */
 export function useTexturePath(path: string): Texture | null {
-  const [texture, setTexture] = useState<Texture | null>(() =>
-    textureCache.get(path) ?? null,
+  const [loadState, setLoadState] = useState<TextureLoadState | null>(() =>
+    textureCache.has(path)
+      ? { key: path, texture: textureCache.get(path) ?? null }
+      : null,
   );
+  const texture = textureCache.has(path)
+    ? textureCache.get(path) ?? null
+    : loadState?.key === path ? loadState.texture : null;
 
   useEffect(() => {
-    if (textureCache.has(path)) {
-      setTexture(textureCache.get(path) ?? null);
-      return;
-    }
+    if (textureCache.has(path)) return;
 
     let cancelled = false;
     loader.load(
@@ -120,13 +127,13 @@ export function useTexturePath(path: string): Texture | null {
         if (cancelled) return;
         tex.colorSpace = SRGBColorSpace;
         textureCache.set(path, tex);
-        setTexture(tex);
+        setLoadState({ key: path, texture: tex });
       },
       undefined,
       () => {
         if (!cancelled) {
           textureCache.set(path, null);
-          setTexture(null);
+          setLoadState({ key: path, texture: null });
         }
       },
     );

@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Line, Html } from '@react-three/drei';
 import { Color, Group, Quaternion, Vector3 } from 'three';
+import type { Mesh, MeshStandardMaterial } from 'three';
 import type { Mission, MissionEphemerisPoint } from '../../types/mission';
 import { usePlanetTexture } from '../../utils/textures';
 import { clearMissionPosition, setMissionPosition } from '../../utils/missionPositions';
-import { useAstronomy } from '../../astronomy/AstronomyContext';
+import { useAstronomy } from '../../astronomy/useAstronomy';
 import * as AstronomyService from '../../astronomy/AstronomyService';
 import { scaleAUVector } from '../../astronomy/realisticScale';
 
@@ -223,7 +224,7 @@ export function RealisticMissionTrajectory({ mission }: RealisticMissionTrajecto
 
 function TexturedMoon({ radius }: { radius: number }) {
   const diffuseMap = usePlanetTexture('moon');
-  const meshRef = useRef<any>(null);
+  const meshRef = useRef<Mesh>(null);
   const tintColor = useMemo(() => {
     if (diffuseMap) {
       const c = new Color('#ffffff');
@@ -235,8 +236,9 @@ function TexturedMoon({ radius }: { radius: number }) {
 
   useEffect(() => {
     if (meshRef.current?.material && diffuseMap) {
-      meshRef.current.material.map = diffuseMap;
-      meshRef.current.material.needsUpdate = true;
+      const material = meshRef.current.material as MeshStandardMaterial;
+      material.map = diffuseMap;
+      material.needsUpdate = true;
     }
   }, [diffuseMap]);
 

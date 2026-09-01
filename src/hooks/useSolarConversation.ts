@@ -275,22 +275,49 @@ export function useSolarConversation({ currentNav, currentMode, currentObserver,
   const pendingNavRef = useRef<NavigationState | null>(null);
   const currentNavRef = useRef<string | null>(null);
   const latestNavRef = useRef<NavigationState>(currentNav);
-  latestNavRef.current = currentNav;
 
   // Refs to navigation handlers so client tools always invoke the LATEST
   // closure even though clientTools are passed once at session start.
   // Without this, a tool call halfway through a session would fire
   // against stale React state.
   const handlersRef = useRef({ onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate });
-  handlersRef.current = { onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate };
 
   // Keep mode/observer/time refs for contextual updates
   const modeRef = useRef(currentMode);
-  modeRef.current = currentMode;
   const observerRef = useRef(currentObserver);
-  observerRef.current = currentObserver;
   const displayTimeRef = useRef(displayTime);
-  displayTimeRef.current = displayTime;
+
+  useEffect(() => {
+    latestNavRef.current = currentNav;
+    handlersRef.current = {
+      onNavigatePlanet,
+      onNavigateMoon,
+      onNavigateSun,
+      onTrackMission,
+      onGoBack,
+      onPeelSunLayer,
+      onSwitchMode,
+      onSetDate,
+      onSetRate,
+    };
+    modeRef.current = currentMode;
+    observerRef.current = currentObserver;
+    displayTimeRef.current = displayTime;
+  }, [
+    currentNav,
+    currentMode,
+    currentObserver,
+    displayTime,
+    onNavigatePlanet,
+    onNavigateMoon,
+    onNavigateSun,
+    onTrackMission,
+    onGoBack,
+    onPeelSunLayer,
+    onSwitchMode,
+    onSetDate,
+    onSetRate,
+  ]);
 
   // Abort flag for in-flight startSession. If the user clicks stop
   // while the start path is still awaiting Conversation.startSession,

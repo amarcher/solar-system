@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import './SceneLabels.css';
 import { Color, Vector3, SphereGeometry } from 'three';
-import type { Group, Mesh } from 'three';
+import type { Group, Mesh, MeshStandardMaterial } from 'three';
 import type { Moon } from '../../types/celestialBody';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
@@ -112,7 +112,7 @@ interface MoonOrbitProps {
 export function MoonOrbit({ moon, onClick, showLabel = true, paused = false }: MoonOrbitProps) {
   const groupRef = useRef<Group>(null);
   const moonMeshRef = useRef<Mesh>(null);
-  const angleRef = useRef(Math.random() * Math.PI * 2);
+  const angleRef = useRef((hashString(moon.id) / 4294967296) * Math.PI * 2);
   const diffuseMap = usePlanetTexture(moon.id);
   const moonColor = MOON_COLORS[moon.id] || '#aaaaaa';
 
@@ -129,7 +129,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false }: M
   // R3F doesn't always detect map changing from undefined → Texture on re-render.
   useEffect(() => {
     if (moonMeshRef.current?.material && diffuseMap) {
-      const mat = moonMeshRef.current.material as any;
+      const mat = moonMeshRef.current.material as MeshStandardMaterial;
       mat.map = diffuseMap;
       mat.needsUpdate = true;
     }
