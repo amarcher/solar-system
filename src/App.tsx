@@ -267,6 +267,7 @@ function App() {
 
       <SolarSystemScene
         tides={tides.state}
+        waterMotionPaused={tides.waterMotionPaused}
         planets={planets}
         moonsByPlanet={moonsByPlanet}
         missions={missions}
@@ -560,7 +561,7 @@ function App() {
         <button type="button" data-tides-entry className="tides-entry tides-entry--compact" onClick={tides.open}>Why tides?</button>
       )}
       </div>
-      {tides.state && <TidesControls state={tides.state} onChange={tides.update} onClose={() => closeTides()}
+      {tides.state && <TidesControls waterMotionPaused={tides.waterMotionPaused} onToggleWaterMotion={() => tides.setWaterMotionPaused(!tides.waterMotionPaused)} state={tides.state} onChange={tides.update} onClose={() => closeTides()}
         voice={voice.agentId ? { label: voice.status === 'off' ? 'Talk to Stella' : 'Stop Stella', onClick: () => { void voice.toggle(); } } : undefined} />}
 
       <Analytics />

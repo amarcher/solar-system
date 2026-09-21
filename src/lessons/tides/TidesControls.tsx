@@ -1,15 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { phaseLabel, tidesCaption, TIDES_QUALIFICATION, type TideSource, type TideStep, type TidesState } from './model';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import './TidesControls.css';
 interface Props {
   state: TidesState;
   onChange: (patch: Partial<TidesState>) => void;
   onClose: () => void;
+  waterMotionPaused: boolean;
+  onToggleWaterMotion: () => void;
   voice?: { label: string; onClick: () => void };
 }
-export function TidesControls({ state, onChange, onClose, voice }: Props) {
+export function TidesControls({ state, onChange, onClose, voice, waterMotionPaused, onToggleWaterMotion }: Props) {
   const dialog = useRef<HTMLElement>(null);
   const close = useRef<HTMLButtonElement>(null);
+  const reducedMotion = useReducedMotion();
   const caption = tidesCaption(state);
   useEffect(() => { close.current?.focus(); }, []);
   return (
@@ -37,7 +41,7 @@ export function TidesControls({ state, onChange, onClose, voice }: Props) {
             <input aria-label="Moon angle from the Sun" aria-valuetext={phaseLabel(state.phase)} type="range" min="0" max="360" step="1" value={state.phase} onChange={(event) => onChange({ phase: Number(event.target.value) })} />
           </fieldset>
         </div>
-        <footer className="tides-lesson__footer"><p>Sizes and distances are schematic. This is not a local tide forecast.</p><a href="https://oceanservice.noaa.gov/facts/springtide.html" target="_blank" rel="noopener noreferrer">Science: NOAA (new tab)</a><span>Images: </span><a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener noreferrer">Solar System Scope (new tab)</a><span> · </span><a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0 (new tab)</a></footer>
+        <footer className="tides-lesson__footer">{state.step === 'water' && (reducedMotion ? <p>Water ripples paused for reduced motion.</p> : <button type="button" onClick={onToggleWaterMotion}>{waterMotionPaused ? 'Resume water' : 'Pause water'}</button>)}<p>Sizes and distances are schematic. This is not a local tide forecast.</p><a href="https://oceanservice.noaa.gov/facts/springtide.html" target="_blank" rel="noopener noreferrer">Science: NOAA (new tab)</a><span>Images: </span><a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener noreferrer">Solar System Scope (new tab)</a><span> · </span><a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0 (new tab)</a></footer>
       </div>
       <p className="tides-lesson__qualification">{TIDES_QUALIFICATION}</p>
     </section>

@@ -7,6 +7,7 @@ import { isSameDestination, restoreExploration, snapshotExploration, type Explor
 export function useTidesLesson(nav: NavigationState) {
   const { mode, timeRef, rate, setDate, setRate } = useAstronomy();
   const [state, setState] = useState<TidesState | null>(null);
+  const [waterMotionPaused, setWaterMotionPaused] = useState(false);
   const snapshot = useRef<ExplorationSnapshot | null>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   const navKey = JSON.stringify(nav);
@@ -27,6 +28,7 @@ export function useTidesLesson(nav: NavigationState) {
     snapshot.current = snapshotExploration(timeRef.current, rate, navKey, mode);
     returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setRate(0);
+    setWaterMotionPaused(false);
     setState({ ...INITIAL_TIDES });
   }, [nav, mode, timeRef, rate, navKey, setRate]);
   useEffect(() => {
@@ -36,5 +38,5 @@ export function useTidesLesson(nav: NavigationState) {
     if (snapshot.current && !isSameDestination(snapshot.current, navKey, mode)) close(false);
   }, [navKey, mode, close]);
   const update = useCallback((patch: Partial<TidesState>) => setState((previous) => previous ? { ...previous, ...patch } : null), []);
-  return { state, open, close, update };
+  return { state, open, close, update, waterMotionPaused, setWaterMotionPaused };
 }

@@ -72,9 +72,10 @@ interface SolarSystemSceneProps {
   devicePitchRef?: React.RefObject<number | null>;
   orreryMission?: Mission;
   tides?: TidesState | null;
+  waterMotionPaused?: boolean;
 }
 
-export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, tides = null }: SolarSystemSceneProps) {
+export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, tides = null, waterMotionPaused = false }: SolarSystemSceneProps) {
   const { mode } = useAstronomy();
   const [benchmarkReport, setBenchmarkReport] = useState('Preparing benchmark…');
   const [benchmarkRun, setBenchmarkRun] = useState(0);
@@ -193,7 +194,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         )}
 
         </group>
-        {tides && <TidesScene state={tides} />}
+        {tides && <TidesScene state={tides} waterMotionPaused={waterMotionPaused} />}
 
         {mode === 'sky' ? (
           <TerrestrialRig
