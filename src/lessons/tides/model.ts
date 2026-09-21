@@ -70,7 +70,11 @@ export function tidesCaption(state: TidesState): { title: string; explanation: s
   };
   return {
     title: 'Two sides rise',
-    explanation: state.source === 'both'
+    explanation: state.live
+      ? state.source === 'both'
+        ? 'The Moon and Sun stretch an ideal global ocean. Their combined effect depends on their directions. This view uses representative physical strengths, not the compressed distances on screen.'
+        : `The ${state.source === 'moon' ? 'Moon' : 'Sun'} stretches this ideal ocean into two bulges. The water follows its displayed direction, using a representative physical strength rather than the compressed distance on screen.`
+      : state.source === 'both'
       ? 'New and full Moon align the tidal effects: spring tides. At quarter Moon, their combined range is smaller: neap tides. Tides do not disappear.'
       : 'In this ideal ocean, different pulls stretch the water into two bulges. Add both bodies to compare spring and neap tides.',
     legend: 'A global equilibrium ocean — not a prediction for any coast.',

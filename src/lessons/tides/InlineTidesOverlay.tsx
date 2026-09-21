@@ -1,10 +1,13 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector2, Vector3, type BufferAttribute, type BufferGeometry, type Group, type ShaderMaterial } from 'three';
 import { getPlanetById } from '../../data/planets';
 import { getPlanetPosition, getMoonPosition } from '../../utils/planetPositions';
-import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { usePlanetTexture, useTexturePath } from '../../utils/textures';
+import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
+import type { TidesCaptureFrame } from '../../recording/useTidesRecording';
 import { useAstronomy } from '../../astronomy/useAstronomy';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { SOLAR_TIDE_RATIO, type TidesState } from './model';
 import { addDifferentialField, gravityInDirection } from './inlineTidesMath';
 import { shellVertex, shellFragment } from './waterShaders';
@@ -16,12 +19,18 @@ const MAX_VERTICES = POINT_COUNT * 2 * 6;
 const MOON_COLOR = [0.35, 0.8, 1] as const;
 const SUN_COLOR = [1, 0.73, 0.24] as const;
 const DIFFERENCE_COLOR = [0.4, 0.93, 1] as const;
-interface Props { state: TidesState; waterMotionPaused?: boolean }
+interface Props { state: TidesState; waterMotionPaused?: boolean; capture?: boolean; captureReadyRef?: RefObject<boolean>; onFrame?: (frame: TidesCaptureFrame) => void }
 
 /** World-space overlay only. The existing Earth, Moon, Sun and camera retain
  * ownership of their positions. phase is deliberately ignored in this live view. */
-export function InlineTidesOverlay({ state, waterMotionPaused = false }: Props) {
+export function InlineTidesOverlay({ state, waterMotionPaused = false, capture = false, captureReadyRef, onFrame }: Props) {
+  const { settings } = useGraphicsQuality();
   const { mode } = useAstronomy();
+  // Same variants already consumed by the real scene; the store shares loads.
+  const earthTexture = usePlanetTexture('earth', { maxWidth: settings.bodyWidth });
+  const moonTexture = usePlanetTexture('moon', { maxWidth: settings.bodyWidth });
+  const clouds = useTexturePath('/textures/2k/earth_clouds.jpg');
+  const sky = useTexturePath(mode === 'artistic' ? '/textures/skybox/stars_milky_way_2k.jpg' : '/textures/skybox/galaxy_milky_way_2k.jpg');
   const root = useRef<Group>(null);
   const water = useRef<ShaderMaterial>(null);
   const lineGeometry = useRef<BufferGeometry>(null);
@@ -48,7 +57,7 @@ export function InlineTidesOverlay({ state, waterMotionPaused = false }: Props) 
     along: new Vector3(), across: new Vector3(), head: new Vector3(),
   }), []);
 
-  useFrame((_, delta) => {
+  useFrame(({ gl, size }, delta) => {
     const group = root.current;
     if (!group) return;
     const earthPosition = getPlanetPosition('earth');
@@ -76,6 +85,7 @@ export function InlineTidesOverlay({ state, waterMotionPaused = false }: Props) 
       water.current.uniforms.waterTime.value = clock.current;
       water.current.uniformsNeedUpdate = true;
     }
+    onFrame?.({ canvas: gl.domElement, state, texturesReady: !!earthTexture && !!moonTexture && !!clouds && !!sky, portrait: capture && !!captureReadyRef?.current && size.width === 360 && size.height === 640 });
     if (state.step === 'water' || !positionAttribute.current || !colorAttribute.current || !lineGeometry.current) return;
 
     const { axisV, planeNormal, surface, field, start, end, along, across, head } = scratch;

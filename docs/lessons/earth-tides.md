@@ -4,7 +4,7 @@ The tides Easter egg is an optional layer on the existing Explore/Orrery canvas.
 
 ## Interaction
 
-The default layer is a translucent rippling water envelope, with both Moon and Sun enabled. A compact nonmodal card starts collapsed; its controls select Water, Gravity, or Difference, choose Moon/Sun/Both, pause ripples, or hide tides. Its model qualification stays visible. The normal toolbar, time controls, navigation, and pan/zoom remain usable. No clock or camera snapshot is taken because the layer does not borrow them. Leaving Earth, entering Sky, or starting Artemis removes it; Explore/Orrery switching retains it.
+The default layer is a translucent rippling water envelope, with both Moon and Sun enabled. A compact nonmodal card starts collapsed; its controls select Water, Gravity, or Difference, choose Moon/Sun/Both, pause ripples, or hide tides. Its model qualification stays visible. The normal toolbar, time controls, navigation, and pan/zoom remain usable. During ordinary exploration the layer does not borrow the clock or camera; temporary borrowing is limited to the explicitly started video capture described below. Leaving Earth, entering Sky, or starting Artemis removes it; Explore/Orrery switching retains it.
 
 The menu icon is the entry point in both compact and desktop toolbars. Enabling focuses the card summary without trapping focus; hiding returns to the visible entry/menu or remounted Earth information panel. Reduced-motion preference freezes decorative ripples. The layer follows body positions regardless of whether those ripples are paused.
 
@@ -26,4 +26,14 @@ The layer adds one water mesh and one batched line buffer. It updates existing v
 
 129 tests, lint, and production build passed for the inline integration. Browser checks covered actual Earth attachment, pan/zoom, changing Orrery time, Explore/Orrery switching, Sky cleanup, compact icon entry, focus, and 320×568/390×844 layouts. Display quality's icon popup was exercised in desktop and compact menus, including selection, Escape, and returning to Automatic. Physical iPhone Safari remains a user acceptance check.
 
-The former schematic renderer is retained as an internal recording helper; it is no longer a public lesson view. Recording PR #73 is held while capture is adapted to the inline experience.
+PR #74's inline experience is released and verified in production at `7b308dd`. PR #75's compact Orrery Moon is released and verified at `2bcd728`, including actual Moon close-up, surrounding Earth context, dragging, zoom, and camera clearance. The integrated recorder/lunar code passes lint, build, and all 169 tests. Physical iPhone Safari remains pending.
+
+## Record the actual scene
+
+The expanded controls offer **Record 18-second clip**. Three six-second beats show Moon gravity, Moon differential gravity, and the combined Moon/Sun water envelope. They use the same live overlay and actual displayed bodies and sky; they never apply New/Full/Quarter presets or reposition objects. The old standalone schematic renderer is not used by capture.
+
+Recording temporarily freezes the exact simulation clock and artistic motion, disables canvas gestures, and stages the existing canvas at 360×640 with DPR2. Camera framing keeps the existing viewing direction and fits actual Earth/Moon bounds into the caption-free portrait area; Explore may zoom out to include its wider Moon orbit. It respects mode-specific Moon radius and water envelope settings. Recording waits for shared scene textures, camera readiness, portrait dimensions and a matching rendered teaching state before copying the canvas after rendering.
+
+Completion, cancellation, timeout, backgrounding and encoder errors restore the original clock/rate, camera, lesson state and layout. Quality sampling is suspended so capture cannot demote the user's quality setting. Paused water and reduced motion remain respected. Voice navigation/time/mode actions cancel recording before applying the new user destination or time. Focus returns to Record, including while encoding finishes; no full-screen lesson modal is introduced.
+
+The native video preview and download remain local; nothing is uploaded, auto-downloaded or published. The composition includes model captions, exaggerated-water qualification, Earth/Moon image attribution and the selected sky source credit. The final integrated inline clip is H.264, 720×1280, 17.9898 seconds and 4,442,757 bytes. All three beats and credits were inspected; native playback reached the end without a media error. Cancellation/completion/dismissal and manual camera/paused-clock restoration were checked, alongside accelerated-rate restoration on the deployed preview. Physical iPhone Safari, backgrounding and reduced-motion device checks remain pending. See [recorder contract and checks](../../src/recording/README.md).
