@@ -197,23 +197,23 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
     }
   }, -1.5);
 
-  // Drei updates controls at -1. Resolve the compact Moon's Earthward orbit
+  // Drei updates controls at -1. Keep compact moon close-ups clear of their parent
   // before rendering, preserving both its current zoom and any fly-in endpoint.
   useFrame(() => {
-    if (mode !== 'orrery' || nav.level !== 'moon' || nav.moonId !== 'moon' || orreryMissionId) return;
+    if (mode !== 'orrery' || nav.level !== 'moon' || orreryMissionId) return;
     const controls = controlsRef.current;
-    const earthPosition = getPlanetPosition('earth');
-    const earth = planets.find(planet => planet.id === 'earth');
-    if (!controls || !earthPosition || !earth) return;
+    const parentPosition = getPlanetPosition(nav.planetId);
+    const parent = planets.find(planet => planet.id === nav.planetId);
+    if (!controls || !parentPosition || !parent) return;
     const s = clearanceScratch.current;
     controls.getPosition(s.position, false);
     controls.getTarget(s.target, false);
     // Include clouds and a near-plane margin, even on a wide viewport.
-    const radius = earth.visualRadius * 1.015 + 0.01;
-    if (!clearOrbitOccluder(s.position, s.target, earthPosition, radius, s.corrected)) return;
+    const radius = parent.visualRadius * 1.015 + 0.01;
+    if (!clearOrbitOccluder(s.position, s.target, parentPosition, radius, s.corrected)) return;
     controls.getPosition(s.endPosition, true);
     controls.getTarget(s.endTarget, true);
-    clearOrbitOccluder(s.endPosition, s.endTarget, earthPosition, radius, s.correctedEnd);
+    clearOrbitOccluder(s.endPosition, s.endTarget, parentPosition, radius, s.correctedEnd);
     controls.setLookAt(...s.corrected.toArray(), ...s.target.toArray(), false);
     controls.setLookAt(...s.correctedEnd.toArray(), ...s.endTarget.toArray(), true);
     controls.update(0);

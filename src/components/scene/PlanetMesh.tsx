@@ -1,3 +1,4 @@
+import { planetRingOuterMultiplier } from '../../utils/planetExtent';
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -264,7 +265,7 @@ function ProceduralRings({ planet }: { planet: Planet }) {
   const ringTexture = useRingTexture(planet.id as 'saturn' | 'uranus');
 
   const innerMul = planet.id === 'saturn' ? 1.3 : 1.5;
-  const outerMul = planet.id === 'saturn' ? 2.4 : 1.9;
+  const outerMul = planetRingOuterMultiplier(planet.id);
   const innerR = planet.visualRadius * innerMul;
   const outerR = planet.visualRadius * outerMul;
 

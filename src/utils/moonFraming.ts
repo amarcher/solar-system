@@ -1,9 +1,11 @@
 import type { ViewMode } from '../astronomy/types';
-import { lunarOrreryBodyRadius } from '../astronomy/lunarOrrery';
+import { getMoonById } from '../data/moons';
+import { orreryMoonBodyRadius } from '../astronomy/moonSpacing';
 
 /** Shared by moon geometry and camera framing; these are illustrative scene units. */
 export function moonVisualRadius(diameterKm: number, moonId?: string, mode: ViewMode = 'artistic'): number {
-  if (moonId === 'moon' && mode === 'orrery') return lunarOrreryBodyRadius(diameterKm);
+  const moon = moonId && mode === 'orrery' ? getMoonById(moonId) : undefined;
+  if (moon) return orreryMoonBodyRadius({ ...moon, diameter: diameterKm });
   return Math.max(diameterKm / 25000, 0.04);
 }
 

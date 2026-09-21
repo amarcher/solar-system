@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { getPlanetById } from '../../data/planets';
 import { getMoonById } from '../../data/moons';
-import { LUNAR_ORRERY_RADIUS, lunarOrreryBodyRadius } from '../../astronomy/lunarOrrery';
+import { LUNAR_ORRERY_RADIUS } from '../../astronomy/lunarOrrery';
+import { orreryMoonBodyRadius } from '../../astronomy/moonSpacing';
 import { SOLAR_TIDE_RATIO } from './model';
 import { DEFAULT_WATER_PROFILE, inlineWaterProfile, WATER_RIPPLE_AMPLITUDE } from './waterProfiles';
 
@@ -17,7 +18,7 @@ describe('inline water envelope clearance', () => {
     const outerRadius = baseRadius + tidalAmplitude * totalStrength + WATER_RIPPLE_AMPLITUDE;
     expect(innerRadius).toBeGreaterThan(1.015);
     expect(innerRadius).toBeCloseTo(1.0176, 3);
-    expect(outerRadius * earth.visualRadius).toBeLessThan(LUNAR_ORRERY_RADIUS - lunarOrreryBodyRadius(moon.diameter));
+    expect(outerRadius * earth.visualRadius).toBeLessThan(LUNAR_ORRERY_RADIUS - orreryMoonBodyRadius(moon));
     expect(outerRadius * earth.visualRadius).toBeCloseTo(0.3847, 3);
   });
 

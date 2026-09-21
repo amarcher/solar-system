@@ -91,22 +91,6 @@ body {
   }
 }
 
-.app__tides-note {
-  position: fixed;
-  right: 16px;
-  bottom: 76px;
-  z-index: 90;
-  max-width: min(300px, calc(100vw - 32px));
-  margin: 0;
-  padding: 5px 8px;
-  border-radius: 6px;
-  background: rgba(3, 6, 16, 0.72);
-  color: #d6dfeb;
-  font-size: 11px;
-  line-height: 1.4;
-  pointer-events: none;
-}
-
 /* Bottom-left toolbar (label toggle + cinema toggle) */
 .app__toolbar {
   position: fixed;
