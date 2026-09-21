@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bodyDirection, differentialField, gravityField, INITIAL_TIDES, oceanPotential, oceanRadius, SOLAR_TIDE_RATIO, tidesCaption, tidesVoiceContext, type TidesState, type Vec3 } from './model';
+import { bodyDirection, differentialField, gravityField, INITIAL_TIDES, TIDES_OVERLAY_STATE, oceanPotential, oceanRadius, SOLAR_TIDE_RATIO, tidesCaption, tidesVoiceContext, type TidesState, type Vec3 } from './model';
 const magnitude = (v: Vec3) => Math.hypot(...v);
 const state = (phase: number, source: TidesState['source'] = 'both'): TidesState => ({ step: 'water', source, phase });
 function equatorialRange(s: TidesState): number {
@@ -54,9 +54,13 @@ describe('tidal physics independent of the scene scale', () => {
 });
 
 it('describes the inline layer without inventing a preset phase or borrowed clock', () => {
-  const context = tidesVoiceContext({ step: 'water', source: 'both', phase: 0, live: true });
+  const context = tidesVoiceContext(TIDES_OVERLAY_STATE);
   expect(context).toContain('current Explore or Orrery scene');
   expect(context).toContain('pan, zoom, and change simulation time');
   expect(context).not.toContain('Schematic, not the current date');
   expect(context).not.toContain('New Moon.');
+  expect(context).toContain('Both the Moon and Sun always contribute');
+  expect(context).toContain('only tides control switches the layer on or off');
+  expect(context).toContain('Reduced motion automatically stops decorative ripples');
+  expect(context).not.toMatch(/vectors|arrows|Step:|Sources:/i);
 });

@@ -3,6 +3,8 @@ export type TideSource = 'moon' | 'sun' | 'both';
 export interface TidesState { step: TideStep; source: TideSource; phase: number; live?: boolean }
 export type Vec3 = readonly [number, number, number];
 export const INITIAL_TIDES: TidesState = { step: 'gravity', source: 'moon', phase: 0 };
+/** The public overlay is a fixed combined water layer, with no editable lesson modes. */
+export const TIDES_OVERLAY_STATE: Readonly<TidesState> = Object.freeze({ step: 'water', source: 'both', phase: 0, live: true });
 export const TIDES_QUALIFICATION = 'Water shape exaggerated. This simplified model leaves out coastlines and ocean depth.';
 // Representative geocentric distances (km) and standard gravitational parameters
 // (km³/s²). These are physical constants, independent of the display geometry.
@@ -82,6 +84,6 @@ export function tidesCaption(state: TidesState): { title: string; explanation: s
 }
 export function tidesVoiceContext(state: TidesState): string {
   const caption = tidesCaption(state);
-  if (state.live) return `[EARTH TIDES OVERLAY] A layer around the actual Earth in the current Explore or Orrery scene. Step: ${state.step}. Sources: ${state.source}. Vectors and the water envelope follow the displayed Moon and Sun directions while the user can pan, zoom, and change simulation time. ${caption.title}. ${caption.explanation} ${caption.legend} ${TIDES_QUALIFICATION} The view has compressed sizes and distances; use representative physical strengths, not displayed distances. Do not infer the current lunar phase from lesson presets or claim a local tide forecast. Sun tide strength is about 46% of the Moon at representative distances. Navigating away from Earth or to Sky hides the layer.`;
+  if (state.live) return `[EARTH TIDES OVERLAY] A translucent, rippling water envelope around the actual Earth in the current Explore or Orrery scene. Both the Moon and Sun always contribute, following their displayed directions while the user can pan, zoom, and change simulation time. The only tides control switches the layer on or off. Reduced motion automatically stops decorative ripples while the envelope continues following the bodies. ${TIDES_QUALIFICATION} The view has compressed sizes and distances; use representative physical strengths, not displayed distances. This is a global equilibrium illustration, not a local tide forecast. Sun tide strength is about 46% of the Moon at representative distances. Navigating away from Earth or to Sky hides the layer.`;
   return `[EARTH TIDES LESSON] Schematic, not the current date. Step: ${state.step}. Sources: ${state.source}. ${phaseLabel(state.phase)}. ${caption.title}. ${caption.explanation} ${caption.legend} ${TIDES_QUALIFICATION} Sun tide strength is about 46% of Moon at representative distances. Navigation, time, and mode tools leave this lesson before acting. Do not claim local tide predictions.`;
 }
