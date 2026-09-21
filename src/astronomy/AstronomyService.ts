@@ -1,4 +1,5 @@
 import type { ObserverLocation } from './types';
+import type { CelestialFrame } from './celestialCoordinates';
 
 // Lazy-loaded astronomy-engine module
 let astroModule: typeof import('astronomy-engine') | null = null;
@@ -143,17 +144,17 @@ export function getHeliocentricPosition(bodyId: string, time: Date): HelioPositi
   const A = astroModule!;
   const body = resolveBody(bodyId);
   const vec = A.HelioVector(body, time);
-  // astronomy-engine returns equatorial J2000 vectors.
-  // Rotate from equatorial to ecliptic for a top-down orrery view.
-  // Obliquity of the ecliptic ≈ 23.4393°
-  const obliquity = 23.4393 * (Math.PI / 180);
-  const cosE = Math.cos(obliquity);
-  const sinE = Math.sin(obliquity);
-  return {
-    x: vec.x,
-    y: vec.y * cosE + vec.z * sinE,
-    z: -vec.y * sinE + vec.z * cosE,
-  };
+  const ecliptic = A.RotateVector(A.Rotation_EQJ_ECL(), vec);
+  return { x: ecliptic.x, y: ecliptic.y, z: ecliptic.z };
+}
+
+/** Rotation for the entire J2000 sky; HOR includes precession and nutation, not refraction. */
+export function getCelestialRotation(frame: CelestialFrame, time: Date, observer: ObserverLocation): number[][] {
+  const A = astroModule;
+  if (!A) throw new Error('Astronomy engine is not ready');
+  return frame === 'ecliptic'
+    ? A.Rotation_EQJ_ECL().rot
+    : A.Rotation_EQJ_HOR(time, new A.Observer(observer.latitude, observer.longitude, observer.elevation)).rot;
 }
 
 /**

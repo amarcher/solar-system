@@ -44,6 +44,7 @@ function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
   const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady } = useAstronomy();
   const [showLabels, setShowLabels] = useState(true);
+  const [showConstellations, setShowConstellations] = useState(false);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
   const [missionHudDismissed, setMissionHudDismissed] = useState(false);
@@ -262,6 +263,7 @@ function App() {
         onMoonClick={handleSceneMoonClick}
         onSunClick={handleSunClick}
         showLabels={showLabels}
+        showConstellations={showConstellations}
         deviceOrientation={deviceOrientation.active}
         deviceHeadingRef={deviceOrientation.headingRef}
         devicePitchRef={deviceOrientation.pitchRef}
@@ -293,6 +295,19 @@ function App() {
         </button>
         <div className="app__toolbar-items">
           <GraphicsSettings />
+          {mode !== 'artistic' && (
+            <button
+              className="app__toolbar-btn"
+              style={{ width: 'auto', paddingInline: 10, fontSize: 11 }}
+              type="button"
+              aria-label="Constellation lines"
+              aria-pressed={showConstellations}
+              title="Toggle Western constellation figures — imagined patterns connecting stars"
+              onClick={() => { setShowConstellations(value => !value); setToolbarOpen(false); }}
+            >
+              {showConstellations ? 'Constellations on' : 'Constellations off'}
+            </button>
+          )}
           {voice.agentId && (
             <button
               className={`app__toolbar-btn${voice.status !== 'off' ? ' app__toolbar-btn--voice-on' : ''}`}

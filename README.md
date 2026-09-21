@@ -104,6 +104,8 @@ Orrery mode uses true `astronomy-engine` heliocentric ephemeris vectors, then ma
 
 **Milky Way starfield backdrop** — Solar System Scope · CC BY 4.0. The bundled 8K source was verified byte-for-byte against the publisher. Automatic/Smoother use 2K; More detail uses a 4K derivative. See `docs/assets/sky-quality.md` for the conversion and source hash.
 
+**Orrery and Sky Milky Way background** — NASA/Goddard Space Flight Center Scientific Visualization Studio. Gaia DR2: ESA/Gaia/DPAC. Derived from the [NASA SVS celestial Milky Way-only map](https://svs.gsfc.nasa.gov/4851/) under its [public-domain reuse policy](https://svs.gsfc.nasa.gov/help/). Exposure and display tone curve adjusted; [source hashes and conversion](docs/assets/nasa-celestial-sky.md). Bright stars are rendered separately. Constellation lines are optional Western sky figures, independently controlled from labels.
+
 **Orion spacecraft 3D model** (Artemis II mission tracker) — "Orion Spacecraft" by [wisemanmods](https://sketchfab.com/3d-models/none-fb89e865dcd446b89eaf78deaf213974) on Sketchfab · licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 **Scientific data & mission profiles** — Public-domain resources from [NASA](https://www.nasa.gov/) and [JPL](https://www.jpl.nasa.gov/), including Artemis II mission parameters, JPL Horizons ephemeris tooling, and planetary body facts.
