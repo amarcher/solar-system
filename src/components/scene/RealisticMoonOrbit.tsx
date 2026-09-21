@@ -1,3 +1,4 @@
+import { orreryMoonOrbitRadius, orreryMoonHitRadius } from '../../astronomy/moonSpacing';
 import { moonVisualRadius } from '../../utils/moonFraming';
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
@@ -105,10 +106,9 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
   const lunarPosition = useRef<[number, number, number]>([LUNAR_ORRERY_RADIUS, 0, 0]);
   const lunarPathPositions = useMemo(() => new Float32Array(isEarthMoon ? (LUNAR_PATH_SEGMENTS + 1) * 3 : 0), [isEarthMoon]);
 
-  const radius = isEarthMoon ? LUNAR_ORRERY_RADIUS : moon.orbitRadius;
+  const radius = orreryMoonOrbitRadius(moon);
   const visualRadius = moonVisualRadius(moon.diameter, moon.id, 'orrery');
-  // Keep the compact Moon's enlarged picking sphere clear of Earth's surface.
-  const hitRadius = isEarthMoon ? visualRadius * 1.6 : Math.max(visualRadius * 3, 0.3);
+  const hitRadius = orreryMoonHitRadius(moon, visualRadius);
   // Positive angle = clockwise from above (+X toward +Z), so prograde moons
   // need a decreasing angle to match prograde planet spin (+rotation.y).
   const orbitDirection = moon.retrograde ? 1 : -1;

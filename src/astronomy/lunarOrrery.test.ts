@@ -9,17 +9,15 @@ import { LUNAR_ORRERY_RADIUS, LUNAR_PATH_SEGMENTS, lunarOrreryPosition, nextLuna
 beforeAll(() => preload());
 
 describe('compact Earth–Moon Orrery profile', () => {
-  it('uses the physical Moon/Earth radius ratio without changing Explore or other moons', () => {
+  it('keeps Earth and Moon clearly separated without changing Explore', () => {
     const earth = getPlanetById('earth')!;
     const moon = getMoonById('moon')!;
     const radius = moonVisualRadius(moon.diameter, moon.id, 'orrery');
-    expect(radius / earth.visualRadius).toBeCloseTo(moon.diameter / earth.diameter, 12);
-    expect(radius).toBeCloseTo(0.0871495767, 9);
+    expect(radius / earth.visualRadius).toBeGreaterThan(0.25);
+    expect(radius / earth.visualRadius).toBeLessThan(0.3);
     expect(moonVisualRadius(moon.diameter, moon.id, 'artistic')).toBe(0.13896);
-    expect(moonVisualRadius(472, 'miranda', 'orrery')).toBe(0.04);
-    expect(moonVisualRadius(5268, 'ganymede', 'orrery')).toBeCloseTo(0.21072);
     expect(LUNAR_ORRERY_RADIUS).toBeGreaterThan(earth.visualRadius + radius);
-    expect(LUNAR_ORRERY_RADIUS + radius).toBeLessThan(0.58);
+    expect(LUNAR_ORRERY_RADIUS + radius).toBeLessThan(0.85);
   });
 
   it.each([[1280, 720], [390, 844], [844, 390]])('keeps the smaller Moon readable when selected at %i×%i', (width, height) => {
@@ -42,10 +40,10 @@ describe('compact Earth–Moon Orrery profile', () => {
       expect(service.z).toBeCloseTo(direct.z, 14);
       const position = lunarOrreryPosition(time);
       const trueLength = Math.hypot(direct.x, direct.y, direct.z);
-      expect(Math.hypot(...position)).toBeCloseTo(0.48, 12);
-      expect(position[0] / 0.48).toBeCloseTo(direct.x / trueLength, 12);
-      expect(position[1] / 0.48).toBeCloseTo(direct.z / trueLength, 12);
-      expect(position[2] / 0.48).toBeCloseTo(-direct.y / trueLength, 12);
+      expect(Math.hypot(...position)).toBeCloseTo(LUNAR_ORRERY_RADIUS, 12);
+      expect(position[0] / LUNAR_ORRERY_RADIUS).toBeCloseTo(direct.x / trueLength, 12);
+      expect(position[1] / LUNAR_ORRERY_RADIUS).toBeCloseTo(direct.z / trueLength, 12);
+      expect(position[2] / LUNAR_ORRERY_RADIUS).toBeCloseTo(-direct.y / trueLength, 12);
       expect(Math.abs(position[1])).toBeGreaterThan(0.001);
       expect(time.getTime()).toBe(before);
     },
@@ -79,7 +77,7 @@ describe('compact Earth–Moon Orrery profile', () => {
     const body = lunarOrreryPosition(new Date(epoch));
     body.forEach((coordinate, axis) => expect(path[middle + axis]).toBeCloseTo(coordinate, 7));
     for (let i = 0; i < path.length; i += 3) {
-      expect(Math.hypot(path[i], path[i + 1], path[i + 2])).toBeCloseTo(0.48, 6);
+      expect(Math.hypot(path[i], path[i + 1], path[i + 2])).toBeCloseTo(LUNAR_ORRERY_RADIUS, 6);
     }
     const elevations = Array.from({ length: LUNAR_PATH_SEGMENTS + 1 }, (_, i) => path[i * 3 + 1]);
     expect(Math.max(...elevations)).toBeGreaterThan(0.02);

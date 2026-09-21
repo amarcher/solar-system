@@ -22,4 +22,10 @@ Later ranked opportunities (deep-sky cards, further moon features, auroras, comp
 
 ## Latest simplification
 
-The user requested only a tide on/off toggle: the combined Sun/Moon rippling spheroid, with no arrows, controls panel, source choices, manual water pause or recording controls. This direction supersedes the earlier interactive lesson/capture UI. Automatic reduced-motion support and a small model qualification remain. Existing exported clips are preserved; physical iPhone/Safari rendering and touch checks are still pending.
+The user requested only a tide on/off toggle: the combined Sun/Moon rippling spheroid, with no arrows, controls panel, source choices, manual water pause or recording controls. This direction supersedes the earlier interactive lesson/capture UI. Automatic reduced-motion support remains. The later visual-cleanup request removes the on-canvas water qualification; limitations remain in documentation and voice context. Existing exported clips are preserved; physical iPhone/Safari rendering and touch checks are still pending.
+
+## Consistent moon systems
+
+Follow-up: use one Orrery policy for all 29 curated moons. Inner moons begin 1.25 parent radii beyond the visible planet/ring extent; orbital separation grows logarithmically with physical distance relative to that system's innermost curated moon. Earth moves from 0.48 to 0.72 scene units; Phobos and Deimos move inward from 1.6/2.2 to about 0.56/0.76. Orbit order and the Moon's ephemeris direction are preserved.
+
+All Orrery moon radii use the same softened physical moon/parent diameter ratio: parent visual radius × (0.04 + 0.5 × ratio^0.6). This illustrative scale preserves relative ordering, distinguishes tiny moons, and avoids an Earth-only exception. Meshes and close-up framing share the result; picking bounds and parent camera clearance apply across systems. Saturn and Uranus retain ring clearance. Explore retains its prior spacing and sizes, following the user's Orrery-only preference.

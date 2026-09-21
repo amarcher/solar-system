@@ -21,7 +21,6 @@ import { useDeviceOrientation } from './astronomy/useDeviceOrientation';
 import { trackModeSwitch } from './utils/analytics';
 import './App.css';
 import { useTidesLesson } from './lessons/tides/useTidesLesson';
-import { TIDES_QUALIFICATION } from './lessons/tides/model';
 import { GraphicsQualityProvider } from './performance/GraphicsQualityProvider';
 import { GraphicsSettings } from './components/ui/GraphicsSettings';
 import { benchmarkEnabled, BENCHMARK_DATE } from './performance/benchmark';
@@ -569,7 +568,6 @@ function App() {
         </>
       )}
       <ModeToggle />
-      {tides.state && <p className="app__tides-note" role="status">{TIDES_QUALIFICATION}</p>}
 
       <Analytics />
       <SpeedInsights />
