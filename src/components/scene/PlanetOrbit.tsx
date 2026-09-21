@@ -27,11 +27,12 @@ interface PlanetOrbitProps {
   showLabel?: boolean;
   showMoonLabels?: boolean;
   showMoons?: boolean;
+  selectedMoonId?: string;
   /** When false the whole orbit group is hidden (but stays mounted so the orbit angle persists). */
   visible?: boolean;
 }
 
-export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoonClick, paused, showLabel = true, showMoonLabels = true, showMoons = false, visible = true }: PlanetOrbitProps) {
+export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoonClick, paused, showLabel = true, showMoonLabels = true, showMoons = false, selectedMoonId, visible = true }: PlanetOrbitProps) {
   const groupRef = useRef<Group>(null);
   const angleRef = useRef(startingAngle(planet.id));
 
@@ -48,7 +49,7 @@ export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoon
       groupRef.current.position.z = z;
       setPlanetPosition(planet.id, x, 0, z);
     }
-  });
+  }, -3);
 
   return (
     <group visible={visible}>
@@ -75,6 +76,7 @@ export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoon
             onClick={() => onMoonClick?.(moon.id)}
             showLabel={showMoonLabels}
             paused={paused}
+            selected={moon.id === selectedMoonId}
           />
         ))}
 

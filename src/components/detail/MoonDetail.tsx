@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Moon } from '../../types/celestialBody';
+import { MoonTextureInfo } from './MoonTextureInfo';
 import './MoonDetail.css';
 
 interface MoonDetailProps {
@@ -33,9 +34,9 @@ export function MoonDetail({ moon, onClose, onBack }: MoonDetailProps) {
     if (!container) return;
     const handleTab = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return;
-      const focusable = container.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
+      const focusable = [...container.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])'
+      )].filter((element) => element.getClientRects().length > 0);
       if (focusable.length === 0) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -86,6 +87,8 @@ export function MoonDetail({ moon, onClose, onBack }: MoonDetailProps) {
           </div>
 
           <p className="moon-detail__summary">{moon.summary}</p>
+
+          <MoonTextureInfo moon={moon} />
 
           <div className="moon-detail__properties">
             <div className="moon-detail__prop">

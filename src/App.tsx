@@ -10,6 +10,7 @@ import { missions, getMissionById } from './data/missions';
 import { SolarSystemScene } from './components/scene/SolarSystemScene';
 import { PlanetDetail } from './components/detail/PlanetDetail';
 import { MoonDetail } from './components/detail/MoonDetail';
+import { MoonTextureInfo } from './components/detail/MoonTextureInfo';
 import { SunDetail } from './components/detail/SunDetail';
 import { AstronomyProvider } from './astronomy/AstronomyContext';
 import { useAstronomy } from './astronomy/useAstronomy';
@@ -231,7 +232,7 @@ function App() {
   }, [currentMission, missionTick]);
 
   return (
-    <div className={`app${cinemaMode ? ' app--cinema' : ''}`}>
+    <div className={`app${cinemaMode ? ' app--cinema' : ''}`} data-nav-level={nav.level}>
       {!cinemaMode && mode === 'artistic' && (
         <header className="app-header">
           <p className="app-subtitle">
@@ -426,6 +427,10 @@ function App() {
                     : 'Back'}
           </button>
         </div>
+      )}
+
+      {hideDetails && !toolbarOpen && nav.level === 'moon' && currentMoon && (
+        <MoonTextureInfo moon={currentMoon} compact />
       )}
 
       {nav.level === 'mission' && currentMission && missionProgress && !missionHudDismissed && (

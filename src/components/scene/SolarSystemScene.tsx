@@ -18,12 +18,13 @@ import { benchmarkEnabled } from '../../performance/benchmark';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 import { QualityMonitor } from '../../performance/QualityMonitor';
 import { SceneBenchmark } from '../../performance/SceneBenchmark';
+import { getMoonPosition } from '../../utils/planetPositions';
 
 /**
  * Camera-relative fill light that activates when zoomed into a planet/moon.
  * Provides fill lighting when zoomed into a planet/moon.
  */
-function FillLight({ active }: { active: boolean }) {
+function FillLight({ active, moonId }: { active: boolean; moonId?: string }) {
   const lightRef = useRef<DirectionalLight>(null);
   const { camera } = useThree();
 
@@ -31,15 +32,24 @@ function FillLight({ active }: { active: boolean }) {
     if (lightRef.current && active) {
       // Position the fill light near the camera, offset slightly above and right
       lightRef.current.position.copy(camera.position);
-      lightRef.current.position.y += 2;
-      lightRef.current.position.x += 1;
+      const moonPosition = moonId ? getMoonPosition(moonId) : null;
+      if (moonPosition) {
+        // Close-up illumination follows the observed surface, rather than
+        // pointing back toward the Sun at the world's origin.
+        lightRef.current.target.position.set(moonPosition.x, moonPosition.y, moonPosition.z);
+      } else {
+        lightRef.current.position.y += 2;
+        lightRef.current.position.x += 1;
+        lightRef.current.target.position.set(0, 0, 0);
+      }
+      lightRef.current.target.updateMatrixWorld();
     }
   });
 
   return (
     <directionalLight
       ref={lightRef}
-      intensity={active ? 0.3 : 0}
+      intensity={active ? (moonId ? 0.8 : 0.3) : 0}
       color="#ffffff"
     />
   );
@@ -102,7 +112,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         {mode !== 'sky' && (
           <>
             <ambientLight intensity={isZoomedIn ? 0.2 : 0.1} />
-            <FillLight active={isZoomedIn} />
+            <FillLight active={isZoomedIn} moonId={nav.level === 'moon' ? nav.moonId : undefined} />
             <pointLight
               position={[0, 0, 0]}
               intensity={1.0}
@@ -146,6 +156,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
                   showLabel={showLabels && (!isZoomedIn || isFocused)}
                   showMoonLabels={showLabels && isFocused}
                   showMoons={showThisPlanetMoons}
+                  selectedMoonId={nav.level === 'moon' && isFocused ? nav.moonId : undefined}
                   visible={isVisible}
                 />
               );

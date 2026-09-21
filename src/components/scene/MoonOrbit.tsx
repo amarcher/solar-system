@@ -1,3 +1,4 @@
+import { moonVisualRadius } from '../../utils/moonFraming';
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -7,6 +8,7 @@ import type { Group, Mesh, MeshStandardMaterial } from 'three';
 import type { Moon } from '../../types/celestialBody';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
+import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 
 // Fallback colors for moons without textures, based on real surface appearance
 const MOON_COLORS: Record<string, string> = {
@@ -107,13 +109,15 @@ interface MoonOrbitProps {
   onClick?: () => void;
   showLabel?: boolean;
   paused?: boolean;
+  selected?: boolean;
 }
 
-export function MoonOrbit({ moon, onClick, showLabel = true, paused = false }: MoonOrbitProps) {
+export function MoonOrbit({ moon, onClick, showLabel = true, paused = false, selected = false }: MoonOrbitProps) {
   const groupRef = useRef<Group>(null);
   const moonMeshRef = useRef<Mesh>(null);
   const angleRef = useRef((hashString(moon.id) / 4294967296) * Math.PI * 2);
-  const diffuseMap = usePlanetTexture(moon.id);
+  const { settings } = useGraphicsQuality();
+  const diffuseMap = usePlanetTexture(moon.id, { detail: selected, maxWidth: settings.bodyWidth });
   const moonColor = MOON_COLORS[moon.id] || '#aaaaaa';
 
   // When textured, use a near-white color with a subtle moon color cast.
@@ -138,7 +142,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false }: M
   // Derive a visual radius from real diameter, clamped for visibility.
   // Divisor of 25000 keeps moons visually smaller than their parent planet
   // while still large enough to see and click.
-  const visualRadius = Math.max(moon.diameter / 25000, 0.04);
+  const visualRadius = moonVisualRadius(moon.diameter);
 
   const irregularGeo = useMemo(
     () => moon.shape === 'irregular' ? createIrregularGeometry(visualRadius, moon.id) : null,
@@ -184,12 +188,12 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false }: M
         moonMeshRef.current.rotation.y += delta * speed * direction;
       }
     }
-  });
+  }, -2);
 
   return (
     <>
       {/* Orbit ring */}
-      <mesh rotation-x={Math.PI / 2}>
+      <mesh rotation-x={Math.PI / 2} visible={!selected}>
         <ringGeometry args={[moon.orbitRadius - 0.01, moon.orbitRadius + 0.01, 64]} />
         <meshBasicMaterial
           color="#ffffff"

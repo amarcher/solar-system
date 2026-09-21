@@ -461,6 +461,10 @@ body {
     padding-bottom: 4px;
   }
 
+  .app__toolbar--open {
+    z-index: 140;
+  }
+
   .app__toolbar--open .app__toolbar-items {
     display: flex;
   }

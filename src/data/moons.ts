@@ -366,7 +366,7 @@ export const moons: Moon[] = [
     summary:
       "Titania is the largest of Uranus's 28 known moons and is named after the queen of the fairies in Shakespeare's A Midsummer Night's Dream. Its surface is crisscrossed by massive fault scarps and canyons, indicating past geological stretching. It likely has a mantle of water ice surrounding a rocky core.",
     funFacts: [
-      "Titania's largest canyon, Messina Chasma, is nearly 1,500 km long — longer than the entire United States is wide.",
+      "Titania's largest canyon, Messina Chasma, is nearly 1,500 km long.",
       "All of Uranus's large moons are named after characters from Shakespeare or Alexander Pope's poetry.",
       "Titania orbits Uranus in a plane almost perpendicular to its orbit around the Sun, meaning it experiences extreme 42-year-long seasons.",
     ],

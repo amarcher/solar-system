@@ -1,3 +1,4 @@
+import { moonVisualRadius } from '../../utils/moonFraming';
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -7,6 +8,7 @@ import type { Moon } from '../../types/celestialBody';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
+import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 
 const TWO_PI = Math.PI * 2;
 
@@ -87,21 +89,23 @@ interface RealisticMoonOrbitProps {
   moon: Moon;
   showLabel?: boolean;
   onClick?: () => void;
+  selected?: boolean;
 }
 
-export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: RealisticMoonOrbitProps) {
+export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected = false }: RealisticMoonOrbitProps) {
   const groupRef = useRef<Group>(null);
   const moonMeshRef = useRef<Mesh>(null);
   const worldPos = useRef(new Vector3());
   const { timeRef, rate } = useAstronomy();
 
   const radius = moon.orbitRadius;
-  const visualRadius = Math.max(moon.diameter / 25000, 0.04);
+  const visualRadius = moonVisualRadius(moon.diameter);
   // Positive angle = clockwise from above (+X toward +Z), so prograde moons
   // need a decreasing angle to match prograde planet spin (+rotation.y).
   const orbitDirection = moon.retrograde ? 1 : -1;
 
-  const diffuseMap = usePlanetTexture(moon.id);
+  const { settings } = useGraphicsQuality();
+  const diffuseMap = usePlanetTexture(moon.id, { detail: selected, maxWidth: settings.bodyWidth });
   const moonColor = MOON_COLORS[moon.id] || '#aaaaaa';
 
   const tintColor = useMemo(() => {
@@ -167,12 +171,12 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: Realisti
         moonMeshRef.current.rotation.y += simDelta * angularVel * direction;
       }
     }
-  });
+  }, -2);
 
   return (
     <>
       {/* Orbit ring */}
-      <mesh rotation-x={Math.PI / 2}>
+      <mesh rotation-x={Math.PI / 2} visible={!selected}>
         <ringGeometry args={[radius - 0.01, radius + 0.01, 64]} />
         <meshBasicMaterial
           color="#ffffff"

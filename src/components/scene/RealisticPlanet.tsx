@@ -17,12 +17,13 @@ interface RealisticPlanetProps {
   showLabel?: boolean;
   showMoons?: boolean;
   showMoonLabels?: boolean;
+  selectedMoonId?: string;
 }
 
 /** Minimum recompute interval in ms of simulation time. */
 const RECOMPUTE_THRESHOLD_MS = 1000;
 
-export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, showLabel = true, showMoons = false, showMoonLabels = true }: RealisticPlanetProps) {
+export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, showLabel = true, showMoons = false, showMoonLabels = true, selectedMoonId }: RealisticPlanetProps) {
   const groupRef = useRef<Group>(null);
   const { timeRef, engineReady, rate } = useAstronomy();
   const lastComputedTime = useRef(0);
@@ -56,7 +57,7 @@ export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, show
       cachedPos.current.z,
     );
     setPlanetPosition(planet.id, cachedPos.current.x, cachedPos.current.y, cachedPos.current.z);
-  });
+  }, -3);
 
   return (
     <group ref={groupRef}>
@@ -77,6 +78,7 @@ export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, show
           moon={moon}
           onClick={() => onMoonClick?.(moon.id)}
           showLabel={showMoonLabels}
+          selected={moon.id === selectedMoonId}
         />
       ))}
     </group>

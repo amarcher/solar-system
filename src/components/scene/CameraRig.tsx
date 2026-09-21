@@ -1,5 +1,7 @@
 import { useRef, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { PerspectiveCamera } from 'three';
+import { moonVisualRadius, moonFocusDistance } from '../../utils/moonFraming';
 import { CameraControls } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
 import { getPlanetPosition, getMoonPosition } from '../../utils/planetPositions';
@@ -26,6 +28,7 @@ const SYSTEM_TARGET = { x: 0, y: 0, z: 0 };
 export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
   const controlsRef = useRef<CameraControlsImpl>(null);
   const { mode } = useAstronomy();
+  const { camera, size } = useThree();
   const reducedMotion = useReducedMotion();
   // With reduced motion, camera transitions snap instead of flying.
   const flightSmoothTime = reducedMotion ? 0.05 : 1.0;
@@ -145,16 +148,25 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
       const moon = getMoonById(trackingMoonId.current);
       if (moonPos && moon) {
         if (!flyInDone.current) {
-          const moonRadius = Math.max(moon.diameter / 8000, 0.06);
-          const dist = moonRadius * 8 + 0.5;
+          const moonRadius = moonVisualRadius(moon.diameter);
+          const dist = moonFocusDistance(moonRadius, camera instanceof PerspectiveCamera ? camera.fov : 50, size.width, size.height);
           controls.smoothTime = flightSmoothTime;
-          controls.moveTo(moonPos.x, moonPos.y, moonPos.z, true);
-          controls.dollyTo(dist, true);
+          if (trackingPlanetId.current === 'uranus') {
+            // Voyager mapped the southern hemisphere. Move the camera to that
+            // side; do not rotate the map or invent the unobserved north.
+            controls.setLookAt(moonPos.x, moonPos.y - dist * 0.8, moonPos.z + dist * 0.6,
+              moonPos.x, moonPos.y, moonPos.z, !reducedMotion);
+          } else {
+            controls.moveTo(moonPos.x, moonPos.y, moonPos.z, !reducedMotion);
+            controls.dollyTo(dist, !reducedMotion);
+          }
           flyInDone.current = true;
           flyInTime.current = 0;
         } else {
-          // Continuously track the orbiting moon
-          controls.moveTo(moonPos.x, moonPos.y, moonPos.z, true);
+          // At close range, smoothing a moving target can leave the moon
+          // outside the frame. Preserve the user's orbit offset while tracking
+          // its center exactly once the initial flight has settled.
+          controls.moveTo(moonPos.x, moonPos.y, moonPos.z, !settled.current && !reducedMotion);
         }
       }
     } else if (trackingPlanetId.current) {
@@ -174,7 +186,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
         }
       }
     }
-  });
+  }, -1.5);
 
   // Reset flyInDone when orrery mission changes
   useEffect(() => {
@@ -185,11 +197,12 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
     }
   }, [orreryMissionId]);
 
-  // Reset flyInDone when nav changes
+  // Reframe after navigation or viewport changes, then resume responsive tracking.
   useEffect(() => {
     flyInDone.current = false;
     flyInTime.current = 0;
-  }, [navKey]);
+    settled.current = false;
+  }, [navKey, mode, size.width, size.height]);
 
   // Distance constraints per nav level
   let minDist = mode === 'orrery' ? 3 : 15;
@@ -210,7 +223,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
   } else if (nav.level === 'moon') {
     const moon = getMoonById(nav.moonId);
     if (moon) {
-      const moonRadius = Math.max(moon.diameter / 8000, 0.06);
+      const moonRadius = moonVisualRadius(moon.diameter);
       minDist = moonRadius * 2;
       maxDist = moonRadius * 25 + 3;
     }
