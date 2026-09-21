@@ -8,6 +8,7 @@ import type { Group, Mesh, MeshStandardMaterial } from 'three';
 import type { Moon } from '../../types/celestialBody';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
+import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 
 // Fallback colors for moons without textures, based on real surface appearance
 const MOON_COLORS: Record<string, string> = {
@@ -108,13 +109,15 @@ interface MoonOrbitProps {
   onClick?: () => void;
   showLabel?: boolean;
   paused?: boolean;
+  selected?: boolean;
 }
 
-export function MoonOrbit({ moon, onClick, showLabel = true, paused = false }: MoonOrbitProps) {
+export function MoonOrbit({ moon, onClick, showLabel = true, paused = false, selected = false }: MoonOrbitProps) {
   const groupRef = useRef<Group>(null);
   const moonMeshRef = useRef<Mesh>(null);
   const angleRef = useRef((hashString(moon.id) / 4294967296) * Math.PI * 2);
-  const diffuseMap = usePlanetTexture(moon.id);
+  const { settings } = useGraphicsQuality();
+  const diffuseMap = usePlanetTexture(moon.id, { detail: selected, maxWidth: settings.bodyWidth });
   const moonColor = MOON_COLORS[moon.id] || '#aaaaaa';
 
   // When textured, use a near-white color with a subtle moon color cast.

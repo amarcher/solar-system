@@ -8,6 +8,7 @@ import type { Moon } from '../../types/celestialBody';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
+import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 
 const TWO_PI = Math.PI * 2;
 
@@ -88,9 +89,10 @@ interface RealisticMoonOrbitProps {
   moon: Moon;
   showLabel?: boolean;
   onClick?: () => void;
+  selected?: boolean;
 }
 
-export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: RealisticMoonOrbitProps) {
+export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected = false }: RealisticMoonOrbitProps) {
   const groupRef = useRef<Group>(null);
   const moonMeshRef = useRef<Mesh>(null);
   const worldPos = useRef(new Vector3());
@@ -102,7 +104,8 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: Realisti
   // need a decreasing angle to match prograde planet spin (+rotation.y).
   const orbitDirection = moon.retrograde ? 1 : -1;
 
-  const diffuseMap = usePlanetTexture(moon.id);
+  const { settings } = useGraphicsQuality();
+  const diffuseMap = usePlanetTexture(moon.id, { detail: selected, maxWidth: settings.bodyWidth });
   const moonColor = MOON_COLORS[moon.id] || '#aaaaaa';
 
   const tintColor = useMemo(() => {

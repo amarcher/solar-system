@@ -188,6 +188,7 @@ export function RealisticScene({
               }
               showMoons={isFocused && !missionHidesMoons}
               showMoonLabels={showLabels}
+              selectedMoonId={nav.level === 'moon' && isFocused ? nav.moonId : undefined}
             />
           </group>
         );

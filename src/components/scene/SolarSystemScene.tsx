@@ -146,6 +146,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
                   showLabel={showLabels && (!isZoomedIn || isFocused)}
                   showMoonLabels={showLabels && isFocused}
                   showMoons={showThisPlanetMoons}
+                  selectedMoonId={nav.level === 'moon' && isFocused ? nav.moonId : undefined}
                   visible={isVisible}
                 />
               );

@@ -6,6 +6,7 @@ import type { Mesh, MeshStandardMaterial } from 'three';
 import type { Planet } from '../../types/celestialBody';
 import { usePlanetTexture, useTexturePath, useRingTexture } from '../../utils/textures';
 import * as AstronomyService from '../../astronomy/AstronomyService';
+import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 import './SceneLabels.css';
 
 interface PlanetMeshProps {
@@ -28,7 +29,8 @@ const TWO_PI = Math.PI * 2;
 export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = false, paused = false, timeScale = 1, useRealRotation = false, timeRef }: PlanetMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const cloudRef = useRef<Mesh>(null);
-  const diffuseMap = usePlanetTexture(planet.id);
+  const { settings } = useGraphicsQuality();
+  const diffuseMap = usePlanetTexture(planet.id, { maxWidth: settings.bodyWidth });
   const cloudMap = useTexturePath(planet.id === 'earth' ? '/textures/2k/earth_clouds.jpg' : '');
 
   useFrame((_, delta) => {
