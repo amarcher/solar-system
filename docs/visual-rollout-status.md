@@ -8,8 +8,14 @@ Goal: accomplish `visual-teaching-roadmap-2026-09-21.md`, including reviewed mil
 | 1: recognizable Uranian moons | Merged as PR #70 after exact-head preview; 102 tests pass; all five moons and both modes checked | Production build 93e4c32 verified; physical iPhone/Safari still pending |
 | 2: coherent celestial sky | Merged as PR #71; production build 6822c90 verified; 118 tests pass; browser night/day/horizon and panning checks passed | Physical iPhone/Safari |
 | 3: Earth tides lesson | Integrated; 125 tests pass; manual phone-layout and camera/clock return checked | Rippling water treatment requested from supplied reel, final preview/review/release |
-| 4: actual-app vertical capture | Planned | Deterministic sequence, actual 9:16 recording, visible model qualifications and credits, playback review |
+| 4: actual-app vertical capture | Actual 18-second H.264 MP4 and full playback verified; PR #73 recording implementation independently reviewed | PR #73 held while the user-requested inline experience is integrated; adapt final capture to that experience |
 
 Physical reference selected by user: **iPhone / Safari**. Desktop responsive emulation does not satisfy this requirement. User supplied `/Users/archer/Programs/earth-moon-tides/tides-reel-v3.mp4` as the water-treatment reference: 56 seconds, 1080×1920, H.264/AAC. Use its translucent rippling envelope as visual direction, while keeping this lesson’s equilibrium model distinct from its tidal-friction/long-term evolution story. No post is authorized for publication by this implementation work.
 
 Later ranked opportunities (deep-sky cards, further moon features, auroras, compression if needed) retain their roadmap priority after the first-release milestones. Deferred volumetric/fluid projects remain deferred as proposed.
+
+## Follow-up requested during visual review
+
+- Replace prominent tides entry with a toolbar icon and render the tidal envelope/vectors around the existing Earth; preserve scene context, pan/zoom, and time controls.
+- Replace exposed quality select with a matching icon and plain-language popup.
+- Compact the Earth–Moon scale in **Orrery only**, as explicitly chosen by the user; preserve Explore spacing. Separate visible Moon size from local orbit distance, with shared framing dimensions.

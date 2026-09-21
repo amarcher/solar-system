@@ -32,6 +32,7 @@ export function InlineTidesOverlay({ state, waterMotionPaused = false }: Props) 
   // every value object across controls, position updates and pause changes.
   const uniforms = useMemo(() => ({
     waterTime: { value: 0 },
+    opacityScale: { value: 0.6 },
     moonDirection: { value: new Vector3(1, 0, 0) },
     sunDirection: { value: new Vector3(1, 0, 0) },
     strengths: { value: new Vector2(1, 0) },

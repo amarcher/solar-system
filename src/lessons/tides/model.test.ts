@@ -52,3 +52,11 @@ describe('tidal physics independent of the scene scale', () => {
     expect(tidesCaption(state(90)).explanation).toContain('do not disappear');
   });
 });
+
+it('describes the inline layer without inventing a preset phase or borrowed clock', () => {
+  const context = tidesVoiceContext({ step: 'water', source: 'both', phase: 0, live: true });
+  expect(context).toContain('current Explore or Orrery scene');
+  expect(context).toContain('pan, zoom, and change simulation time');
+  expect(context).not.toContain('Schematic, not the current date');
+  expect(context).not.toContain('New Moon.');
+});

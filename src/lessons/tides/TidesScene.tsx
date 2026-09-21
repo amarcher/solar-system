@@ -55,6 +55,7 @@ export function TidesScene({ state, waterMotionPaused = false }: { state: TidesS
   // than replacing it when a learner changes the Moon or Sun controls.
   const uniforms = useMemo(() => ({
     waterTime: { value: 0 },
+    opacityScale: { value: 1 },
     moonDirection: { value: new Vector3(1, 0, 0) },
     sunDirection: { value: new Vector3(1, 0, 0) },
     strengths: { value: new Vector2(1, 0) },

@@ -37,6 +37,7 @@ export const shellVertex = `
   }
 `;
 export const shellFragment = `
+  uniform float opacityScale;
   varying vec3 surfaceNormal;
   varying vec3 surfaceDirection;
   varying vec3 eyeDirection;
@@ -54,6 +55,6 @@ export const shellFragment = `
     vec3 color = mix(vec3(0.08, 0.35, 0.58), vec3(0.53, 0.86, 1.0), rim);
     color = mix(color, vec3(0.83, 0.96, 1.0), highlights * (0.28 + 0.45 * rim));
     float alpha = 0.10 + 0.46 * rim + 0.15 * highlights;
-    gl_FragColor = vec4(color, alpha);
+    gl_FragColor = vec4(color, alpha * opacityScale);
   }
 `;

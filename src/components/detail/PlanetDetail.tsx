@@ -8,11 +8,10 @@ import './PlanetDetail.css';
 interface PlanetDetailProps {
   planet: Planet;
   onClose: () => void;
-  onTides?: () => void;
   onMoonClick: (moonId: string) => void;
 }
 
-export function PlanetDetail({ planet, onClose, onMoonClick, onTides }: PlanetDetailProps) {
+export function PlanetDetail({ planet, onClose, onMoonClick }: PlanetDetailProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -92,7 +91,6 @@ export function PlanetDetail({ planet, onClose, onMoonClick, onTides }: PlanetDe
 
           <div className="detail__summary detail__content">
             <p>{planet.summary}</p>
-            {planet.id === 'earth' && onTides && <button className="tides-entry" data-tides-entry type="button" onClick={onTides}>Why tides?</button>}
           </div>
 
           <div className="detail__properties detail__content">
