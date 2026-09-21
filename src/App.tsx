@@ -232,7 +232,7 @@ function App() {
   }, [currentMission, missionTick]);
 
   return (
-    <div className={`app${cinemaMode ? ' app--cinema' : ''}`}>
+    <div className={`app${cinemaMode ? ' app--cinema' : ''}`} data-nav-level={nav.level}>
       {!cinemaMode && mode === 'artistic' && (
         <header className="app-header">
           <p className="app-subtitle">

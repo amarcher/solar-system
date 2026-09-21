@@ -176,7 +176,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
   return (
     <>
       {/* Orbit ring */}
-      <mesh rotation-x={Math.PI / 2}>
+      <mesh rotation-x={Math.PI / 2} visible={!selected}>
         <ringGeometry args={[radius - 0.01, radius + 0.01, 64]} />
         <meshBasicMaterial
           color="#ffffff"

@@ -193,7 +193,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false, sel
   return (
     <>
       {/* Orbit ring */}
-      <mesh rotation-x={Math.PI / 2}>
+      <mesh rotation-x={Math.PI / 2} visible={!selected}>
         <ringGeometry args={[moon.orbitRadius - 0.01, moon.orbitRadius + 0.01, 64]} />
         <meshBasicMaterial
           color="#ffffff"

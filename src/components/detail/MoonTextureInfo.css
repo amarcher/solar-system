@@ -80,3 +80,14 @@
     max-height: 25dvh;
   }
 }
+
+@media (max-width: 560px) {
+  .app[data-nav-level="moon"] .app__cinema-nav {
+    top: calc(104px + env(safe-area-inset-top, 0px));
+  }
+
+  .moon-texture-info--compact {
+    top: auto;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+}
