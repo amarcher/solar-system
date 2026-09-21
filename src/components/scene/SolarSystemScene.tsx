@@ -178,6 +178,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             showLabels={!tides && showLabels}
             showConstellations={!tides && showConstellations}
             activeMission={orreryMission}
+            paused={!!tides || reducedMotion}
           />
         ) : (
           <SkyScene

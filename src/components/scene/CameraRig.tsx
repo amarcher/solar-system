@@ -1,6 +1,6 @@
 import { useRef, useEffect, useLayoutEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { PerspectiveCamera } from 'three';
+import { PerspectiveCamera, Vector3 } from 'three';
 import { moonVisualRadius, moonFocusDistance } from '../../utils/moonFraming';
 import { CameraControls } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
@@ -10,7 +10,6 @@ import { getMoonById } from '../../data/moons';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { benchmarkMode } from '../../performance/benchmark';
-import { Vector3 } from 'three';
 import type CameraControlsImpl from 'camera-controls';
 
 interface CameraRigProps {
@@ -33,6 +32,7 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false 
   const { size, camera } = useThree();
   const lessonSnapshot = useRef<{ json: string; navKey: string; mode: string } | null>(null);
   const restoredSameView = useRef(false);
+  const framedView = useRef<{ navKey: string; mode: string } | null>(null);
   const reducedMotion = useReducedMotion();
   // With reduced motion, camera transitions snap instead of flying.
   const flightSmoothTime = reducedMotion ? 0.05 : 1.0;
@@ -41,6 +41,8 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false 
   const trackingMoonId = useRef<string | null>(null);
   const trackingMissionId = useRef<string | null>(null);
   const settled = useRef(false);
+  const flyInDone = useRef(false);
+  const flyInTime = useRef(0);
 
   // Serialize nav so the effect only fires on actual changes
   const navKey = nav.level === 'moon'
@@ -89,9 +91,20 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false 
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls || lessonActive) return;
-    if (restoredSameView.current) { restoredSameView.current = false; return; }
+    if (restoredSameView.current) {
+      restoredSameView.current = false;
+      framedView.current = { navKey, mode };
+      return;
+    }
+    const viewChanged = framedView.current?.navKey !== navKey || framedView.current.mode !== mode;
+    framedView.current = { navKey, mode };
+    // A viewport change should reframe tracked bodies, not discard a free
+    // viewing angle in the whole-system or Sun view.
+    if (!viewChanged && (nav.level === 'system' || nav.level === 'sun')) return;
 
     settled.current = false;
+    flyInDone.current = false;
+    flyInTime.current = 0;
 
     if (nav.level === 'system') {
       trackingPlanetId.current = null;
@@ -134,10 +147,7 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false 
       // Fly-in triggered once mission position is registered
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navKey, mode, lessonActive]);
-
-  const flyInDone = useRef(false);
-  const flyInTime = useRef(0);
+  }, [navKey, mode, lessonActive, size.width, size.height]);
 
   useFrame((_, delta) => {
     const controls = controlsRef.current;
@@ -236,13 +246,6 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false 
       settled.current = false;
     }
   }, [orreryMissionId]);
-
-  // Reframe after navigation or viewport changes, then resume responsive tracking.
-  useEffect(() => {
-    flyInDone.current = false;
-    flyInTime.current = 0;
-    settled.current = false;
-  }, [navKey, mode, size.width, size.height]);
 
   // Distance constraints per nav level
   let minDist = mode === 'orrery' ? 3 : 15;

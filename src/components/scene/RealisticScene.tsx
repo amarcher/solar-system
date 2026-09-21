@@ -24,6 +24,7 @@ interface RealisticSceneProps {
   showLabels: boolean;
   showConstellations: boolean;
   activeMission?: Mission;
+  paused?: boolean;
 }
 
 /**
@@ -143,6 +144,7 @@ export function RealisticScene({
   showLabels,
   showConstellations,
   activeMission,
+  paused = false,
 }: RealisticSceneProps) {
   const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun';
   // Keep the real solar-system geometry visible around a focused planet or
@@ -159,7 +161,7 @@ export function RealisticScene({
         <SunMesh
           onClick={onSunClick}
           showLabel={showLabels && !isZoomedIn}
-          paused={false}
+          paused={paused}
         />
       </group>
 
