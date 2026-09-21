@@ -298,14 +298,22 @@ function App() {
           {mode !== 'artistic' && (
             <button
               className="app__toolbar-btn"
-              style={{ width: 'auto', paddingInline: 10, fontSize: 11 }}
               type="button"
               aria-label="Constellation lines"
               aria-pressed={showConstellations}
               title="Toggle Western constellation figures — imagined patterns connecting stars"
               onClick={() => { setShowConstellations(value => !value); setToolbarOpen(false); }}
             >
-              {showConstellations ? 'Constellations on' : 'Constellations off'}
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <path d="m5 5 6 5 8-6-3 15-5-9-6 8" opacity={showConstellations ? 1 : 0.4} />
+                <g fill="currentColor" stroke="none">
+                  <circle cx="5" cy="5" r="1.7" />
+                  <circle cx="11" cy="10" r="1.7" />
+                  <circle cx="19" cy="4" r="1.7" />
+                  <circle cx="16" cy="19" r="1.7" />
+                  <circle cx="5" cy="18" r="1.7" />
+                </g>
+              </svg>
             </button>
           )}
           {voice.agentId && (
