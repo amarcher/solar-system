@@ -1,6 +1,6 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useLayoutEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { PerspectiveCamera } from 'three';
+import { PerspectiveCamera, Vector3 } from 'three';
 import { moonVisualRadius, moonFocusDistance } from '../../utils/moonFraming';
 import { CameraControls } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
@@ -17,6 +17,7 @@ interface CameraRigProps {
   planets: Planet[];
   /** When set, camera continuously tracks this mission in orrery mode */
   orreryMissionId?: string;
+  lessonActive?: boolean;
 }
 
 // Artistic orbits span ~40 units; the log-compressed orrery only ~13.
@@ -25,10 +26,13 @@ const SYSTEM_POSITION_ARTISTIC = { x: 0, y: 35, z: 50 };
 const SYSTEM_POSITION_ORRERY = { x: 0, y: 15, z: 21 };
 const SYSTEM_TARGET = { x: 0, y: 0, z: 0 };
 
-export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
+export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false }: CameraRigProps) {
   const controlsRef = useRef<CameraControlsImpl>(null);
   const { mode } = useAstronomy();
-  const { camera, size } = useThree();
+  const { size, camera } = useThree();
+  const lessonSnapshot = useRef<{ json: string; navKey: string; mode: string } | null>(null);
+  const restoredSameView = useRef(false);
+  const framedView = useRef<{ navKey: string; mode: string } | null>(null);
   const reducedMotion = useReducedMotion();
   // With reduced motion, camera transitions snap instead of flying.
   const flightSmoothTime = reducedMotion ? 0.05 : 1.0;
@@ -37,6 +41,8 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
   const trackingMoonId = useRef<string | null>(null);
   const trackingMissionId = useRef<string | null>(null);
   const settled = useRef(false);
+  const flyInDone = useRef(false);
+  const flyInTime = useRef(0);
 
   // Serialize nav so the effect only fires on actual changes
   const navKey = nav.level === 'moon'
@@ -47,11 +53,58 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
     ? `mission:${nav.missionId}`
     : nav.level;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
+    if (lessonActive) {
+      if (!lessonSnapshot.current) {
+        // Serialize settings and the currently displayed pose, rather than the
+        // destination of a fly-in that may still be in progress.
+        const data = JSON.parse(controls.toJSON());
+        data.position = controls.getPosition(new Vector3(), false).toArray();
+        data.target = controls.getTarget(new Vector3(), false).toArray();
+        data.zoom = camera.zoom;
+        lessonSnapshot.current = { json: JSON.stringify(data), navKey, mode };
+      }
+      controls.enabled = false;
+      controls.minDistance = 0.1;
+      controls.maxDistance = 1000;
+      const aspect = size.width / size.height;
+      const availableHeight = size.height * (size.width <= 700 ? 0.44 : 0.58);
+      const span = Math.max(7.5 / aspect, 5.8 * size.height / availableHeight);
+      const distance = span / (2 * Math.tan(25 * Math.PI / 180));
+      const centerY = size.height * (size.width <= 700 ? 0.30 : 0.33);
+      const targetY = -(1 - 2 * centerY / size.height) * span / 2;
+      controls.setFocalOffset(0, 0, 0, false);
+      controls.zoomTo(1, false);
+      controls.setLookAt(0.15, targetY, distance, 0.15, targetY, 0, false);
+      controls.update(0);
+    } else if (lessonSnapshot.current) {
+      const saved = lessonSnapshot.current;
+      lessonSnapshot.current = null;
+      controls.fromJSON(saved.json, false);
+      controls.update(0);
+      restoredSameView.current = saved.navKey === navKey && saved.mode === mode;
+    }
+  }, [lessonActive, navKey, mode, size.width, size.height, camera]);
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls || lessonActive) return;
+    if (restoredSameView.current) {
+      restoredSameView.current = false;
+      framedView.current = { navKey, mode };
+      return;
+    }
+    const viewChanged = framedView.current?.navKey !== navKey || framedView.current.mode !== mode;
+    framedView.current = { navKey, mode };
+    // A viewport change should reframe tracked bodies, not discard a free
+    // viewing angle in the whole-system or Sun view.
+    if (!viewChanged && (nav.level === 'system' || nav.level === 'sun')) return;
 
     settled.current = false;
+    flyInDone.current = false;
+    flyInTime.current = 0;
 
     if (nav.level === 'system') {
       trackingPlanetId.current = null;
@@ -94,14 +147,11 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
       // Fly-in triggered once mission position is registered
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navKey, mode]);
-
-  const flyInDone = useRef(false);
-  const flyInTime = useRef(0);
+  }, [navKey, mode, lessonActive, size.width, size.height]);
 
   useFrame((_, delta) => {
     const controls = controlsRef.current;
-    if (!controls) return;
+    if (!controls || lessonActive) return;
     if (benchmarkMode === 'orbit') void controls.rotate(delta * 0.15, 0, false);
 
     // After fly-in animation settles, reduce smooth time for responsive tracking
@@ -197,13 +247,6 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
     }
   }, [orreryMissionId]);
 
-  // Reframe after navigation or viewport changes, then resume responsive tracking.
-  useEffect(() => {
-    flyInDone.current = false;
-    flyInTime.current = 0;
-    settled.current = false;
-  }, [navKey, mode, size.width, size.height]);
-
   // Distance constraints per nav level
   let minDist = mode === 'orrery' ? 3 : 15;
   let maxDist = 100;
@@ -231,6 +274,14 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
     minDist = 0.02;
     maxDist = 8;
   }
+
+  useLayoutEffect(() => {
+    if (lessonActive || !controlsRef.current) return;
+    // A voice navigation may close the lesson and change destination together.
+    // Apply that destination's bounds after restoring the borrowed controls.
+    controlsRef.current.minDistance = minDist;
+    controlsRef.current.maxDistance = maxDist;
+  }, [lessonActive, minDist, maxDist]);
 
   return (
     <CameraControls

@@ -30,7 +30,7 @@ The default sky's estimated RGBA+mipmap payload falls from about 171 MiB at 8192
 ## Browser checks and budgets
 
 - Verified actual default scene, Explore, and Automatic/Smoother/More detail transitions.
-- At 650×850, the collapsed/expanded toolbar leaves the centered view-mode controls unobstructed. The toolbar breakpoint is consistently 899px.
+- At 650×850, the collapsed/expanded toolbar leaves the centered view-mode controls unobstructed. The initial toolbar breakpoint was 899px; celestial integration raises it to 1023px to accommodate the production voice control.
 - The overview remains subscribed during detail loading/failure. Known unavailable moon maps and empty cloud paths no longer trigger speculative requests.
 - Proposed release budgets remain warm p95 ≤20ms on reference desktop, ≤33ms on the chosen phone, and ≤10% regression in matched scenarios. Phone numbers are targets, not measured results.
 - Existing ad-script warnings and the Three.js Clock deprecation are observed baseline issues; they are not attributed to the new scene controls.
@@ -43,4 +43,6 @@ The previous eager 8K planet-CDN behavior is intentionally retired and documenta
 
 ## Celestial integration pan sample
 
-Build 87f4e08, production build served locally, 1280×720, DPR1.5, automatic/standard, fixed benchmark date, camera pan0.15rad/s. After5s startup, 20s warm sample:2400frames, median8.3ms, p959.2ms, maximum9.4ms, zero frames over33ms. Peak43drawcalls,44273triangles,32textures,27geometries; page transfer8,728,827bytes. Startup maximum204.5ms and2long tasks total371ms. This is one desktop sample on the same M5Max host; not physical iPhone evidence or a controlled startup comparison.
+Build `87f4e08`, production build served locally, 1280×720, DPR 1.5, automatic/standard, fixed benchmark date, camera pan 0.15 rad/s. After 5 seconds of startup, the 20-second warm sample contained 2,400 frames: median 8.3 ms, p95 9.2 ms, maximum 9.4 ms, zero frames over 33 ms. Peak 43 draw calls, 44,273 triangles, 32 textures, and 27 geometries; page transfer 8,728,827 bytes. Startup maximum was 204.5 ms, with 2 long tasks totaling 371 ms. This is one desktop sample on the same M5 Max host, not physical iPhone evidence or a controlled startup comparison.
+
+Production build `6822c90` was then checked at 1024×768, DPR 1, automatic/standard, fixed date and stationary Orrery. Its 20-second warm sample had p95 9.3 ms, maximum 12.6 ms, and no frames over 33 ms; startup reached 288.3 ms with 3 long tasks. The constellation control was exercised on that deployed build. Different viewport/DPR and pan settings mean this row must not be treated as a matched regression comparison.

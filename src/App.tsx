@@ -20,6 +20,8 @@ import { ObserverPicker } from './components/ui/ObserverPicker';
 import { useDeviceOrientation } from './astronomy/useDeviceOrientation';
 import { trackModeSwitch } from './utils/analytics';
 import './App.css';
+import { useTidesLesson } from './lessons/tides/useTidesLesson';
+import { TidesControls } from './lessons/tides/TidesControls';
 import { GraphicsQualityProvider } from './performance/GraphicsQualityProvider';
 import { GraphicsSettings } from './components/ui/GraphicsSettings';
 import { benchmarkEnabled, BENCHMARK_DATE } from './performance/benchmark';
@@ -43,6 +45,8 @@ function getIsMobile() { return mobileQuery.matches; }
 function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
   const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady } = useAstronomy();
+  const tides = useTidesLesson(nav);
+  const { close: closeTides, state: tidesState } = tides;
   const [showLabels, setShowLabels] = useState(true);
   const [showConstellations, setShowConstellations] = useState(false);
   const [cinemaMode, setCinemaMode] = useState(false);
@@ -100,12 +104,14 @@ function App() {
   }, [mode]);
 
   const handlePlanetClick = useCallback((planetId: string) => {
+    closeTides(false);
     viewTransition(() => goToPlanet(planetId), ['detail-open']);
-  }, [goToPlanet]);
+  }, [goToPlanet, closeTides]);
 
   const handleSunClick = useCallback(() => {
+    closeTides(false);
     viewTransition(() => goToSun(), ['detail-open']);
-  }, [goToSun]);
+  }, [goToSun, closeTides]);
 
   const moonsByPlanet = useMemo(() => {
     const map: Record<string, ReturnType<typeof getMoonsByPlanet>> = {};
@@ -123,8 +129,9 @@ function App() {
   }, [nav, goToMoon]);
 
   const handleSceneMoonClick = useCallback((planetId: string, moonId: string) => {
+    closeTides(false);
     viewTransition(() => goToMoon(planetId, moonId), ['detail-open']);
-  }, [goToMoon]);
+  }, [goToMoon, closeTides]);
 
   const handleClose = useCallback(() => {
     viewTransition(() => goToSystem(), ['detail-close']);
@@ -132,8 +139,9 @@ function App() {
   }, [goToSystem]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleBack = useCallback(() => {
+    if (tidesState) { closeTides(); return; }
     viewTransition(() => goBack(), ['detail-close']);
-  }, [goBack]);
+  }, [goBack, tidesState, closeTides]);
 
   const handleMissionToggle = useCallback(() => {
     if (nav.level === 'mission') {
@@ -162,15 +170,18 @@ function App() {
 
   const voice = useSolarConversation({
     currentNav: nav,
+    currentTides: tides.state,
     currentMode: mode,
     currentObserver: observer,
     displayTime,
     onNavigatePlanet: handlePlanetClick,
     onNavigateMoon: (planetId, moonId) => {
+      closeTides(false);
       viewTransition(() => goToMoon(planetId, moonId), ['detail-open']);
     },
     onNavigateSun: handleSunClick,
     onTrackMission: (missionId: string) => {
+      closeTides(false);
       viewTransition(() => goToMission(missionId), ['detail-open']);
     },
     onGoBack: handleBack,
@@ -180,9 +191,9 @@ function App() {
       }
       setSunLayerOverride(layerIndex);
     },
-    onSwitchMode: setMode,
-    onSetDate: setDate,
-    onSetRate: setRate,
+    onSwitchMode: (nextMode) => { closeTides(false); setMode(nextMode); },
+    onSetDate: (date) => { closeTides(); setDate(date); },
+    onSetRate: (rate) => { closeTides(); setRate(rate); },
   });
 
   useEffect(() => {
@@ -234,7 +245,7 @@ function App() {
 
   return (
     <div className={`app${cinemaMode ? ' app--cinema' : ''}`} data-nav-level={nav.level}>
-      {!cinemaMode && mode === 'artistic' && (
+      {!tides.state && !cinemaMode && mode === 'artistic' && (
         <header className="app-header">
           <p className="app-subtitle">
             {nav.level === 'planet' ? 'Click any moon to explore' :
@@ -247,7 +258,7 @@ function App() {
 
       {/* Orrery/Sky positions come from the lazy-loaded astronomy engine —
           without this the first paint is a black void with no explanation. */}
-      {mode !== 'artistic' && !engineReady && (
+      {!tides.state && mode !== 'artistic' && !engineReady && (
         <div className="app__scene-loading" role="status">
           <span className="app__scene-loading-spinner" aria-hidden="true" />
           Calculating planet positions…
@@ -255,6 +266,8 @@ function App() {
       )}
 
       <SolarSystemScene
+        tides={tides.state}
+        waterMotionPaused={tides.waterMotionPaused}
         planets={planets}
         moonsByPlanet={moonsByPlanet}
         missions={missions}
@@ -270,6 +283,7 @@ function App() {
         orreryMission={orreryMissionActive ? getMissionById('artemis-2') : undefined}
       />
 
+      <div inert={!!tides.state} style={tides.state ? { visibility: 'hidden' } : undefined}>
       <div className={`app__toolbar${toolbarOpen ? ' app__toolbar--open' : ''}`}>
         {/* Hamburger toggle — visible only on compact screens via CSS */}
         <button
@@ -494,9 +508,10 @@ function App() {
         />
       )}
 
-      {!hideDetails && nav.level === 'planet' && currentPlanet && (
+      {!tides.state && !hideDetails && nav.level === 'planet' && currentPlanet && (
         <PlanetDetail
           planet={currentPlanet}
+          onTides={mode !== 'sky' && !orreryMissionActive ? tides.open : undefined}
           onClose={handleClose}
           onMoonClick={handleMoonClick}
         />
@@ -542,6 +557,12 @@ function App() {
         </>
       )}
       <ModeToggle />
+      {hideDetails && nav.level === 'planet' && nav.planetId === 'earth' && mode !== 'sky' && !orreryMissionActive && (
+        <button type="button" data-tides-entry className="tides-entry tides-entry--compact" onClick={tides.open}>Why tides?</button>
+      )}
+      </div>
+      {tides.state && <TidesControls waterMotionPaused={tides.waterMotionPaused} onToggleWaterMotion={() => tides.setWaterMotionPaused(!tides.waterMotionPaused)} state={tides.state} onChange={tides.update} onClose={() => closeTides()}
+        voice={voice.agentId ? { label: voice.status === 'off' ? 'Talk to Stella' : 'Stop Stella', onClick: () => { void voice.toggle(); } } : undefined} />}
 
       <Analytics />
       <SpeedInsights />
