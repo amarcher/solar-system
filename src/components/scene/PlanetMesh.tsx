@@ -3,11 +3,12 @@ import { planetRingOuterMultiplier } from '../../utils/planetExtent';
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { Color, DoubleSide, RingGeometry, Vector3 } from 'three';
-import type { Mesh, MeshStandardMaterial } from 'three';
+import { Color, DoubleSide, Matrix4, RingGeometry, Vector3 } from 'three';
+import type { Group, Mesh, MeshStandardMaterial } from 'three';
 import type { Planet } from '../../types/celestialBody';
 import { usePlanetTexture, useTexturePath, useRingTexture } from '../../utils/textures';
 import * as AstronomyService from '../../astronomy/AstronomyService';
+import { celestialRotationMatrix } from '../../astronomy/celestialCoordinates';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 import './SceneLabels.css';
 
@@ -31,42 +32,40 @@ const TWO_PI = Math.PI * 2;
 export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = false, paused = false, timeScale = 1, useRealRotation = false, timeRef }: PlanetMeshProps) {
   const meshRef = useRef<Mesh>(null);
   const cloudRef = useRef<Mesh>(null);
+  const axisRef = useRef<Group>(null);
+  const earthBasis = useMemo(() => new Matrix4(), []);
+  const isRealEarth = useRealRotation && planet.id === 'earth';
   const { settings } = useGraphicsQuality();
   const diffuseMap = usePlanetTexture(planet.id, { maxWidth: settings.bodyWidth });
   const cloudMap = useTexturePath(planet.id === 'earth' ? '/textures/2k/earth_clouds.jpg' : '');
 
   useFrame((_, delta) => {
+    if (isRealEarth && timeRef && AstronomyService.isReady()) {
+      const time = new Date(timeRef.current);
+      // SiderealTime is apparent sidereal time in the equator of date.
+      // Transform that tilted frame into the scene's J2000 ecliptic basis.
+      celestialRotationMatrix(AstronomyService.getEarthEquatorialRotation(time), 'ecliptic', earthBasis);
+      axisRef.current?.quaternion.setFromRotationMatrix(earthBasis);
+      // SphereGeometry places Greenwich at +X; positive Y spin is eastward.
+      const siderealRad = AstronomyService.getSiderealTime(time) * (TWO_PI / 24);
+      if (meshRef.current) meshRef.current.rotation.y = siderealRad;
+      if (cloudRef.current) cloudRef.current.rotation.y = siderealRad + timeRef.current * 0.0000000001;
+      return;
+    }
     if (paused) return;
 
     if (useRealRotation && timeRef) {
-      // Compute absolute rotation from simulation time so continents face
-      // the correct direction (e.g. sunlit side of Earth matches real life).
+      // Other planets retain their existing J2000 rotation convention.
       const simTimeMs = timeRef.current;
-
-      if (planet.id === 'earth' && AstronomyService.isReady()) {
-        // Use Greenwich Mean Sidereal Time for Earth — this tells us exactly
-        // how much Earth has rotated relative to the vernal equinox.
-        // GMST is in hours (0–24). Convert to radians.
-        // In Three.js SphereGeometry, the texture center (u=0.5 = prime meridian)
-        // maps to the +X direction at rotation.y=0.
-        // The heliocentric frame has +X toward the vernal equinox.
-        // So rotation.y = GMST_radians places Greenwich correctly.
-        const gmstHours = AstronomyService.getSiderealTime(new Date(simTimeMs));
-        const gmstRad = gmstHours * (TWO_PI / 24);
-        if (meshRef.current) meshRef.current.rotation.y = gmstRad;
-        if (cloudRef.current) cloudRef.current.rotation.y = gmstRad + simTimeMs * 0.0000000001;
-      } else {
-        // Other planets: compute rotation from J2000 epoch.
-        // We don't know their prime meridian orientation, but consistent
-        // rotation relative to time is still correct.
-        const J2000_MS = 946684800000; // 2000-01-01T00:00:00Z
-        const elapsed = simTimeMs - J2000_MS;
-        const periodMs = Math.abs(planet.rotationPeriod) * 3600 * 1000;
-        const direction = planet.rotationPeriod < 0 ? -1 : 1;
-        const rotation = periodMs > 0 ? (elapsed / periodMs) * TWO_PI * direction : 0;
-        if (meshRef.current) meshRef.current.rotation.y = rotation % TWO_PI;
-        if (cloudRef.current) cloudRef.current.rotation.y = rotation % TWO_PI;
-      }
+      // We don't know their prime meridian orientation, but consistent
+      // rotation relative to time is still correct.
+      const J2000_MS = 946684800000; // 2000-01-01T00:00:00Z
+      const elapsed = simTimeMs - J2000_MS;
+      const periodMs = Math.abs(planet.rotationPeriod) * 3600 * 1000;
+      const direction = planet.rotationPeriod < 0 ? -1 : 1;
+      const rotation = periodMs > 0 ? (elapsed / periodMs) * TWO_PI * direction : 0;
+      if (meshRef.current) meshRef.current.rotation.y = rotation % TWO_PI;
+      if (cloudRef.current) cloudRef.current.rotation.y = rotation % TWO_PI;
     } else if (useRealRotation) {
       // Fallback: accumulate delta if no timeRef (shouldn't happen in orrery)
       const periodSec = Math.abs(planet.rotationPeriod) * 3600;
@@ -141,7 +140,7 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
       )}
 
       {/* Axial tilt group — everything inside spins around the tilted local Y axis */}
-      <group rotation-z={axialTiltRad}>
+      <group ref={axisRef} rotation-x={isRealEarth ? -axialTiltRad : 0} rotation-z={isRealEarth ? 0 : axialTiltRad}>
         {/* Planet sphere */}
         <mesh
           ref={meshRef}
