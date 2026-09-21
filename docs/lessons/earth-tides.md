@@ -1,51 +1,29 @@
-# Earth tides lesson
+# Earth tides layer
 
-Implemented against the visual foundation `27df062`. This lesson is a schematic equilibrium illustration; it does not predict the tide at any location or use the currently selected simulation date.
+The tides Easter egg is an optional layer on the existing Explore/Orrery canvas. A wave-and-Moon toolbar icon focuses Earth and enables it. It replaces the former prominent Why tides entry and separate schematic lesson view. The existing Earth, Moon, Sun, star field, camera, orbit controls, and simulation clock remain in place.
 
-## Model and sources
+## Interaction
 
-`src/lessons/tides/model.ts` owns the pure state, captions, voice context, and physics. State is `{ step: 'gravity' | 'difference' | 'water', source: 'moon' | 'sun' | 'both', phase: number }`; phase is a manually controlled angle in degrees from the fixed Sun direction. New = 0°, full = 180°, quarter = 90° or 270°. It is not an ephemeris phase.
+The default layer is a translucent rippling water envelope, with both Moon and Sun enabled. A compact nonmodal card starts collapsed; its controls select Water, Gravity, or Difference, choose Moon/Sun/Both, pause ripples, or hide tides. Its model qualification stays visible. The normal toolbar, time controls, navigation, and pan/zoom remain usable. No clock or camera snapshot is taken because the layer does not borrow them. Leaving Earth, entering Sky, or starting Artemis removes it; Explore/Orrery switching retains it.
 
-The differential acceleration uses the leading-order field `w × (3(r·n)n − r)`, with unit Earth surface vector `r`, direction to the perturbing body `n`, and `w` proportional to `GM / d³`. Normalizing by the lunar value gives Moon = 1 and Sun ≈ 0.46. Physical parameters are independent of every rendered size and distance:
+The menu icon is the entry point in both compact and desktop toolbars. Enabling focuses the card summary without trapping focus; hiding returns to the visible entry/menu or remounted Earth information panel. Reduced-motion preference freezes decorative ripples. The layer follows body positions regardless of whether those ripples are paused.
 
-| Parameter | Value |
-| --- | ---: |
-| Lunar GM | 4902.800118 km³/s² |
-| Solar GM | 132712440041.279419 km³/s² |
-| Representative lunar distance | 384400 km |
-| Representative solar distance | 149597870.7 km (1 au) |
-| Representative Earth radius | 6371 km |
+## Physical model and coordinates
 
-[JPL astrodynamic parameters](https://ssd.jpl.nasa.gov/astro_par.html) supplies the DE440 GM values and astronomical unit. The lunar distance and Earth radius are rounded representative values, not a date-specific position. Their purpose is to distinguish near/far attraction and the relative tidal contribution.
+`InlineTidesOverlay` reads the same world-position registry used by the camera after planet and moon frame updates. Its group stays centered on Earth and uses Earth's existing visible radius. It normalizes Earth-to-Moon and Earth-to-Sun vectors; scene distance compression is never used to calculate physical force strength. The Moon's displayed Orrery motion currently remains a schematic approximation until the separate lunar-scale/ephemeris update lands.
 
-The water shell uses the degree-two potential `P2(cos θ) = (3 cos² θ − 1)/2`, summed with the same weights. Its base displayed radius is `1.18 + 0.22 × potential`, with a small bounded decorative ripple added in the water stage. The offset and displacement are artistic scale parameters, not physical ocean depths. The shell stays outside the Earth mesh for all supported source/phase combinations. This deliberately idealized global ocean has antipodal bulges and no coasts, ocean dynamics, terrain, or forecast quantities.
+The differential field is `w × (3(r·n)n − r)`, where `n` is the displayed body direction and `w` is proportional to physical `GM/d³`. Representative physical constants give Moon = 1 and Sun ≈ 0.46. The water shape is the summed degree-two potential `P2(cos θ) = (3 cos² θ − 1)/2`, rendered at base radius `1.18 + 0.22 × potential` in Earth-radius units. This is an exaggerated global equilibrium illustration, not ocean depth or a coastal tide prediction.
 
-Gravity-step arrows use inverse-square attraction at physical points on Earth, normalized separately by each body's center acceleration. Their display scales differ and are disclosed in the legend; comparing blue and gold lengths does not compare gravitational strengths. Difference-step arrows share the tide-strength normalization, subtract the center's acceleration, and can point outward on the far side without implying repulsion. Arrow strokes are laid above the globe for legibility, not altitude.
+Gravity arrows use inverse-square attraction, separately normalized for each body and disclosed in the legend. Difference arrows show acceleration relative to Earth's center and do not imply that gravity repels the far side. A shared shader adds a bounded ±0.004 decorative ripple with a transparent rim. The supplied `earth-moon-tides/tides-reel-v3.mp4` informed the water treatment; this layer does not model that reel's friction, leading tidal bulge, or lunar-recession story.
 
-The scientific explanation follows [NOAA/NASA differential-gravity teaching material](https://www.nesdis.noaa.gov/about/k-12-education/oceans-coasts/what-causes-tides) and [NOAA spring and neap tides](https://oceanservice.noaa.gov/facts/springtide.html). Real coastlines can have different tidal cycles; the lesson makes no universal two-equal-high-tides claim.
+The shader uniform container and vector objects remain stable. Three caches them when linking the program, so live directions and strengths are mutated before rendering rather than replacing the uniform object. This prevents a moving Moon marker from disagreeing with a stale water shape.
 
-## Session and integration
+Sources: [JPL astrodynamic parameters](https://ssd.jpl.nasa.gov/astro_par.html), [NOAA differential gravity explanation](https://www.nesdis.noaa.gov/about/k-12-education/oceans-coasts/what-causes-tides), and [NOAA spring/neap tides](https://oceanservice.noaa.gov/facts/springtide.html). Existing Earth/Moon imagery is Solar System Scope, CC BY 4.0; provenance is recorded in the texture manifest.
 
-`useTidesLesson` is orthogonal to navigation. Earth entry is present in desktop details and mobile/cinema Explore or Orrery. Artemis replay must be exited first. Opening records `timeRef.current` (not the throttled displayed date), rate, navigation/mode identity, and focus once, then sets rate to zero. Closing restores the exact saved millisecond time before the original rate and returns focus to the entry. Navigation is never restored. Voice mode/time/navigation callbacks close the lesson before performing the requested action; an external navigation fallback also releases it without undoing the new destination.
+## Performance and verification
 
-CameraRig keeps the same controls instance mounted. It serializes settings plus the current pose (rather than an in-flight transition destination), disables camera gestures/tracking, and sets a fixed schematic view. Closing restores those settings and pose before tracking resumes. Resize reframes the lesson without overwriting the original snapshot. If navigation changes at exit, its normal constraints and tracking take over after restoration.
+The layer adds one water mesh and one batched line buffer. It updates existing vectors and typed arrays, has no fluid simulation, and unmounts its resources when disabled. Other celestial layers and normal quality controls remain active.
 
-The permanent Canvas and ordinary scene groups stay mounted, hidden under the lesson. Artistic motion pauses, astronomical time is frozen, normal HTML controls are hidden and inert, and ordinary scene labels are disabled. The water stage adds gentle illustrative ripple motion, controlled by Pause water / Resume water and frozen automatically for reduced motion. Macro-scale bulges still use the physical P2 model; ripples are a visual treatment, not a hydrodynamic simulation. Other lesson stages do not animate. TidesScene is absent while off, so its geometry, material, labels, and texture subscriptions only exist while active. Reused Earth/Moon images may remain in the application's shared bounded texture cache, consistent with its normal lifetime policy.
+129 tests, lint, and production build passed for the inline integration. Browser checks covered actual Earth attachment, pan/zoom, changing Orrery time, Explore/Orrery switching, Sky cleanup, compact icon entry, focus, and 320×568/390×844 layouts. Display quality's icon popup was exercised in desktop and compact menus, including selection, Escape, and returning to Automatic. Physical iPhone Safari remains a user acceptance check.
 
-The lesson uses one water mesh and one batched arrow draw, plus the Earth, Moon, Sun-direction marker and dark background. The water shape updates shader uniforms. Arrow buffers update only for manual state changes. Shared pure `tidesCaption`, `TIDES_QUALIFICATION`, and `tidesVoiceContext` are available for the separate recording milestone. There is no recorder here; raw Canvas capture would omit the HTML qualifications/credits.
-
-Earth and Moon image credit is **Solar System Scope, CC BY 4.0**. Source and license links are reachable within the lesson. Parent verified these unchanged JPEGs against publisher bytes in M1; that manifest change must be included when merging this branch.
-
-## Validation and remaining checks
-
-- Model tests: real attraction points toward Moon on both sides; differential field vanishes at center and compresses at quadrature; solar contribution is smaller; new/full reinforce equally; quarter reduces but does not eliminate equatorial range; shell finite and antipodally symmetric over sampled directions/phases.
-- Restoration helpers: exact milliseconds/rate ordering, paused rates, and external destination detection.
-- Local TypeScript/build, lint and tests run by executor. Browser and physical iPhone/Safari validation remain coordinator acceptance checks; no voice call was started.
-- Coordinator should check mobile scrolling with qualification fixed visible, keyboard focus wrapping and Escape, connected/connecting voice session entry, rapidly switching presets, exit during camera fly-in, repeated entry/exit resource counts, prior time/rate/camera restore, and external voice navigation preserving its destination.
-- Parent M1 changes CameraRig frame order and moon framing. Preserve both its explicit frame priority and this lesson suspension when resolving that integration.
-
-## Integrated browser findings
-
-The browser check caught stale shader uniforms: the Moon marker moved at quarter phase while the water shell retained its initial orientation. Three caches the uniforms object for the linked shader. The corrected component keeps that object stable and updates its vector values before each render, including while ripples are paused. Fresh-load checks now show the Moon-only shell rotate from horizontal at new Moon to vertical at quarter; combined new/full configurations reinforce while quarter reduces the range. Preserve this visual check when changing the shader.
-
-At 390×844, all lesson controls remain reachable by panel scrolling and the model qualification stays visible. Close and Escape return focus to Why tides and restore the original clock rate. A resize while the lesson is open does not overwrite the saved camera pose. Moon/Sun labels have separate baselines. The supplied 56-second reel is a visual reference for the translucent rippling envelope; this lesson does not yet model its friction, leading bulge, or lunar-recession story.
+The former schematic renderer is retained as an internal recording helper; it is no longer a public lesson view. Recording PR #73 is held while capture is adapted to the inline experience.
