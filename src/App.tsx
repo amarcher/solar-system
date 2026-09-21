@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useNavigation } from './hooks/useNavigation';
+import { useGraphicsQuality } from './performance/useGraphicsQuality';
 import { useSolarConversation } from './hooks/useSolarConversation';
 import { planets } from './data/planets';
 import { getPlanetById } from './data/planets';
@@ -43,8 +44,9 @@ function getIsMobile() { return mobileQuery.matches; }
 
 function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
-  const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady } = useAstronomy();
+  const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady, rate } = useAstronomy();
   const tides = useTidesLesson(nav);
+  const graphics = useGraphicsQuality();
   const { close: closeTides, state: tidesState } = tides;
   const [showLabels, setShowLabels] = useState(true);
   const [showConstellations, setShowConstellations] = useState(false);
@@ -168,6 +170,14 @@ function App() {
   }, [orreryMissionActive, startOrreryMission]);
 
   const voice = useSolarConversation({
+    currentRate: rate,
+    scene: { detailsVisible: !hideDetails && !tides.state, constellations: showConstellations, quality: graphics.preference, missionActive: orreryMissionActive || nav.level === 'mission' },
+    onSetTides: (enabled) => {
+      if (enabled) { goToPlanet('earth'); tides.open(); }
+      else closeTides(false);
+    },
+    onSetConstellations: setShowConstellations,
+    onSetQuality: graphics.setPreference,
     currentNav: nav,
     currentTides: tides.state,
     currentMode: mode,
@@ -181,9 +191,13 @@ function App() {
     onNavigateSun: handleSunClick,
     onTrackMission: (missionId: string) => {
       closeTides(false);
-      viewTransition(() => goToMission(missionId), ['detail-open']);
+      if (mode === 'orrery') { goToPlanet('earth'); startOrreryMission(); }
+      else viewTransition(() => goToMission(missionId), ['detail-open']);
     },
-    onGoBack: handleBack,
+    onGoBack: () => {
+      if (orreryMissionActive) { setOrreryMissionActive(false); return; }
+      handleBack();
+    },
     onPeelSunLayer: (layerIndex: number) => {
       if (nav.level !== 'sun') {
         handleSunClick();

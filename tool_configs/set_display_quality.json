@@ -1,0 +1,24 @@
+{
+    "name": "set_display_quality",
+    "description": "Set the existing display preference when the user asks for smoother motion or sharper available textures. Do not promise frame rate or missing terrain. Detailed may use more power.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "preference": {
+                "type": "string",
+                "enum": [
+                    "auto",
+                    "smooth",
+                    "detailed"
+                ],
+                "description": "auto adjusts for device; smooth reduces detail; detailed requests sharper available maps."
+            }
+        },
+        "required": [
+            "preference"
+        ]
+    }
+}
