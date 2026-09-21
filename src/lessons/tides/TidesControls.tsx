@@ -17,8 +17,14 @@ export function TidesControls({ state, onChange, onClose, voice, waterMotionPaus
   const dialog = useRef<HTMLElement>(null);
   const close = useRef<HTMLButtonElement>(null);
   const reducedMotion = useReducedMotion();
+  const recordButton = useRef<HTMLButtonElement>(null);
+  const previousCaptureActive = useRef(recording.active);
   const caption = tidesCaption(state);
   useEffect(() => { close.current?.focus(); }, []);
+  useEffect(() => {
+    if (previousCaptureActive.current && !recording.active) recordButton.current?.focus();
+    previousCaptureActive.current = recording.active;
+  }, [recording.active]);
   return (
     <section ref={dialog} className="tides-lesson" role="dialog" aria-modal="true" aria-labelledby="tides-title"
       onKeyDown={(event) => {
@@ -44,10 +50,10 @@ export function TidesControls({ state, onChange, onClose, voice, waterMotionPaus
             <input aria-label="Moon angle from the Sun" aria-valuetext={phaseLabel(state.phase)} type="range" min="0" max="360" step="1" value={state.phase} onChange={(event) => onChange({ phase: Number(event.target.value) })} />
           </fieldset>
         </div>
-        <TidesRecordingControls recording={recording} />
+        <TidesRecordingControls recording={recording} recordButtonRef={recordButton} />
         <footer className="tides-lesson__footer">{state.step === 'water' && (reducedMotion ? <p>Water ripples paused for reduced motion.</p> : <button type="button" onClick={onToggleWaterMotion}>{waterMotionPaused ? 'Resume water' : 'Pause water'}</button>)}<p>Sizes and distances are schematic. This is not a local tide forecast.</p><a href="https://oceanservice.noaa.gov/facts/springtide.html" target="_blank" rel="noopener noreferrer">Science: NOAA (new tab)</a><span>Images: </span><a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener noreferrer">Solar System Scope (new tab)</a><span> · </span><a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0 (new tab)</a></footer>
       </div>}
-      {recording.active && <TidesRecordingControls recording={recording} />}
+      {recording.active && <TidesRecordingControls recording={recording} recordButtonRef={recordButton} />}
       <p className="tides-lesson__qualification">{TIDES_QUALIFICATION}</p>
     </section>
   );
