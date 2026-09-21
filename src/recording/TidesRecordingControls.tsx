@@ -12,7 +12,7 @@ export function TidesRecordingControls({ recording, recordButtonRef }: { recordi
     <p role="status">{!recording.available ? 'Video recording is unavailable in this browser. Try a current desktop browser.' : recording.message || 'Make a silent portrait video from this lesson. Nothing is uploaded.'}</p>
     {recording.preview && <div className="tides-recording__result">
       <video aria-label="Your Earth and Moon tides clip" src={recording.preview.url} controls playsInline preload="metadata" />
-      <div><a href={recording.preview.url} download={recording.preview.filename}>Download clip</a><button type="button" onClick={recording.dismiss}>Dismiss video</button></div>
+      <div><a href={recording.preview.url} download={recording.preview.filename}>Download clip</a><button type="button" onClick={() => { recording.dismiss(); recordButtonRef.current?.focus(); }}>Dismiss video</button></div>
     </div>}
   </div>;
 }
