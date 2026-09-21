@@ -1,3 +1,5 @@
+import { useFocusedSpace } from '../../sceneLayout/useFocusedSpace';
+import { focusLayoutShift } from '../../sceneLayout/focusedSpace';
 import { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera, Vector3 } from 'three';
@@ -27,6 +29,8 @@ const SYSTEM_POSITION_ORRERY = { x: 0, y: 15, z: 21 };
 const SYSTEM_TARGET = { x: 0, y: 0, z: 0 };
 
 export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
+  const space = useFocusedSpace();
+  const layoutScratch = useRef({ shift: new Vector3(), target: new Vector3(), end: new Vector3() });
   const controlsRef = useRef<CameraControlsImpl>(null);
   const { mode } = useAstronomy();
   const { size, camera } = useThree();
@@ -111,6 +115,18 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
   useFrame((_, delta) => {
     const controls = controlsRef.current;
     if (!controls) return;
+    const focusedRaw = (nav.level === 'planet' || nav.level === 'moon') ? space.raw.get(nav.planetId) : undefined;
+    if (focusedRaw && !orreryMissionId) {
+      const s = layoutScratch.current;
+      focusLayoutShift(space, focusedRaw, s.shift);
+      if (s.shift.lengthSq() > 1e-16) {
+        controls.getTarget(s.target, false).add(s.shift);
+        controls.getTarget(s.end, true).add(s.shift);
+        controls.moveTo(s.target.x, s.target.y, s.target.z, false);
+        controls.moveTo(s.end.x, s.end.y, s.end.z, true);
+        controls.update(0);
+      }
+    }
     if (benchmarkMode === 'orbit') void controls.rotate(delta * 0.15, 0, false);
 
     // After fly-in animation settles, reduce smooth time for responsive tracking
@@ -190,8 +206,8 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
           flyInDone.current = true;
           flyInTime.current = 0;
         } else {
-          // Continuously track the orbiting planet
-          controls.moveTo(pos.x, pos.y, pos.z, true);
+          // Preserve the focused body under accelerated time once the flight settles.
+          controls.moveTo(pos.x, pos.y, pos.z, !settled.current && !reducedMotion);
         }
       }
     }

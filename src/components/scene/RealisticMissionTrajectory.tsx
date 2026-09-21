@@ -8,7 +8,7 @@ import { usePlanetTexture } from '../../utils/textures';
 import { clearMissionPosition, setMissionPosition } from '../../utils/missionPositions';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import * as AstronomyService from '../../astronomy/AstronomyService';
-import { scaleAUVector } from '../../astronomy/realisticScale';
+import { getPlanetPosition } from '../../utils/planetPositions';
 
 interface RealisticMissionTrajectoryProps {
   mission: Mission;
@@ -134,20 +134,10 @@ export function RealisticMissionTrajectory({ mission }: RealisticMissionTrajecto
       wrapperRef.current.rotation.y = Math.atan2(-sceneZ, sceneX);
     } catch { /* engine not ready */ }
 
-    // Position the wrapper at Earth's location in the orrery
-    try {
-      const earthHelio = AstronomyService.getHeliocentricPosition('earth', simDate);
-      const earthScenePos = scaleAUVector(
-        earthHelio.x,
-        earthHelio.z,
-        -earthHelio.y,
-      );
-      wrapperRef.current.position.set(
-        earthScenePos.x,
-        earthScenePos.y,
-        earthScenePos.z,
-      );
-    } catch { /* engine not ready */ }
+    // Use the same displayed origin as Earth, including the exit transition
+    // from a focused layout. Mission-local distances remain unchanged.
+    const earthPosition = getPlanetPosition('earth');
+    if (earthPosition) wrapperRef.current.position.copy(earthPosition);
 
     // Sample spacecraft position at sim time
     if (!groupRef.current || ephemeris.length < 2) return;

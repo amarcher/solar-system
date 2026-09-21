@@ -20,13 +20,15 @@ import { QualityMonitor } from '../../performance/QualityMonitor';
 import { InlineTidesOverlay } from '../../lessons/tides/InlineTidesOverlay';
 import type { TidesState } from '../../lessons/tides/model';
 import { SceneBenchmark } from '../../performance/SceneBenchmark';
-import { getMoonPosition } from '../../utils/planetPositions';
+import { FocusedSpaceProvider } from '../../sceneLayout/FocusedSpaceProvider';
+import { HeliocentricOrigin } from '../../sceneLayout/HeliocentricOrigin';
+import { getMoonPosition, getPlanetPosition } from '../../utils/planetPositions';
 
 /**
  * Camera-relative fill light that activates when zoomed into a planet/moon.
  * Provides fill lighting when zoomed into a planet/moon.
  */
-function FillLight({ active, moonId }: { active: boolean; moonId?: string }) {
+function FillLight({ active, moonId, planetId }: { active: boolean; moonId?: string; planetId?: string }) {
   const lightRef = useRef<DirectionalLight>(null);
   const { camera } = useThree();
 
@@ -35,6 +37,7 @@ function FillLight({ active, moonId }: { active: boolean; moonId?: string }) {
       // Position the fill light near the camera, offset slightly above and right
       lightRef.current.position.copy(camera.position);
       const moonPosition = moonId ? getMoonPosition(moonId) : null;
+      const planetPosition = planetId ? getPlanetPosition(planetId) : getPlanetPosition('sun');
       if (moonPosition) {
         // Close-up illumination follows the observed surface, rather than
         // pointing back toward the Sun at the world's origin.
@@ -42,7 +45,8 @@ function FillLight({ active, moonId }: { active: boolean; moonId?: string }) {
       } else {
         lightRef.current.position.y += 2;
         lightRef.current.position.x += 1;
-        lightRef.current.target.position.set(0, 0, 0);
+        if (planetPosition) lightRef.current.target.position.copy(planetPosition);
+        else lightRef.current.target.position.set(0, 0, 0);
       }
       lightRef.current.target.updateMatrixWorld();
     }
@@ -109,6 +113,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         // which also hosts the <Html> label buttons that must stay reachable.
         onCreated={({ gl }) => gl.domElement.setAttribute('aria-hidden', 'true')}
       >
+        <FocusedSpaceProvider nav={nav} planets={planets} moonsByPlanet={moonsByPlanet} missionActive={!!orreryMission || nav.level === 'mission'}>
         <QualityMonitor />
         {benchmarkEnabled && <SceneBenchmark key={`${mode}:${JSON.stringify(nav)}:${benchmarkRun}`} scenario={`${mode}:${JSON.stringify(nav)}`} onReport={setBenchmarkReport} />}
         {/* No shadow maps: the only shadow in the scene (planet → rings) is
@@ -117,13 +122,13 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         {mode !== 'sky' && (
           <>
             <ambientLight intensity={isZoomedIn ? 0.2 : 0.1} />
-            <FillLight active={isZoomedIn} moonId={nav.level === 'moon' ? nav.moonId : undefined} />
-            <pointLight
+            <FillLight active={isZoomedIn} moonId={nav.level === 'moon' ? nav.moonId : undefined} planetId={focusedPlanetId ?? undefined} />
+            <HeliocentricOrigin><pointLight
               position={[0, 0, 0]}
               intensity={1.0}
               color="#fff8ee"
               decay={0}
-            />
+            /></HeliocentricOrigin>
           </>
         )}
 
@@ -131,11 +136,11 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
           <>
             <CelestialBackdrop />
             <group visible={!hidesSystemContext || nav.level === 'sun'}>
-              <SunMesh
+              <HeliocentricOrigin><SunMesh
                 onClick={hidesSystemContext && nav.level !== 'sun' ? undefined : onSunClick}
                 showLabel={showLabels && !isZoomedIn}
                 paused={paused}
-              />
+              /></HeliocentricOrigin>
             </group>
             <group visible={!hidesSystemContext}>
               <AsteroidBelt paused={paused} />
@@ -215,6 +220,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             />
           </EffectComposer>
         )}
+        </FocusedSpaceProvider>
       </Canvas>
       {benchmarkEnabled && (
         <aside style={{ position: 'fixed', right: 8, top: 8, zIndex: 10000, background: '#080d18ee', color: '#fff', padding: 12, maxHeight: '85vh', overflow: 'auto', width: 330, fontSize: 11 }} aria-label="Scene benchmark">

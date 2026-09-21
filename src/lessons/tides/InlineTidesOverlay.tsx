@@ -36,8 +36,10 @@ export function InlineTidesOverlay() {
     const moonPosition = getMoonPosition('moon');
     if (!earthPosition || !moonPosition) { group.visible = false; return; }
     const moonDirection = uniforms.moonDirection.value.copy(moonPosition).sub(earthPosition);
-    // Both existing scene modes place the Sun at the origin.
-    const sunDirection = uniforms.sunDirection.value.copy(earthPosition).negate();
+    const sunPosition = getPlanetPosition('sun');
+    const sunDirection = uniforms.sunDirection.value;
+    if (sunPosition) sunDirection.copy(sunPosition).sub(earthPosition);
+    else sunDirection.copy(earthPosition).negate();
     const moonDistanceSq = moonDirection.lengthSq(), sunDistanceSq = sunDirection.lengthSq();
     if (!Number.isFinite(moonDistanceSq) || !Number.isFinite(sunDistanceSq) || moonDistanceSq < 1e-12 || sunDistanceSq < 1e-12) {
       group.visible = false; return;

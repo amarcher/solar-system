@@ -10,6 +10,8 @@ import { RealisticMissionTrajectory } from './RealisticMissionTrajectory';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import * as AstronomyService from '../../astronomy/AstronomyService';
 import { scaleAUVector } from '../../astronomy/realisticScale';
+import { HeliocentricOrbit } from '../../sceneLayout/HeliocentricOrbit';
+import { HeliocentricOrigin } from '../../sceneLayout/HeliocentricOrigin';
 import { getPlanetPosition } from '../../utils/planetPositions';
 
 const ORBIT_SAMPLE_EPOCH_MS = Date.now();
@@ -58,14 +60,7 @@ function OrbitPath({ planet }: { planet: Planet }) {
 
   if (!positions) return null;
 
-  return (
-    <lineLoop>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-      </bufferGeometry>
-      <lineBasicMaterial color="#ffffff" transparent opacity={0.08} depthWrite={false} />
-    </lineLoop>
-  );
+  return <HeliocentricOrbit id={planet.id} points={positions} />;
 }
 
 /** How close (in px) two labels may get before the lower-priority one hides. */
@@ -104,7 +99,8 @@ function useLabelCollisions(planets: Planet[], enabled: boolean): Set<string> {
       };
     };
 
-    const sunPt = project(0, 0, 0);
+    const sun = getPlanetPosition('sun');
+    const sunPt = project(sun?.x ?? 0, sun?.y ?? 0, sun?.z ?? 0);
     if (sunPt) placed.push(sunPt);
 
     const byPriority = [...planets].sort((a, b) => b.visualRadius - a.visualRadius);
@@ -157,13 +153,13 @@ export function RealisticScene({
   return (
     <>
       <CelestialLayers frame="ecliptic" showConstellations={showConstellations} showNames={showLabels} />
-      <group>
+      <HeliocentricOrigin>
         <SunMesh
           onClick={onSunClick}
           showLabel={showLabels && !isZoomedIn}
           paused={paused}
         />
-      </group>
+      </HeliocentricOrigin>
 
       {/* Orbit paths preserve spatial context around a focused planet/moon. */}
       <group visible={!hidesSystemContext}>
