@@ -1,4 +1,17 @@
-.graphics-settings { display: flex; align-items: center; gap: 6px; color: #d4dbe9; font: 11px 'Space Grotesk', sans-serif; }
-.graphics-settings select { max-width: 108px; border: 1px solid #ffffff35; border-radius: 7px; background: #111522; color: #f1f4fb; padding: 7px 5px; font: inherit; }
-.graphics-settings select:focus-visible { outline: 2px solid #a8caff; outline-offset: 3px; }
-@media (max-width: 1023px) { .graphics-settings { flex-direction: column; align-items: flex-start; padding: 6px; } }
+.graphics-settings { display: flex; position: relative; align-items: center; }
+.graphics-settings .graphics-settings__trigger { width: 44px; height: 44px; flex: 0 0 44px; }
+.graphics-settings__trigger[aria-expanded="true"] { color: #eef6ff; border-color: #a8caff80; background: #162238; }
+.graphics-settings__popover { position: fixed; z-index: 180; top: 12px; left: 12px; visibility: hidden; width: min(280px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; padding: 10px; box-sizing: border-box; border: 1px solid #a8caff45; border-radius: 16px; background: #0d1525fa; box-shadow: 0 12px 36px #0008; color: #edf4ff; font: 13px 'Space Grotesk', sans-serif; }
+.graphics-settings__heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-left: 8px; }
+.graphics-settings__heading h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.graphics-settings__close { width: 44px; height: 44px; flex: 0 0 44px; border: 0; border-radius: 50%; background: transparent; color: #d2dff3; font-size: 24px; cursor: pointer; }
+.graphics-settings__close:hover { background: #ffffff12; color: #fff; }
+.graphics-settings__choices { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 4px; }
+.graphics-settings__choice { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 10px; border: 1px solid transparent; border-radius: 10px; cursor: pointer; }
+.graphics-settings__choice:has(input:checked) { background: #a8caff16; border-color: #a8caff5c; }
+.graphics-settings__choice:hover { background: #ffffff0d; }
+.graphics-settings__choice input { margin: 0; width: 18px; height: 18px; flex: 0 0 18px; accent-color: #a8caff; }
+.graphics-settings__choice strong { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; }
+.graphics-settings__choice strong + span { display: block; color: #b4c4dc; font-size: 11px; line-height: 1.5; }
+.graphics-settings :focus-visible { outline: 2px solid #a8caff; outline-offset: 3px; }
+.graphics-settings__sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
