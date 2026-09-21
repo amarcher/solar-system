@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { PerspectiveCamera } from 'three';
+import { PerspectiveCamera, Vector3 } from 'three';
+import { clearOrbitOccluder } from '../../utils/orbitClearance';
 import { moonVisualRadius, moonFocusDistance } from '../../utils/moonFraming';
 import { CameraControls } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
@@ -40,6 +41,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
   const settled = useRef(false);
   const flyInDone = useRef(false);
   const flyInTime = useRef(0);
+  const clearanceScratch = useRef({ position: new Vector3(), target: new Vector3(), endPosition: new Vector3(), endTarget: new Vector3(), corrected: new Vector3(), correctedEnd: new Vector3() });
 
   // Serialize nav so the effect only fires on actual changes
   const navKey = nav.level === 'moon'
@@ -194,6 +196,28 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
       }
     }
   }, -1.5);
+
+  // Drei updates controls at -1. Resolve the compact Moon's Earthward orbit
+  // before rendering, preserving both its current zoom and any fly-in endpoint.
+  useFrame(() => {
+    if (mode !== 'orrery' || nav.level !== 'moon' || nav.moonId !== 'moon' || orreryMissionId) return;
+    const controls = controlsRef.current;
+    const earthPosition = getPlanetPosition('earth');
+    const earth = planets.find(planet => planet.id === 'earth');
+    if (!controls || !earthPosition || !earth) return;
+    const s = clearanceScratch.current;
+    controls.getPosition(s.position, false);
+    controls.getTarget(s.target, false);
+    // Include clouds and a near-plane margin, even on a wide viewport.
+    const radius = earth.visualRadius * 1.015 + 0.01;
+    if (!clearOrbitOccluder(s.position, s.target, earthPosition, radius, s.corrected)) return;
+    controls.getPosition(s.endPosition, true);
+    controls.getTarget(s.endTarget, true);
+    clearOrbitOccluder(s.endPosition, s.endTarget, earthPosition, radius, s.correctedEnd);
+    controls.setLookAt(...s.corrected.toArray(), ...s.target.toArray(), false);
+    controls.setLookAt(...s.correctedEnd.toArray(), ...s.endTarget.toArray(), true);
+    controls.update(0);
+  }, -0.5);
 
   // Reset flyInDone when orrery mission changes
   useEffect(() => {
