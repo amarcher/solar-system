@@ -195,10 +195,11 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
     }
   }, [orreryMissionId]);
 
-  // Reset flyInDone when nav changes
+  // Reframe after navigation or viewport changes, then resume responsive tracking.
   useEffect(() => {
     flyInDone.current = false;
     flyInTime.current = 0;
+    settled.current = false;
   }, [navKey, mode, size.width, size.height]);
 
   // Distance constraints per nav level
