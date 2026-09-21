@@ -1,12 +1,14 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import type { Group } from 'three';
+import { Vector3, type Group } from 'three';
 import type { Moon, Planet } from '../../types/celestialBody';
 import { PlanetMesh } from './PlanetMesh';
 import { RealisticMoonOrbit } from './RealisticMoonOrbit';
 import { setPlanetPosition } from '../../utils/planetPositions';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import * as AstronomyService from '../../astronomy/AstronomyService';
+import { useFocusedSpace } from '../../sceneLayout/useFocusedSpace';
+import { applyFocusSpace } from '../../sceneLayout/focusedSpace';
 import { scaleAUVector } from '../../astronomy/realisticScale';
 
 interface RealisticPlanetProps {
@@ -27,7 +29,9 @@ export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, show
   const groupRef = useRef<Group>(null);
   const { timeRef, engineReady, rate } = useAstronomy();
   const lastComputedTime = useRef(0);
-  const cachedPos = useRef({ x: 0, y: 0, z: 0 });
+  const cachedPos = useRef(new Vector3());
+  const space = useFocusedSpace();
+  useEffect(() => () => { space.raw.delete(planet.id); }, [space, planet.id]);
 
   useFrame(() => {
     if (!groupRef.current || !engineReady) return;
@@ -51,12 +55,12 @@ export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, show
       }
     }
 
-    groupRef.current.position.set(
-      cachedPos.current.x,
-      cachedPos.current.y,
-      cachedPos.current.z,
-    );
-    setPlanetPosition(planet.id, cachedPos.current.x, cachedPos.current.y, cachedPos.current.z);
+    space.raw.set(planet.id, cachedPos.current);
+  }, -4);
+  useFrame(() => {
+    if (!groupRef.current || !engineReady) return;
+    const position = applyFocusSpace(space, cachedPos.current, groupRef.current.position);
+    setPlanetPosition(planet.id, position.x, position.y, position.z);
   }, -3);
 
   return (

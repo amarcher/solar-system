@@ -1,8 +1,9 @@
+import { getPlanetPosition } from '../../utils/planetPositions';
 import { planetRingOuterMultiplier } from '../../utils/planetExtent';
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { Color, DoubleSide, RingGeometry } from 'three';
+import { Color, DoubleSide, RingGeometry, Vector3 } from 'three';
 import type { Mesh, MeshStandardMaterial } from 'three';
 import type { Planet } from '../../types/celestialBody';
 import { usePlanetTexture, useTexturePath, useRingTexture } from '../../utils/textures';
@@ -288,8 +289,13 @@ function ProceduralRings({ planet }: { planet: Planet }) {
   const uniforms = useMemo(() => ({
     uMap: { value: ringTexture },
     uPlanetRadius: { value: planet.visualRadius },
-    uSunPos: { value: [0, 0, 0] },
+    uSunPos: { value: new Vector3() },
   }), [ringTexture, planet.visualRadius]);
+
+  useFrame(() => {
+    const sun = getPlanetPosition('sun');
+    if (sun) uniforms.uSunPos.value.copy(sun);
+  });
 
   return (
     <mesh rotation-x={Math.PI / 2} geometry={geometry}>

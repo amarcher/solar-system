@@ -7,7 +7,7 @@ export const celestialVertex = /* glsl */ `
     vec3 worldDirection = mat3(modelMatrix) * position;
     vAltitude = normalize(worldDirection).y;
     gl_Position = projectionMatrix * vec4(mat3(viewMatrix) * worldDirection, 1.0);
-    gl_Position.z = gl_Position.w * 0.99999;
+    gl_Position.z = gl_Position.w;
   }
 `;
 

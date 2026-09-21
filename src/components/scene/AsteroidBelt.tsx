@@ -1,3 +1,4 @@
+import { useFocusedSpace } from '../../sceneLayout/useFocusedSpace';
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -94,6 +95,7 @@ const TEXTURE_PATHS = [
 
 function AsteroidGroup({ variant, asteroids, paused }: { variant: number; asteroids: AsteroidData[]; paused?: boolean }) {
   const meshRef = useRef<InstancedMesh>(null);
+  const space = useFocusedSpace();
   const asteroidStateRef = useRef(asteroids.map((asteroid) => ({ ...asteroid })));
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const geometry = useMemo(() => createRockGeometry(variant * 17 + 42), [variant]);
@@ -124,6 +126,7 @@ function AsteroidGroup({ variant, asteroids, paused }: { variant: number; astero
         a.y,
         Math.sin(a.angle) * a.radius,
       );
+      dummy.position.multiplyScalar(space.scale).add(space.offset);
       dummy.rotation.set(a.rotX, a.rotY, a.rotZ);
       dummy.scale.setScalar(a.scale);
       dummy.updateMatrix();
@@ -133,7 +136,7 @@ function AsteroidGroup({ variant, asteroids, paused }: { variant: number; astero
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[geometry, material, asteroids.length]}>
+    <instancedMesh ref={meshRef} frustumCulled={false} args={[geometry, material, asteroids.length]}>
     </instancedMesh>
   );
 }
