@@ -11,6 +11,7 @@ import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { SOLAR_TIDE_RATIO, type TidesState } from './model';
 import { addDifferentialField, gravityInDirection } from './inlineTidesMath';
 import { shellVertex, shellFragment } from './waterShaders';
+import { DEFAULT_WATER_PROFILE, inlineWaterProfile } from './waterProfiles';
 
 const EARTH_VISUAL_RADIUS = getPlanetById('earth')!.visualRadius;
 const POINT_COUNT = 12;
@@ -44,6 +45,8 @@ export function InlineTidesOverlay({ state, waterMotionPaused = false, capture =
   const uniforms = useMemo(() => ({
     waterTime: { value: 0 },
     opacityScale: { value: 0.6 },
+    baseRadius: { value: DEFAULT_WATER_PROFILE.baseRadius },
+    tidalAmplitude: { value: DEFAULT_WATER_PROFILE.tidalAmplitude },
     moonDirection: { value: new Vector3(1, 0, 0) },
     sunDirection: { value: new Vector3(1, 0, 0) },
     strengths: { value: new Vector2(1, 0) },
@@ -74,8 +77,11 @@ export function InlineTidesOverlay({ state, waterMotionPaused = false, capture =
     const lunarWeight = state.source === 'sun' ? 0 : 1;
     const solarWeight = state.source === 'moon' ? 0 : SOLAR_TIDE_RATIO;
     uniforms.strengths.value.set(lunarWeight, solarWeight);
+    const profile = inlineWaterProfile(mode);
     if (state.step === 'water' && !waterMotionPaused && !reducedMotion) clock.current += Math.min(delta, 0.05);
     if (water.current) {
+      water.current.uniforms.baseRadius.value = profile.baseRadius;
+      water.current.uniforms.tidalAmplitude.value = profile.tidalAmplitude;
       water.current.uniforms.waterTime.value = clock.current;
       water.current.uniformsNeedUpdate = true;
     }

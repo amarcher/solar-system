@@ -1,6 +1,7 @@
 import { useRef, useEffect, useLayoutEffect, type RefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera, Vector3 } from 'three';
+import { clearOrbitOccluder } from '../../utils/orbitClearance';
 import { moonVisualRadius, moonFocusDistance } from '../../utils/moonFraming';
 import { CameraControls } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
@@ -46,6 +47,7 @@ export function CameraRig({ nav, planets, orreryMissionId, tidesCapture = false,
   const settled = useRef(false);
   const flyInDone = useRef(false);
   const flyInTime = useRef(0);
+  const clearanceScratch = useRef({ position: new Vector3(), target: new Vector3(), endPosition: new Vector3(), endTarget: new Vector3(), corrected: new Vector3(), correctedEnd: new Vector3() });
 
   // Serialize nav so the effect only fires on actual changes
   const navKey = nav.level === 'moon'
@@ -73,7 +75,7 @@ export function CameraRig({ nav, planets, orreryMissionId, tidesCapture = false,
         const direction = new Vector3().fromArray(data.position).sub(new Vector3().fromArray(data.target)).normalize();
         const up = new Vector3(0, 1, 0).applyQuaternion(camera.quaternion).normalize();
         const framing = tidesCaptureFraming(earth, moon, direction, up, planets.find(p => p.id === 'earth')!.visualRadius,
-          moonVisualRadius(getMoonById('moon')!.diameter),
+          moonVisualRadius(getMoonById('moon')!.diameter, 'moon', mode),
           camera instanceof PerspectiveCamera ? camera.fov : 50);
         captureSnapshot.current = { json: JSON.stringify(data), navKey, mode, ...framing };
       }
@@ -207,7 +209,7 @@ export function CameraRig({ nav, planets, orreryMissionId, tidesCapture = false,
       const moon = getMoonById(trackingMoonId.current);
       if (moonPos && moon) {
         if (!flyInDone.current) {
-          const moonRadius = moonVisualRadius(moon.diameter);
+          const moonRadius = moonVisualRadius(moon.diameter, moon.id, mode);
           const dist = moonFocusDistance(moonRadius, camera instanceof PerspectiveCamera ? camera.fov : 50, size.width, size.height);
           controls.smoothTime = flightSmoothTime;
           if (trackingPlanetId.current === 'uranus') {
@@ -247,6 +249,28 @@ export function CameraRig({ nav, planets, orreryMissionId, tidesCapture = false,
     }
   }, -1.5);
 
+  // Drei updates controls at -1. Resolve the compact Moon's Earthward orbit
+  // before rendering, preserving both its current zoom and any fly-in endpoint.
+  useFrame(() => {
+    if (tidesCapture || restoredSameView.current || mode !== 'orrery' || nav.level !== 'moon' || nav.moonId !== 'moon' || orreryMissionId) return;
+    const controls = controlsRef.current;
+    const earthPosition = getPlanetPosition('earth');
+    const earth = planets.find(planet => planet.id === 'earth');
+    if (!controls || !earthPosition || !earth) return;
+    const s = clearanceScratch.current;
+    controls.getPosition(s.position, false);
+    controls.getTarget(s.target, false);
+    // Include clouds and a near-plane margin, even on a wide viewport.
+    const radius = earth.visualRadius * 1.015 + 0.01;
+    if (!clearOrbitOccluder(s.position, s.target, earthPosition, radius, s.corrected)) return;
+    controls.getPosition(s.endPosition, true);
+    controls.getTarget(s.endTarget, true);
+    clearOrbitOccluder(s.endPosition, s.endTarget, earthPosition, radius, s.correctedEnd);
+    controls.setLookAt(...s.corrected.toArray(), ...s.target.toArray(), false);
+    controls.setLookAt(...s.correctedEnd.toArray(), ...s.endTarget.toArray(), true);
+    controls.update(0);
+  }, -0.5);
+
   // Reset flyInDone when orrery mission changes
   useEffect(() => {
     if (orreryMissionId) {
@@ -275,7 +299,7 @@ export function CameraRig({ nav, planets, orreryMissionId, tidesCapture = false,
   } else if (nav.level === 'moon') {
     const moon = getMoonById(nav.moonId);
     if (moon) {
-      const moonRadius = moonVisualRadius(moon.diameter);
+      const moonRadius = moonVisualRadius(moon.diameter, moon.id, mode);
       minDist = moonRadius * 2;
       maxDist = moonRadius * 25 + 3;
     }

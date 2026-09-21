@@ -3,12 +3,13 @@ import { PerspectiveCamera, Vector3 } from 'three';
 import { tidesCaptureFraming } from './captureLayout';
 import { getPlanetById } from '../data/planets';
 import { getMoonById } from '../data/moons';
+import { LUNAR_ORRERY_RADIUS } from '../astronomy/lunarOrrery';
 import { moonVisualRadius } from '../utils/moonFraming';
 
 describe('actual Earth and Moon portrait framing', () => {
-  it.each([['Explore', 2], ['compact Orrery', 0.48]] as const)('fits %s live positions without relocating either body', (_, orbitDistance) => {
+  it.each([['artistic', 2], ['orrery', LUNAR_ORRERY_RADIUS]] as const)('fits %s live positions without relocating either body', (mode, orbitDistance) => {
     const earthRadius = getPlanetById('earth')!.visualRadius;
-    const moonRadius = moonVisualRadius(getMoonById('moon')!.diameter);
+    const moonRadius = moonVisualRadius(getMoonById('moon')!.diameter, 'moon', mode);
     const earth = new Vector3(5, 1, -3), original = earth.clone();
     const direction = new Vector3(1, 1, 2).normalize();
     const right = new Vector3().crossVectors(new Vector3(0, 1, 0), direction).normalize();

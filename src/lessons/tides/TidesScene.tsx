@@ -4,6 +4,7 @@ import { Html } from '@react-three/drei';
 import { DoubleSide, Vector2, Vector3, type ShaderMaterial } from 'three';
 import { usePlanetTexture } from '../../utils/textures';
 import { shellVertex, shellFragment } from './waterShaders';
+import { DEFAULT_WATER_PROFILE } from './waterProfiles';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { bodyDirection, differentialField, gravityField, selectedBodies, SOLAR_TIDE_RATIO, type TidesState, type Vec3 } from './model';
 
@@ -56,6 +57,8 @@ export function TidesScene({ state, waterMotionPaused = false }: { state: TidesS
   const uniforms = useMemo(() => ({
     waterTime: { value: 0 },
     opacityScale: { value: 1 },
+    baseRadius: { value: DEFAULT_WATER_PROFILE.baseRadius },
+    tidalAmplitude: { value: DEFAULT_WATER_PROFILE.tidalAmplitude },
     moonDirection: { value: new Vector3(1, 0, 0) },
     sunDirection: { value: new Vector3(1, 0, 0) },
     strengths: { value: new Vector2(1, 0) },
