@@ -148,6 +148,14 @@ export function getHeliocentricPosition(bodyId: string, time: Date): HelioPositi
   return { x: ecliptic.x, y: ecliptic.y, z: ecliptic.z };
 }
 
+/** Earth's center → Moon's center, AU in the J2000 ecliptic frame (no surface observer). */
+export function getLunarEclipticPosition(time: Date): { x: number; y: number; z: number } {
+  const A = astroModule;
+  if (!A) throw new Error('Astronomy engine is not ready');
+  const ecliptic = A.RotateVector(A.Rotation_EQJ_ECL(), A.GeoMoon(time));
+  return { x: ecliptic.x, y: ecliptic.y, z: ecliptic.z };
+}
+
 /** Rotation for the entire J2000 sky; HOR includes precession and nutation, not refraction. */
 export function getCelestialRotation(frame: CelestialFrame, time: Date, observer: ObserverLocation): number[][] {
   const A = astroModule;

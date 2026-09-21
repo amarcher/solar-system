@@ -198,7 +198,7 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false 
       const moon = getMoonById(trackingMoonId.current);
       if (moonPos && moon) {
         if (!flyInDone.current) {
-          const moonRadius = moonVisualRadius(moon.diameter);
+          const moonRadius = moonVisualRadius(moon.diameter, moon.id, mode);
           const dist = moonFocusDistance(moonRadius, camera instanceof PerspectiveCamera ? camera.fov : 50, size.width, size.height);
           controls.smoothTime = flightSmoothTime;
           if (trackingPlanetId.current === 'uranus') {
@@ -266,7 +266,7 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false 
   } else if (nav.level === 'moon') {
     const moon = getMoonById(nav.moonId);
     if (moon) {
-      const moonRadius = moonVisualRadius(moon.diameter);
+      const moonRadius = moonVisualRadius(moon.diameter, moon.id, mode);
       minDist = moonRadius * 2;
       maxDist = moonRadius * 25 + 3;
     }

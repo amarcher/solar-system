@@ -3,12 +3,13 @@ import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import './SceneLabels.css';
-import { Color, Vector3, SphereGeometry, type Group, type Mesh, type MeshStandardMaterial } from 'three';
+import { Color, Vector3, SphereGeometry, type Group, type Mesh, type MeshStandardMaterial, type BufferGeometry } from 'three';
 import type { Moon } from '../../types/celestialBody';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
+import { LUNAR_ORRERY_RADIUS, LUNAR_PATH_SEGMENTS, lunarOrreryPosition, nextLunarPathSample, sampleLunarOrreryPath, type LunarPathSample } from '../../astronomy/lunarOrrery';
 
 const TWO_PI = Math.PI * 2;
 
@@ -96,10 +97,18 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
   const groupRef = useRef<Group>(null);
   const moonMeshRef = useRef<Mesh>(null);
   const worldPos = useRef(new Vector3());
-  const { timeRef, rate } = useAstronomy();
+  const { timeRef, rate, engineReady } = useAstronomy();
+  const isEarthMoon = moon.id === 'moon';
+  const lunarPathGeometry = useRef<BufferGeometry>(null);
+  const lunarPathSample = useRef<LunarPathSample | null>(null);
+  const lunarPositionTime = useRef<number | null>(null);
+  const lunarPosition = useRef<[number, number, number]>([LUNAR_ORRERY_RADIUS, 0, 0]);
+  const lunarPathPositions = useMemo(() => new Float32Array(isEarthMoon ? (LUNAR_PATH_SEGMENTS + 1) * 3 : 0), [isEarthMoon]);
 
-  const radius = moon.orbitRadius;
-  const visualRadius = moonVisualRadius(moon.diameter);
+  const radius = isEarthMoon ? LUNAR_ORRERY_RADIUS : moon.orbitRadius;
+  const visualRadius = moonVisualRadius(moon.diameter, moon.id, 'orrery');
+  // Keep the compact Moon's enlarged picking sphere clear of Earth's surface.
+  const hitRadius = isEarthMoon ? visualRadius * 1.6 : Math.max(visualRadius * 3, 0.3);
   // Positive angle = clockwise from above (+X toward +Z), so prograde moons
   // need a decreasing angle to match prograde planet spin (+rotation.y).
   const orbitDirection = moon.retrograde ? 1 : -1;
@@ -135,14 +144,30 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
 
     // Compute orbital position from simulation time
     const simTime = timeRef.current;
-    const j2000Ms = 946728000000;
-    const elapsedDays = (simTime - j2000Ms) / 86_400_000;
-    const orbitsCompleted = elapsedDays / moon.orbitalPeriod;
-    const angle = (orbitsCompleted * TWO_PI * orbitDirection) % TWO_PI;
-
-    const x = Math.cos(angle) * radius;
-    const z = Math.sin(angle) * radius;
-    groupRef.current.position.set(x, 0, z);
+    if (isEarthMoon) {
+      if (!engineReady) return;
+      if (lunarPositionTime.current === null || Math.abs(simTime - lunarPositionTime.current) >= 1000 || rate === 0 && simTime !== lunarPositionTime.current) {
+        lunarPosition.current = lunarOrreryPosition(new Date(simTime));
+        lunarPositionTime.current = simTime;
+      }
+      groupRef.current.position.set(...lunarPosition.current);
+      if (!selected && lunarPathGeometry.current) {
+        const sample = nextLunarPathSample(lunarPathSample.current, simTime, performance.now(), rate === 0);
+        if (sample) {
+          const attribute = lunarPathGeometry.current.attributes.position;
+          attribute.array.set(sampleLunarOrreryPath(sample.epochMs));
+          attribute.needsUpdate = true;
+          lunarPathGeometry.current.computeBoundingSphere();
+          lunarPathSample.current = sample;
+        }
+      }
+    } else {
+      const j2000Ms = 946728000000;
+      const elapsedDays = (simTime - j2000Ms) / 86_400_000;
+      const orbitsCompleted = elapsedDays / moon.orbitalPeriod;
+      const angle = (orbitsCompleted * TWO_PI * orbitDirection) % TWO_PI;
+      groupRef.current.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+    }
 
     groupRef.current.getWorldPosition(worldPos.current);
     setMoonPosition(moon.id, worldPos.current.x, worldPos.current.y, worldPos.current.z);
@@ -176,7 +201,12 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
   return (
     <>
       {/* Orbit ring */}
-      <mesh rotation-x={Math.PI / 2} visible={!selected}>
+      {isEarthMoon ? <lineLoop visible={!selected && engineReady}>
+        <bufferGeometry ref={lunarPathGeometry}>
+          <bufferAttribute attach="attributes-position" args={[lunarPathPositions, 3]} />
+        </bufferGeometry>
+        <lineBasicMaterial color="#ffffff" transparent opacity={0.06} depthWrite={false} />
+      </lineLoop> : <mesh rotation-x={Math.PI / 2} visible={!selected}>
         <ringGeometry args={[radius - 0.01, radius + 0.01, 64]} />
         <meshBasicMaterial
           color="#ffffff"
@@ -184,9 +214,9 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
           opacity={0.06}
           depthWrite={false}
         />
-      </mesh>
+      </mesh>}
 
-      <group ref={groupRef}>
+      <group ref={groupRef} visible={!isEarthMoon || engineReady}>
         <mesh
           ref={moonMeshRef}
           geometry={irregularGeo ?? undefined}
@@ -210,7 +240,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
           onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
           onPointerOut={() => { document.body.style.cursor = ''; }}
         >
-          <sphereGeometry args={[Math.max(visualRadius * 3, 0.3), 16, 16]} />
+          <sphereGeometry args={[hitRadius, 16, 16]} />
           <meshBasicMaterial />
         </mesh>
 
