@@ -5,7 +5,7 @@ import type { Moon, NavigationState, Planet } from '../../types/celestialBody';
 import type { Mission } from '../../types/mission';
 import { SunMesh } from './Sun';
 import { RealisticPlanet } from './RealisticPlanet';
-import { RealisticStarField } from './RealisticStarField';
+import { CelestialLayers } from './CelestialLayers';
 import { RealisticMissionTrajectory } from './RealisticMissionTrajectory';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import * as AstronomyService from '../../astronomy/AstronomyService';
@@ -22,6 +22,7 @@ interface RealisticSceneProps {
   onMoonClick: (planetId: string, moonId: string) => void;
   onSunClick: () => void;
   showLabels: boolean;
+  showConstellations: boolean;
   activeMission?: Mission;
 }
 
@@ -140,6 +141,7 @@ export function RealisticScene({
   onMoonClick,
   onSunClick,
   showLabels,
+  showConstellations,
   activeMission,
 }: RealisticSceneProps) {
   const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun';
@@ -152,7 +154,7 @@ export function RealisticScene({
 
   return (
     <>
-      <RealisticStarField />
+      <CelestialLayers frame="ecliptic" showConstellations={showConstellations} showNames={showLabels} />
       <group>
         <SunMesh
           onClick={onSunClick}

@@ -6,9 +6,8 @@ import { Html } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import * as AstronomyService from '../../astronomy/AstronomyService';
-import { RealisticStarField } from './RealisticStarField';
+import { CelestialLayers } from './CelestialLayers';
 import { HorizonPlane } from './HorizonPlane';
-import { ConstellationLines } from './ConstellationLines';
 import { setPlanetPosition } from '../../utils/planetPositions';
 
 const DEG2RAD = Math.PI / 180;
@@ -38,6 +37,7 @@ interface SkySceneProps {
   onMoonClick?: (planetId: string, moonId: string) => void;
   onSunClick?: () => void;
   showLabels: boolean;
+  showConstellations: boolean;
 }
 
 /**
@@ -89,11 +89,11 @@ const labelStyle = (color: string): React.CSSProperties => ({
   textShadow: '0 1px 6px rgba(0,0,0,0.9)',
 });
 
-export function SkyScene({ planets, onPlanetClick, onMoonClick, showLabels }: SkySceneProps) {
+export function SkyScene({ planets, onPlanetClick, onMoonClick, showLabels, showConstellations }: SkySceneProps) {
   const { timeRef, observer, engineReady } = useAstronomy();
   const { scene } = useThree();
-  const starGroupRef = useRef<Group>(null);
-  const lastComputedTime = useRef(0);
+  const lastComputedTime = useRef(NaN);
+  const lastObserver = useRef(observer);
 
   // Refs for body meshes — positions update imperatively in useFrame
   const bodyRefs = useRef<Map<string, Group>>(new Map());
@@ -115,32 +115,12 @@ export function SkyScene({ planets, onPlanetClick, onMoonClick, showLabels }: Sk
     if (!engineReady) return;
 
     const now = timeRef.current;
-    const needsRecompute = Math.abs(now - lastComputedTime.current) > RECOMPUTE_THRESHOLD_MS;
-
-    // Rotate star field by local sidereal time
-    if (starGroupRef.current && needsRecompute) {
-      try {
-        const gmst = AstronomyService.getSiderealTime(new Date(now)); // hours
-        const lst = gmst + observer.longitude / 15; // local sidereal time in hours
-        // Rotate the celestial sphere: RA increases eastward, so we rotate
-        // the star sphere by -LST around the polar axis (Y in our scene,
-        // tilted by observer latitude).
-        const lstRad = lst * (Math.PI / 12); // hours → radians
-
-        // The star field is in equatorial coords. To show the correct sky:
-        // 1. Rotate by -LST around the polar axis (hour angle)
-        // 2. Tilt the polar axis by (90° - latitude) from vertical
-        starGroupRef.current.rotation.set(0, 0, 0);
-        // First tilt: rotate around X by -(90° - lat) to align pole with horizon
-        starGroupRef.current.rotation.x = -(90 - observer.latitude) * DEG2RAD;
-        // Then rotate around the (now-tilted) Y axis by LST
-        starGroupRef.current.rotation.y = -lstRad;
-      } catch { /* engine not ready */ }
-    }
+    const needsRecompute = !Number.isFinite(lastComputedTime.current) || Math.abs(now - lastComputedTime.current) > RECOMPUTE_THRESHOLD_MS || lastObserver.current !== observer;
 
     // Update body positions in horizontal coords
     if (needsRecompute) {
       lastComputedTime.current = now;
+      lastObserver.current = observer;
       const date = new Date(now);
       const nextAbove = new Set<string>();
 
@@ -202,7 +182,7 @@ export function SkyScene({ planets, onPlanetClick, onMoonClick, showLabels }: Sk
     } else {
       skyColor.current.lerpColors(TWILIGHT_SKY, DAY_SKY, (d - 0.5) * 2);
     }
-  });
+  }, -2);
 
   const setBodyRef = (id: string) => (el: Group | null) => {
     if (el) bodyRefs.current.set(id, el);
@@ -211,12 +191,7 @@ export function SkyScene({ planets, onPlanetClick, onMoonClick, showLabels }: Sk
 
   return (
     <>
-      {/* Stars + constellation figures — rotated by sidereal time + latitude,
-          faded out by daylight */}
-      <group ref={starGroupRef}>
-        <RealisticStarField dimRef={daylightRef} />
-        <ConstellationLines showNames={showLabels} dimRef={daylightRef} />
-      </group>
+      <CelestialLayers frame="horizon" showConstellations={showConstellations} showNames={showLabels} dimRef={daylightRef} />
 
       {/* Sun */}
       <group ref={sunRef}>

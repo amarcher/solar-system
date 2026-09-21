@@ -1,15 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { AdditiveBlending, Points as ThreePoints, PointsMaterial } from 'three';
+import { AdditiveBlending, Color, ShaderMaterial } from 'three';
 import { loadStarCatalog, type StarCatalog } from '../../data/stars';
+import { equatorialToCartesian, starAppearance } from '../../astronomy/celestialCoordinates';
 
-const DEG2RAD = Math.PI / 180;
-const SPHERE_RADIUS = 200;
-
-/**
- * Convert color temperature (K) to an approximate RGB color.
- * Based on Tanner Helland's algorithm.
- */
 function colorTempToRGB(temp: number): [number, number, number] {
   const t = temp / 100;
   let r: number, g: number, b: number;
@@ -31,104 +25,90 @@ function colorTempToRGB(temp: number): [number, number, number] {
   ];
 }
 
-/**
- * Convert equatorial RA/Dec to Cartesian on a sphere.
- */
-function equatorialToCartesian(raDeg: number, decDeg: number, radius: number): [number, number, number] {
-  const ra = raDeg * DEG2RAD;
-  const dec = decDeg * DEG2RAD;
-  const cosDec = Math.cos(dec);
-  return [
-    radius * cosDec * Math.cos(ra),
-    radius * Math.sin(dec),
-    -radius * cosDec * Math.sin(ra),
-  ];
-}
-
 interface RealisticStarFieldProps {
-  /**
-   * 0 = stars at full brightness, 1 = fully washed out. Sky mode drives this
-   * with the daylight level so stars fade out when the Sun is up.
-   */
   dimRef?: React.RefObject<number>;
+  horizon?: boolean;
 }
 
-const BASE_OPACITY = 0.9;
+const vertexShader = /* glsl */ `
+  attribute float size;
+  attribute float brightness;
+  uniform float uPixelRatio;
+  varying vec3 vColor;
+  varying float vBrightness;
+  varying float vAltitude;
+  void main() {
+    vColor = color;
+    vBrightness = brightness;
+    vec3 worldDirection = mat3(modelMatrix) * position;
+    vAltitude = normalize(worldDirection).y;
+    gl_Position = projectionMatrix * vec4(mat3(viewMatrix) * worldDirection, 1.0);
+    gl_Position.z = gl_Position.w * 0.99998;
+    gl_PointSize = size * uPixelRatio;
+  }
+`;
 
-export function RealisticStarField({ dimRef }: RealisticStarFieldProps = {}) {
+const fragmentShader = /* glsl */ `
+  uniform float uOpacity;
+  uniform bool uHorizon;
+  varying vec3 vColor;
+  varying float vBrightness;
+  varying float vAltitude;
+  void main() {
+    if (uHorizon && vAltitude < 0.0) discard;
+    float radius = length(gl_PointCoord - 0.5) * 2.0;
+    if (radius >= 1.0) discard;
+    float softness = exp(-3.0 * radius * radius) * (1.0 - smoothstep(0.65, 1.0, radius));
+    gl_FragColor = vec4(vColor, softness * vBrightness * uOpacity);
+    #include <colorspace_fragment>
+  }
+`;
+
+export function RealisticStarField({ dimRef, horizon = false }: RealisticStarFieldProps = {}) {
   const [catalog, setCatalog] = useState<StarCatalog | null>(null);
-  const pointsRef = useRef<ThreePoints>(null);
+  const material = useRef<ShaderMaterial>(null);
+  const uniforms = useMemo(() => ({ uOpacity: { value: 0.9 }, uPixelRatio: { value: 1 }, uHorizon: { value: horizon } }), [horizon]);
 
   useEffect(() => {
-    loadStarCatalog().then(setCatalog);
+    let active = true;
+    loadStarCatalog().then((value) => { if (active) setCatalog(value); }).catch(() => {});
+    return () => { active = false; };
   }, []);
 
-  useFrame(() => {
-    if (!dimRef || !pointsRef.current) return;
-    const material = pointsRef.current.material as PointsMaterial;
-    material.opacity = BASE_OPACITY * (1 - dimRef.current);
+  useFrame(({ gl }) => {
+    if (!material.current) return;
+    material.current.uniforms.uOpacity.value = 0.9 * (1 - (dimRef?.current ?? 0));
+    material.current.uniforms.uPixelRatio.value = gl.getPixelRatio();
   });
 
-  const { positions, colors, sizes } = useMemo(() => {
-    if (!catalog) return { positions: null, colors: null, sizes: null };
-
-    const count = catalog.stars.length;
-    const pos = new Float32Array(count * 3);
-    const col = new Float32Array(count * 3);
-    const siz = new Float32Array(count);
-
-    for (let i = 0; i < count; i++) {
-      const [raDeg, decDeg, mag, colorTemp] = catalog.stars[i];
-
-      // Position on celestial sphere
-      const [x, y, z] = equatorialToCartesian(raDeg, decDeg, SPHERE_RADIUS);
-      pos[i * 3] = x;
-      pos[i * 3 + 1] = y;
-      pos[i * 3 + 2] = z;
-
-      // Color from temperature
-      const [r, g, b] = colorTempToRGB(colorTemp);
-      col[i * 3] = r;
-      col[i * 3 + 1] = g;
-      col[i * 3 + 2] = b;
-
-      // Size: brighter stars = larger points
-      // Magnitude scale is inverted (lower = brighter)
-      // Map mag range [-1.5, 6.5] → size range [4.0, 0.5]
-      const normalized = (mag + 1.5) / 8.0; // 0 = brightest, 1 = dimmest
-      siz[i] = 4.0 * Math.pow(1 - normalized, 2) + 0.5;
-    }
-
-    return { positions: pos, colors: col, sizes: siz };
+  const buffers = useMemo(() => {
+    if (!catalog) return null;
+    const positions = new Float32Array(catalog.stars.length * 3);
+    const colors = new Float32Array(catalog.stars.length * 3);
+    const sizes = new Float32Array(catalog.stars.length);
+    const brightness = new Float32Array(catalog.stars.length);
+    const color = new Color();
+    catalog.stars.forEach(([ra, dec, mag, temperature], index) => {
+      positions.set(equatorialToCartesian(ra, dec, 200), index * 3);
+      color.setRGB(...colorTempToRGB(temperature)).convertSRGBToLinear().toArray(colors, index * 3);
+      const appearance = starAppearance(mag);
+      sizes[index] = appearance.size;
+      brightness[index] = appearance.brightness;
+    });
+    return { positions, colors, sizes, brightness };
   }, [catalog]);
 
-  if (!positions || !colors || !sizes) return null;
-
+  if (!buffers) return null;
   return (
-    <points ref={pointsRef}>
+    <points frustumCulled={false} renderOrder={-90} raycast={() => {}}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
-        <bufferAttribute
-          attach="attributes-color"
-          args={[colors, 3]}
-        />
-        <bufferAttribute
-          attach="attributes-size"
-          args={[sizes, 1]}
-        />
+        <bufferAttribute attach="attributes-position" args={[buffers.positions, 3]} />
+        <bufferAttribute attach="attributes-color" args={[buffers.colors, 3]} />
+        <bufferAttribute attach="attributes-size" args={[buffers.sizes, 1]} />
+        <bufferAttribute attach="attributes-brightness" args={[buffers.brightness, 1]} />
       </bufferGeometry>
-      <pointsMaterial
-        vertexColors
-        size={1.5}
-        sizeAttenuation={false}
-        transparent
-        opacity={0.9}
-        depthWrite={false}
-        blending={AdditiveBlending}
-      />
+      <shaderMaterial ref={material} uniforms={uniforms} vertexShader={vertexShader} fragmentShader={fragmentShader}
+        vertexColors transparent depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
     </points>
   );
 }

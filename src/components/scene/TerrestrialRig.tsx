@@ -26,7 +26,9 @@ export function TerrestrialRig({ deviceOrientation, headingRef, pitchRef }: Terr
     if (!controls) return;
 
     // Position camera at origin, looking up initially
-    controls.setLookAt(0, 0, 0, 0, 50, 0, false);
+    // Match the constrained orbit distance so camera-controls cannot lift
+    // the observer 50 units above the ground when it clamps the distance.
+    controls.setLookAt(0, 0, 0, 0, 0.01, 0, false);
     controls.smoothTime = 0.25;
   }, []);
 

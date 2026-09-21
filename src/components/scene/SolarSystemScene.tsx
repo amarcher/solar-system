@@ -64,13 +64,14 @@ interface SolarSystemSceneProps {
   onMoonClick: (planetId: string, moonId: string) => void;
   onSunClick: () => void;
   showLabels?: boolean;
+  showConstellations?: boolean;
   deviceOrientation?: boolean;
   deviceHeadingRef?: React.RefObject<number | null>;
   devicePitchRef?: React.RefObject<number | null>;
   orreryMission?: Mission;
 }
 
-export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission }: SolarSystemSceneProps) {
+export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission }: SolarSystemSceneProps) {
   const { mode } = useAstronomy();
   const [benchmarkReport, setBenchmarkReport] = useState('Preparing benchmark…');
   const [benchmarkRun, setBenchmarkRun] = useState(0);
@@ -171,6 +172,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             onMoonClick={onMoonClick}
             onSunClick={onSunClick}
             showLabels={showLabels}
+            showConstellations={showConstellations}
             activeMission={orreryMission}
           />
         ) : (
@@ -181,6 +183,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             onMoonClick={onMoonClick}
             onSunClick={onSunClick}
             showLabels={showLabels}
+            showConstellations={showConstellations}
           />
         )}
 

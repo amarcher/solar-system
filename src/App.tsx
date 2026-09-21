@@ -44,6 +44,7 @@ function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
   const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady } = useAstronomy();
   const [showLabels, setShowLabels] = useState(true);
+  const [showConstellations, setShowConstellations] = useState(false);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
   const [missionHudDismissed, setMissionHudDismissed] = useState(false);
@@ -262,6 +263,7 @@ function App() {
         onMoonClick={handleSceneMoonClick}
         onSunClick={handleSunClick}
         showLabels={showLabels}
+        showConstellations={showConstellations}
         deviceOrientation={deviceOrientation.active}
         deviceHeadingRef={deviceOrientation.headingRef}
         devicePitchRef={deviceOrientation.pitchRef}
@@ -293,6 +295,27 @@ function App() {
         </button>
         <div className="app__toolbar-items">
           <GraphicsSettings />
+          {mode !== 'artistic' && (
+            <button
+              className="app__toolbar-btn"
+              type="button"
+              aria-label="Constellation lines"
+              aria-pressed={showConstellations}
+              title="Toggle Western constellation figures — imagined patterns connecting stars"
+              onClick={() => { setShowConstellations(value => !value); setToolbarOpen(false); }}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <path d="m5 5 6 5 8-6-3 15-5-9-6 8" opacity={showConstellations ? 1 : 0.4} />
+                <g fill="currentColor" stroke="none">
+                  <circle cx="5" cy="5" r="1.7" />
+                  <circle cx="11" cy="10" r="1.7" />
+                  <circle cx="19" cy="4" r="1.7" />
+                  <circle cx="16" cy="19" r="1.7" />
+                  <circle cx="5" cy="18" r="1.7" />
+                </g>
+              </svg>
+            </button>
+          )}
           {voice.agentId && (
             <button
               className={`app__toolbar-btn${voice.status !== 'off' ? ' app__toolbar-btn--voice-on' : ''}`}

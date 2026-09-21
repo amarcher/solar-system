@@ -1,4 +1,4 @@
 .graphics-settings { display: flex; align-items: center; gap: 6px; color: #d4dbe9; font: 11px 'Space Grotesk', sans-serif; }
 .graphics-settings select { max-width: 108px; border: 1px solid #ffffff35; border-radius: 7px; background: #111522; color: #f1f4fb; padding: 7px 5px; font: inherit; }
 .graphics-settings select:focus-visible { outline: 2px solid #a8caff; outline-offset: 3px; }
-@media (max-width: 899px) { .graphics-settings { flex-direction: column; align-items: flex-start; padding: 6px; } }
+@media (max-width: 1023px) { .graphics-settings { flex-direction: column; align-items: flex-start; padding: 6px; } }

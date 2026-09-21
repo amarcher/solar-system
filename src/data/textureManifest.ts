@@ -116,6 +116,21 @@ export const textureManifest: readonly TextureAsset[] = [
       notes: '8K source verified byte-for-byte against publisher on 2026-09-21. 4K derived with sips; see docs/assets/sky-quality.md. Star-rich artistic panorama.',
     },
   },
+  {
+    id: 'nasa-celestial-milky-way', kind: 'sky',
+    variants: [
+      { path: '/textures/skybox/galaxy_milky_way_2k.jpg', width: 2048, height: 1024 },
+      { path: '/textures/skybox/galaxy_milky_way_4k.jpg', width: 4096, height: 2048, detailOnly: true },
+    ],
+    provenance: {
+      status: 'verified',
+      credit: 'NASA/Goddard Space Flight Center Scientific Visualization Studio. Gaia DR2: ESA/Gaia/DPAC.',
+      sourceUrl: 'https://svs.gsfc.nasa.gov/4851/',
+      licenseUrl: 'https://svs.gsfc.nasa.gov/help/',
+      notes: 'NASA SVS public-domain reuse policy; source hash and exact display enhancement recipe in docs/assets/nasa-celestial-sky.md. J2000 celestial frame; Hipparcos/Tycho bright foreground omitted.',
+    },
+    coverage: 'Full celestial sphere in ICRF/J2000 RA/Dec. Display-enhanced faint-star catalogue background, not a naked-eye brightness simulation.',
+  },
   ...['01', '02', '03'].map((number): TextureAsset => ({
     id: `asteroid-rock-${number}`, kind: 'rock',
     variants: [{ path: `/textures/asteroids/rock_${number}.jpg`, width: 1024, height: 1024 }],

@@ -2,53 +2,45 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { Vector3 } from 'three';
-import type { Group, LineBasicMaterial } from 'three';
+import type { Group, ShaderMaterial } from 'three';
+import { equatorialToCartesian } from '../../astronomy/celestialCoordinates';
+import { celestialVertex, constellationFragment } from './celestialShaders';
 import { loadConstellations, type Constellation } from '../../data/constellations';
 
-const DEG2RAD = Math.PI / 180;
-// Slightly inside the star sphere (200) so lines never z-fight with stars.
+// This radius also anchors the optional HTML labels; shaders project at infinity.
 const SPHERE_RADIUS = 196;
 /** Show name labels only for the most prominent constellations. */
 const LABEL_RANK = 1;
 /** How often label horizon visibility recomputes, in ms. */
 const LABEL_INTERVAL_MS = 1000;
 
-function equatorialToCartesian(raDeg: number, decDeg: number, radius: number): [number, number, number] {
-  const ra = raDeg * DEG2RAD;
-  const dec = decDeg * DEG2RAD;
-  const cosDec = Math.cos(dec);
-  return [
-    radius * cosDec * Math.cos(ra),
-    radius * Math.sin(dec),
-    -radius * cosDec * Math.sin(ra),
-  ];
-}
-
 /**
  * Constellation stick figures on the celestial sphere. Rendered inside the
- * sky scene's sidereal-rotated star group, so figures stay glued to the stars.
+ * shared J2000 group, so figures stay glued to the stars in both realistic modes.
  * Name labels appear for the most prominent constellations and hide while a
  * figure's center is below the horizon.
  */
 interface ConstellationLinesProps {
   showNames: boolean;
+  horizon?: boolean;
   /** 0 = night (full visibility), 1 = day (figures fade out with the stars). */
   dimRef?: React.RefObject<number>;
 }
 
 const BASE_LINE_OPACITY = 0.28;
 
-export function ConstellationLines({ showNames, dimRef }: ConstellationLinesProps) {
+export function ConstellationLines({ showNames, dimRef, horizon = false }: ConstellationLinesProps) {
   const [constellations, setConstellations] = useState<Constellation[] | null>(null);
   const groupRef = useRef<Group>(null);
-  const lineMaterialRef = useRef<LineBasicMaterial>(null);
+  const lineMaterialRef = useRef<ShaderMaterial>(null);
   const [labelsAboveHorizon, setLabelsAboveHorizon] = useState<Set<string>>(() => new Set());
-  const lastLabelPass = useRef(0);
+  const lastLabelPass = useRef(-Infinity);
+  const uniforms = useMemo(() => ({ uOpacity: { value: BASE_LINE_OPACITY }, uHorizon: { value: horizon } }), [horizon]);
   const scratch = useRef(new Vector3());
 
   useEffect(() => {
     let cancelled = false;
-    loadConstellations().then((data) => { if (!cancelled) setConstellations(data); });
+    loadConstellations().then((data) => { if (!cancelled) setConstellations(data); }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
@@ -73,12 +65,10 @@ export function ConstellationLines({ showNames, dimRef }: ConstellationLinesProp
     [constellations],
   );
 
-  // The parent star group rotates with sidereal time, so each label's world
-  // height changes over time — hide names whose constellation is below the
-  // horizon (world y < 0).
-  useFrame(({ clock }) => {
+  // In Sky, hide names below the observer's horizon or during daylight.
+  useFrame(({ clock, camera }) => {
     if (dimRef && lineMaterialRef.current) {
-      lineMaterialRef.current.opacity = BASE_LINE_OPACITY * (1 - dimRef.current);
+      lineMaterialRef.current.uniforms.uOpacity.value = BASE_LINE_OPACITY * (1 - dimRef.current);
     }
     if (!groupRef.current || labeled.length === 0) return;
     const nowMs = clock.elapsedTime * 1000;
@@ -90,7 +80,7 @@ export function ConstellationLines({ showNames, dimRef }: ConstellationLinesProp
       const [x, y, z] = equatorialToCartesian(con.center[0], con.center[1], SPHERE_RADIUS);
       scratch.current.set(x, y, z).applyMatrix4(groupRef.current.matrixWorld);
       const daytime = (dimRef?.current ?? 0) > 0.6;
-      if (scratch.current.y > 8 && !daytime) next.add(con.id); // comfortably above horizon, not daytime
+      if ((!horizon || scratch.current.y - camera.position.y > 8) && !daytime) next.add(con.id); // comfortably above horizon, not daytime
     }
     setLabelsAboveHorizon((prev) => {
       if (prev.size === next.size && [...next].every((id) => prev.has(id))) return prev;
@@ -102,11 +92,11 @@ export function ConstellationLines({ showNames, dimRef }: ConstellationLinesProp
 
   return (
     <group ref={groupRef}>
-      <lineSegments renderOrder={1}>
+      <lineSegments frustumCulled={false} renderOrder={-80} raycast={() => {}}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[positions, 3]} />
         </bufferGeometry>
-        <lineBasicMaterial ref={lineMaterialRef} color="#7fa8ff" transparent opacity={BASE_LINE_OPACITY} depthWrite={false} />
+        <shaderMaterial ref={lineMaterialRef} uniforms={uniforms} vertexShader={celestialVertex} fragmentShader={constellationFragment} transparent depthWrite={false} toneMapped={false} />
       </lineSegments>
 
       {showNames && labeled.map((con) => {
