@@ -12,6 +12,7 @@ import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { benchmarkMode } from '../../performance/benchmark';
 import type CameraControlsImpl from 'camera-controls';
 import { tidesCaptureFraming } from '../../recording/captureLayout';
+import { cameraRestorationStep, type CameraDestination } from '../../recording/cameraRestoration';
 
 interface CameraRigProps {
   nav: NavigationState;
@@ -31,9 +32,9 @@ const SYSTEM_TARGET = { x: 0, y: 0, z: 0 };
 export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false, lessonCapture = false }: CameraRigProps) {
   const controlsRef = useRef<CameraControlsImpl>(null);
   const { mode } = useAstronomy();
-  const { size, camera } = useThree();
+  const { size, camera, gl } = useThree();
   const lessonSnapshot = useRef<{ json: string; navKey: string; mode: string } | null>(null);
-  const restoredSameView = useRef(false);
+  const restoredSameView = useRef<CameraDestination | null>(null);
   const framedView = useRef<{ navKey: string; mode: string } | null>(null);
   const reducedMotion = useReducedMotion();
   // With reduced motion, camera transitions snap instead of flying.
@@ -88,7 +89,13 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false,
       lessonSnapshot.current = null;
       controls.fromJSON(saved.json, false);
       controls.update(0);
-      restoredSameView.current = saved.navKey === navKey && saved.mode === mode;
+      const sameDestination = saved.navKey === navKey && saved.mode === mode;
+      restoredSameView.current = sameDestination ? { navKey, mode } : null;
+      if (sameDestination) {
+        // Restore the displayed pose, including when entry interrupted a fly-in.
+        flyInDone.current = true;
+        settled.current = true;
+      }
     }
   }, [lessonActive, lessonCapture, navKey, mode, size.width, size.height, camera]);
 
@@ -96,9 +103,14 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false,
     const controls = controlsRef.current;
     if (!controls || lessonActive) return;
     if (restoredSameView.current) {
-      restoredSameView.current = false;
-      framedView.current = { navKey, mode };
-      return;
+      const step = cameraRestorationStep(restoredSameView.current, { navKey, mode }, size,
+        gl.domElement.parentElement?.getBoundingClientRect() ?? null);
+      if (step === 'wait-for-layout') return;
+      restoredSameView.current = null;
+      if (step === 'restored') {
+        framedView.current = { navKey, mode };
+        return;
+      }
     }
     const viewChanged = framedView.current?.navKey !== navKey || framedView.current.mode !== mode;
     framedView.current = { navKey, mode };
@@ -155,7 +167,7 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false,
 
   useFrame((_, delta) => {
     const controls = controlsRef.current;
-    if (!controls || lessonActive) return;
+    if (!controls || lessonActive || restoredSameView.current) return;
     if (benchmarkMode === 'orbit') void controls.rotate(delta * 0.15, 0, false);
 
     // After fly-in animation settles, reduce smooth time for responsive tracking
