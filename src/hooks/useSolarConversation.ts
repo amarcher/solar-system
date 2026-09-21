@@ -16,10 +16,12 @@ import { getMoonsByPlanet, getMoonById } from '../data/moons';
 import { missions, getMissionById } from '../data/missions';
 import { trackVoiceAgentActivated } from '../utils/analytics';
 import { categoryLabels } from '../utils/colors';
+import { tidesVoiceContext, type TidesState } from '../lessons/tides/model';
 import { sun } from '../data/sun';
 
 interface ConversationCallbacks {
   currentNav: NavigationState;
+  currentTides?: TidesState | null;
   currentMode: ViewMode;
   currentObserver: ObserverLocation;
   displayTime: Date;
@@ -255,7 +257,7 @@ function buildContextForNav(nav: NavigationState): string | null {
   }
 }
 
-export function useSolarConversation({ currentNav, currentMode, currentObserver, displayTime, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate }: ConversationCallbacks) {
+export function useSolarConversation({ currentNav, currentTides = null, currentMode, currentObserver, displayTime, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate }: ConversationCallbacks) {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
 
   // Live Conversation instance from @elevenlabs/client. We hold this in
@@ -275,6 +277,8 @@ export function useSolarConversation({ currentNav, currentMode, currentObserver,
   const pendingNavRef = useRef<NavigationState | null>(null);
   const currentNavRef = useRef<string | null>(null);
   const latestNavRef = useRef<NavigationState>(currentNav);
+  const tidesRef = useRef(currentTides);
+  const hadTidesContext = useRef(false);
 
   // Refs to navigation handlers so client tools always invoke the LATEST
   // closure even though clientTools are passed once at session start.
@@ -289,6 +293,7 @@ export function useSolarConversation({ currentNav, currentMode, currentObserver,
 
   useEffect(() => {
     latestNavRef.current = currentNav;
+    tidesRef.current = currentTides;
     handlersRef.current = {
       onNavigatePlanet,
       onNavigateMoon,
@@ -305,6 +310,7 @@ export function useSolarConversation({ currentNav, currentMode, currentObserver,
     displayTimeRef.current = displayTime;
   }, [
     currentNav,
+    currentTides,
     currentMode,
     currentObserver,
     displayTime,
@@ -521,7 +527,7 @@ export function useSolarConversation({ currentNav, currentMode, currentObserver,
     }
 
     const navAtStart = latestNavRef.current;
-    const firstMessage = buildFirstMessage(navAtStart);
+    const firstMessage = tidesRef.current ? 'Hi! We’re exploring why Earth has tides. Let’s look at how gravity pulls differently across our planet.' : buildFirstMessage(navAtStart);
     if (navAtStart.level !== 'system') {
       pendingNavRef.current = navAtStart;
     }
@@ -585,7 +591,10 @@ export function useSolarConversation({ currentNav, currentMode, currentObserver,
       // Now that convRef is populated, flush any queued nav context.
       // This is necessary because onConnect fires INSIDE the await
       // above, before convRef.current = conv runs.
-      if (pendingNavRef.current) {
+      if (tidesRef.current) {
+        pendingNavRef.current = null;
+        conv.sendContextualUpdate(tidesVoiceContext(tidesRef.current));
+      } else if (pendingNavRef.current) {
         const queuedNav = pendingNavRef.current;
         pendingNavRef.current = null;
         const ctx = buildContextForNav(queuedNav);
@@ -604,6 +613,20 @@ export function useSolarConversation({ currentNav, currentMode, currentObserver,
       setMicError('device');
     }
   }, [agentId, sessionStarted, buildClientTools]);
+
+  useEffect(() => {
+    if (!convRef.current || rawStatus !== 'connected') return;
+    if (!currentTides && !hadTidesContext.current) return;
+    hadTidesContext.current = !!currentTides;
+    const context = currentTides ? tidesVoiceContext(currentTides) : buildContextForNav(currentNav);
+    // A dragged phase slider should not stream dozens of voice updates a second.
+    const timer = window.setTimeout(() => {
+      if (!context || !convRef.current) return;
+      try { convRef.current.sendContextualUpdate(context); }
+      catch (error) { console.error('[voice] lesson context update failed:', error); }
+    }, currentTides ? 200 : 0);
+    return () => window.clearTimeout(timer);
+  }, [currentTides, currentNav, rawStatus]);
 
   const clearMicError = useCallback(() => setMicError(null), []);
 

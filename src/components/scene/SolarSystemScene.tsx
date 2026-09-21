@@ -17,6 +17,8 @@ import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { benchmarkEnabled } from '../../performance/benchmark';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 import { QualityMonitor } from '../../performance/QualityMonitor';
+import { TidesScene } from '../../lessons/tides/TidesScene';
+import type { TidesState } from '../../lessons/tides/model';
 import { SceneBenchmark } from '../../performance/SceneBenchmark';
 import { getMoonPosition } from '../../utils/planetPositions';
 
@@ -69,9 +71,10 @@ interface SolarSystemSceneProps {
   deviceHeadingRef?: React.RefObject<number | null>;
   devicePitchRef?: React.RefObject<number | null>;
   orreryMission?: Mission;
+  tides?: TidesState | null;
 }
 
-export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission }: SolarSystemSceneProps) {
+export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, tides = null }: SolarSystemSceneProps) {
   const { mode } = useAstronomy();
   const [benchmarkReport, setBenchmarkReport] = useState('Preparing benchmark…');
   const [benchmarkRun, setBenchmarkRun] = useState(0);
@@ -83,7 +86,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
   // Sun and mission views retain their purpose-built isolated framing.
   const hidesSystemContext = nav.level === 'sun' || nav.level === 'mission';
   const focusedPlanetId = (nav.level === 'planet' || nav.level === 'moon') ? nav.planetId : null;
-  const paused = nav.level === 'mission' || reducedMotion;
+  const paused = nav.level === 'mission' || reducedMotion || !!tides;
 
   // Group missions by their frame planet so each PlanetOrbit gets only its own.
   const missionsByPlanet = useMemo(() => {
@@ -97,7 +100,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
   }, [missions]);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: tides ? 'none' : undefined }}>
       <Canvas
         dpr={[1, settings.dpr]}
         camera={{ position: [0, 35, 50], fov: 50, near: 0.001, far: 600 }}
@@ -110,6 +113,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         {benchmarkEnabled && <SceneBenchmark key={`${mode}:${JSON.stringify(nav)}:${benchmarkRun}`} scenario={`${mode}:${JSON.stringify(nav)}`} onReport={setBenchmarkReport} />}
         {/* No shadow maps: the only shadow in the scene (planet → rings) is
             computed analytically in the ring shader. See PlanetMesh.tsx. */}
+        <group visible={!tides}>
         {mode !== 'sky' && (
           <>
             <ambientLight intensity={isZoomedIn ? 0.2 : 0.1} />
@@ -129,7 +133,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             <group visible={!hidesSystemContext || nav.level === 'sun'}>
               <SunMesh
                 onClick={hidesSystemContext && nav.level !== 'sun' ? undefined : onSunClick}
-                showLabel={showLabels && !isZoomedIn}
+                showLabel={!tides && showLabels && !isZoomedIn}
                 paused={paused}
               />
             </group>
@@ -154,8 +158,8 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
                   onClick={isVisible ? () => onPlanetClick(planet.id) : undefined}
                   onMoonClick={(moonId) => onMoonClick(planet.id, moonId)}
                   paused={paused}
-                  showLabel={showLabels && (!isZoomedIn || isFocused)}
-                  showMoonLabels={showLabels && isFocused}
+                  showLabel={!tides && showLabels && (!isZoomedIn || isFocused)}
+                  showMoonLabels={!tides && showLabels && isFocused}
                   showMoons={showThisPlanetMoons}
                   selectedMoonId={nav.level === 'moon' && isFocused ? nav.moonId : undefined}
                   visible={isVisible}
@@ -171,8 +175,8 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             onPlanetClick={onPlanetClick}
             onMoonClick={onMoonClick}
             onSunClick={onSunClick}
-            showLabels={showLabels}
-            showConstellations={showConstellations}
+            showLabels={!tides && showLabels}
+            showConstellations={!tides && showConstellations}
             activeMission={orreryMission}
           />
         ) : (
@@ -182,10 +186,13 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             onPlanetClick={onPlanetClick}
             onMoonClick={onMoonClick}
             onSunClick={onSunClick}
-            showLabels={showLabels}
-            showConstellations={showConstellations}
+            showLabels={!tides && showLabels}
+            showConstellations={!tides && showConstellations}
           />
         )}
+
+        </group>
+        {tides && <TidesScene state={tides} />}
 
         {mode === 'sky' ? (
           <TerrestrialRig
@@ -194,10 +201,10 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             pitchRef={devicePitchRef}
           />
         ) : (
-          <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} />
+          <CameraRig lessonActive={!!tides} nav={nav} planets={planets} orreryMissionId={orreryMission?.id} />
         )}
 
-        {!reducedMotion && settings.bloom && (
+        {!tides && !reducedMotion && settings.bloom && (
           <EffectComposer>
             <Bloom
               intensity={1.2}
