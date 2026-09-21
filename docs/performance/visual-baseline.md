@@ -40,3 +40,7 @@ The default sky's estimated RGBA+mipmap payload falls from about 171 MiB at 8192
 Independent review checked store deduplication, ownership, retries, eviction, and manifest dimensions. It also identified and verified fixes for non-repeatable Sky settings, ignored visible slow frames, visibility-invalid benchmark runs, and toolbar breakpoint consistency. Dynamic material maps explicitly clear with null, and detail loading retains the overview reference.
 
 The previous eager 8K planet-CDN behavior is intentionally retired and documentation updated. Every planet no longer automatically upgrades merely because a deployment enables that old flag. New higher-resolution variants must be registered and explicitly selected.
+
+## Celestial integration pan sample
+
+Build 87f4e08, production build served locally, 1280×720, DPR1.5, automatic/standard, fixed benchmark date, camera pan0.15rad/s. After5s startup, 20s warm sample:2400frames, median8.3ms, p959.2ms, maximum9.4ms, zero frames over33ms. Peak43drawcalls,44273triangles,32textures,27geometries; page transfer8,728,827bytes. Startup maximum204.5ms and2long tasks total371ms. This is one desktop sample on the same M5Max host; not physical iPhone evidence or a controlled startup comparison.

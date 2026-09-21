@@ -413,9 +413,9 @@ body {
   color: #fff;
 }
 
-/* (voice agent moved to toolbar) */
+/* Collapse before the full toolbar can overlap the centered mode selector. */
 
-@media (max-width: 899px) {
+@media (max-width: 1023px) {
   .app-header {
     padding: 8px 12px 2px;
   }

@@ -24,9 +24,9 @@ function MilkyWay({ dimRef, horizon }: { dimRef?: React.RefObject<number>; horiz
     ? '/textures/skybox/galaxy_milky_way_4k.jpg' : '');
   const texture = detail ?? overview;
   const material = useRef<ShaderMaterial>(null);
-  const uniforms = useMemo(() => ({ uMap: { value: texture }, uOpacity: { value: 0.68 }, uHorizon: { value: horizon } }), [texture, horizon]);
+  const uniforms = useMemo(() => ({ uMap: { value: texture }, uOpacity: { value: 0.3 }, uHorizon: { value: horizon } }), [texture, horizon]);
   useFrame(() => {
-    if (material.current) material.current.uniforms.uOpacity.value = 0.68 * (1 - (dimRef?.current ?? 0));
+    if (material.current) material.current.uniforms.uOpacity.value = 0.3 * (1 - (dimRef?.current ?? 0));
   });
   if (!texture) return null;
   return (
