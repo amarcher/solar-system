@@ -188,7 +188,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false, sel
         moonMeshRef.current.rotation.y += delta * speed * direction;
       }
     }
-  });
+  }, -2);
 
   return (
     <>

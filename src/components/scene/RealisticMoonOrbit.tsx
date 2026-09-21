@@ -171,7 +171,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
         moonMeshRef.current.rotation.y += simDelta * angularVel * direction;
       }
     }
-  });
+  }, -2);
 
   return (
     <>

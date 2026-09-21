@@ -49,7 +49,7 @@ export function PlanetOrbit({ planet, moons = [], missions = [], onClick, onMoon
       groupRef.current.position.z = z;
       setPlanetPosition(planet.id, x, 0, z);
     }
-  });
+  }, -3);
 
   return (
     <group visible={visible}>

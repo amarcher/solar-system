@@ -57,7 +57,7 @@ export function RealisticPlanet({ planet, moons = [], onClick, onMoonClick, show
       cachedPos.current.z,
     );
     setPlanetPosition(planet.id, cachedPos.current.x, cachedPos.current.y, cachedPos.current.z);
-  });
+  }, -3);
 
   return (
     <group ref={groupRef}>
