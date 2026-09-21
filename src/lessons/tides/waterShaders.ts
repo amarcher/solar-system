@@ -1,3 +1,5 @@
+import { WATER_RIPPLE_AMPLITUDE } from './waterProfiles';
+
 // Decorative capillary-like ripples sit on top of the unchanged equilibrium tide.
 // They do not rotate its bulges or model ocean currents or tidal friction.
 const rippleFunctions = `
@@ -14,6 +16,8 @@ export const shellVertex = `
   uniform vec3 moonDirection;
   uniform vec3 sunDirection;
   uniform vec2 strengths;
+  uniform float baseRadius;
+  uniform float tidalAmplitude;
   varying vec3 surfaceNormal;
   varying vec3 surfaceDirection;
   varying vec3 eyeDirection;
@@ -24,9 +28,9 @@ export const shellVertex = `
     float s = dot(n, sunDirection);
     float potential = strengths.x * (3.0*m*m-1.0)/2.0 + strengths.y * (3.0*s*s-1.0)/2.0;
     // P2 still owns the large bulges. Wave displacement is at most 0.004 Earth radii.
-    float radius = max(1.01, 1.18 + 0.22 * potential + 0.004 * ripple(n));
-    vec3 gradient = 0.22 * 3.0 * (strengths.x * m * moonDirection + strengths.y * s * sunDirection)
-                  + 0.004 * rippleGradient(n);
+    float radius = max(1.01, baseRadius + tidalAmplitude * potential + ${WATER_RIPPLE_AMPLITUDE} * ripple(n));
+    vec3 gradient = tidalAmplitude * 3.0 * (strengths.x * m * moonDirection + strengths.y * s * sunDirection)
+                  + ${WATER_RIPPLE_AMPLITUDE} * rippleGradient(n);
     vec3 tangentGradient = gradient - n * dot(n, gradient);
     vec3 displaced = n * radius;
     surfaceNormal = normalize(normalMatrix * normalize(n - tangentGradient / radius));
