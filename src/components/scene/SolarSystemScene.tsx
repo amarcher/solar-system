@@ -18,7 +18,6 @@ import { benchmarkEnabled } from '../../performance/benchmark';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 import { QualityMonitor } from '../../performance/QualityMonitor';
 import { InlineTidesOverlay } from '../../lessons/tides/InlineTidesOverlay';
-import type { TidesCaptureFrame } from '../../recording/useTidesRecording';
 import type { TidesState } from '../../lessons/tides/model';
 import { SceneBenchmark } from '../../performance/SceneBenchmark';
 import { getMoonPosition } from '../../utils/planetPositions';
@@ -73,14 +72,10 @@ interface SolarSystemSceneProps {
   devicePitchRef?: React.RefObject<number | null>;
   orreryMission?: Mission;
   tides?: TidesState | null;
-  waterMotionPaused?: boolean;
-  tidesCapture?: boolean;
-  onTidesFrame?: (frame: TidesCaptureFrame) => void;
 }
 
-export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, tides = null, waterMotionPaused = false, tidesCapture = false, onTidesFrame }: SolarSystemSceneProps) {
+export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, tides = null }: SolarSystemSceneProps) {
   const { mode } = useAstronomy();
-  const captureReadyRef = useRef(false);
   const [benchmarkReport, setBenchmarkReport] = useState('Preparing benchmark…');
   const [benchmarkRun, setBenchmarkRun] = useState(0);
   const reducedMotion = useReducedMotion();
@@ -91,7 +86,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
   // Sun and mission views retain their purpose-built isolated framing.
   const hidesSystemContext = nav.level === 'sun' || nav.level === 'mission';
   const focusedPlanetId = (nav.level === 'planet' || nav.level === 'moon') ? nav.planetId : null;
-  const paused = nav.level === 'mission' || reducedMotion || tidesCapture;
+  const paused = nav.level === 'mission' || reducedMotion;
 
   // Group missions by their frame planet so each PlanetOrbit gets only its own.
   const missionsByPlanet = useMemo(() => {
@@ -105,16 +100,16 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
   }, [missions]);
 
   return (
-    <div inert={tidesCapture} style={tidesCapture ? { position: 'fixed', width: 360, height: 640, left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' } : { position: 'fixed', inset: 0, zIndex: 0 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
       <Canvas
-        dpr={tidesCapture ? 2 : [1, settings.dpr]}
+        dpr={[1, settings.dpr]}
         camera={{ position: [0, 35, 50], fov: 50, near: 0.001, far: 600 }}
         gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.75 }}
         // Hide only the canvas itself from assistive tech — NOT the container,
         // which also hosts the <Html> label buttons that must stay reachable.
         onCreated={({ gl }) => gl.domElement.setAttribute('aria-hidden', 'true')}
       >
-        {!tidesCapture && <QualityMonitor />}
+        <QualityMonitor />
         {benchmarkEnabled && <SceneBenchmark key={`${mode}:${JSON.stringify(nav)}:${benchmarkRun}`} scenario={`${mode}:${JSON.stringify(nav)}`} onReport={setBenchmarkReport} />}
         {/* No shadow maps: the only shadow in the scene (planet → rings) is
             computed analytically in the ring shader. See PlanetMesh.tsx. */}
@@ -183,7 +178,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             showLabels={showLabels}
             showConstellations={showConstellations}
             activeMission={orreryMission}
-            paused={reducedMotion || tidesCapture}
+            paused={reducedMotion}
           />
         ) : (
           <SkyScene
@@ -198,7 +193,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         )}
 
         </group>
-        {tides && <InlineTidesOverlay state={tides} waterMotionPaused={waterMotionPaused} capture={tidesCapture} captureReadyRef={captureReadyRef} onFrame={onTidesFrame} />}
+        {tides && <InlineTidesOverlay />}
 
         {mode === 'sky' ? (
           <TerrestrialRig
@@ -207,7 +202,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             pitchRef={devicePitchRef}
           />
         ) : (
-          <CameraRig captureReadyRef={captureReadyRef} tidesCapture={tidesCapture} nav={nav} planets={planets} orreryMissionId={orreryMission?.id} />
+          <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} />
         )}
 
         {!reducedMotion && settings.bloom && (
