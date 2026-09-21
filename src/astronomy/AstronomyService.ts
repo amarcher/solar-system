@@ -201,9 +201,14 @@ export function getMoonPhase(time: Date): number {
 }
 
 /**
- * Greenwich Mean Sidereal Time in hours (0–24).
+ * Greenwich Apparent Sidereal Time in hours (0–24).
  */
 export function getSiderealTime(time: Date): number {
   const A = astroModule!;
   return A.SiderealTime(time);
+}
+
+/** Apparent equator of date to the J2000 ecliptic used by Orrery positions. */
+export function getEarthEquatorialRotation(time: Date): number[][] {
+  return astroModule!.Rotation_EQD_ECL(time).rot;
 }
