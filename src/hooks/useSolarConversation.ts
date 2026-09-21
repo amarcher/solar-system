@@ -18,13 +18,16 @@ import { trackVoiceAgentActivated } from '../utils/analytics';
 import { categoryLabels } from '../utils/colors';
 import { tidesVoiceContext, type TidesState } from '../lessons/tides/model';
 import { sun } from '../data/sun';
+import { buildSceneContext, createSceneTools, parseTimeRate, type SceneToolHandlers, type SceneVoiceState } from '../voice/sceneTools';
 
-interface ConversationCallbacks {
+interface ConversationCallbacks extends SceneToolHandlers {
+  scene: Omit<SceneVoiceState, 'nav' | 'mode' | 'tides'>;
   currentNav: NavigationState;
   currentTides?: TidesState | null;
   currentMode: ViewMode;
   currentObserver: ObserverLocation;
   displayTime: Date;
+  currentRate: number;
   onNavigatePlanet: (planetId: string) => void;
   onNavigateMoon: (planetId: string, moonId: string) => void;
   onNavigateSun: () => void;
@@ -39,7 +42,7 @@ interface ConversationCallbacks {
 export type VoiceStatus = 'off' | 'connecting' | 'connected' | 'error';
 export type MicError = 'timeout' | 'not-allowed' | 'device' | 'no-input' | null;
 
-function buildPlanetContext(planet: Planet): string {
+function buildPlanetContext(planet: Planet, detailsVisible: boolean): string {
   const moons = getMoonsByPlanet(planet.id);
   const parts = [
     `[PLANET CLICK] The child just clicked on ${planet.name}.`,
@@ -51,17 +54,17 @@ function buildPlanetContext(planet: Planet): string {
     '',
     `[WHAT THE CHILD SEES]`,
     `- The 3D solar system scene in the background with the camera focused on ${planet.name}`,
-    `- Planet name, category, and key properties displayed`,
+    detailsVisible ? `- Planet name, category, and key properties displayed` : '- Compact/cinema view hides property cards and moon lists; use these facts as reference, not visible text',
     `- ${planet.atmosphereComposition ? `Atmosphere: ${planet.atmosphereComposition}` : 'No significant atmosphere'}`,
   ];
 
-  if (moons.length > 0) {
+  if (detailsVisible && moons.length > 0) {
     parts.push(`- A list of ${moons.length} notable moons they can click on:`);
     moons.forEach(m => parts.push(`  • ${m.name}: ${m.notableFeature}`));
   }
 
   parts.push('', `[ABOUT]`, planet.summary);
-  parts.push('', `[FUN FACTS on screen]`);
+  parts.push('', detailsVisible ? `[FUN FACTS on screen]` : '[REFERENCE FACTS — not displayed]');
   planet.funFacts.forEach((fact, i) => parts.push(`${i + 1}. ${fact}`));
 
   if (planet.discoveredBy) {
@@ -72,7 +75,7 @@ function buildPlanetContext(planet: Planet): string {
   return parts.join('\n');
 }
 
-function buildMoonContext(moon: Moon, planet: Planet): string {
+function buildMoonContext(moon: Moon, planet: Planet, detailsVisible: boolean): string {
   return [
     `[MOON CLICK] The child is now looking at ${moon.name}, a moon of ${planet.name}.`,
     `Notable feature: ${moon.notableFeature}`,
@@ -81,7 +84,7 @@ function buildMoonContext(moon: Moon, planet: Planet): string {
     '',
     moon.summary,
     '',
-    `[FUN FACTS on screen]`,
+    detailsVisible ? `[FUN FACTS on screen]` : '[REFERENCE FACTS — compact/cinema hides the detail panel]',
     ...moon.funFacts.map((f, i) => `${i + 1}. ${f}`),
     '',
     moon.discoveredBy ? `Discovered by ${moon.discoveredBy} (${moon.yearDiscovered}).` : '',
@@ -91,59 +94,14 @@ function buildMoonContext(moon: Moon, planet: Planet): string {
 }
 
 function buildMissionContext(mission: Mission): string {
-  const launch = Date.parse(mission.launchDate);
-  const end = Date.parse(mission.endDate);
-  const now = Date.now();
-  const totalDays = Math.max(1, Math.round((end - launch) / 86_400_000));
-  const elapsedMs = Math.max(0, now - launch);
-  const elapsedDays = Math.min(totalDays, Math.floor(elapsedMs / 86_400_000) + 1);
-  const progress = Math.max(0, Math.min(1, (now - launch) / (end - launch)));
-  const isComplete = now > end;
-
-  // Phase boundaries match src/data/missions/artemis2.ts
-  let phase: string;
-  if (isComplete) phase = 'mission complete (trajectory replaying)';
-  else if (progress < 0.10) phase = 'parking orbit around Earth (pre-TLI burn)';
-  else if (progress < 0.45) phase = 'outbound coast toward the Moon';
-  else if (progress < 0.55) phase = 'lunar flyby (closest approach to the Moon)';
-  else if (progress < 0.97) phase = 'return coast back to Earth';
-  else phase = 'reentry — coming home!';
-
   return [
-    `[MISSION TRACKER OPENED] The child just opened the live ${mission.name} tracker.`,
-    '',
-    `[WHAT THEY SEE]`,
-    `- The whole solar system is FROZEN in place`,
-    `- The camera has flown out from the solar system to the spacecraft itself`,
-    `- A glowing orange line shows the spacecraft's planned trajectory through space`,
-    `- They can see Earth, the Moon, and the spacecraft along its path`,
-    `- The trajectory shows: a small parking orbit around Earth, then a long curving arc out past the Moon and back`,
-    `- They can drag to pan around the spacecraft and zoom in/out`,
-    '',
-    `[MISSION DETAILS]`,
-    `- Name: ${mission.name} (${mission.agency})`,
-    `- Launched: April 1, 2026 at 6:35 PM Eastern Time from Kennedy Space Center, Florida`,
-    `- Mission length: ${totalDays} days`,
-    `- Current status: ${isComplete ? 'COMPLETE' : `Day ${elapsedDays} of ${totalDays}`}`,
-    `- Current phase: ${phase}`,
-    '',
-    `[ABOUT THE MISSION]`,
-    mission.summary,
-    '',
-    `[FUN FACTS]`,
-    ...mission.funFacts.map((f, i) => `${i + 1}. ${f}`),
-    '',
-    `[REAL PHYSICS DETAILS — for older kids or parents who ask]`,
-    `- Artemis II uses a "free-return" trajectory: the spacecraft launches into a highly elliptical Earth orbit (perigee 563 km, apogee 70,000 km), completes nearly one full revolution, then fires a single Trans-Lunar Injection burn at perigee that adds just 380 m/s but stretches the orbit out to lunar distance.`,
-    `- The Moon's gravity then deflects the path back toward Earth — no second burn needed. Perilune (closest approach to the Moon) is about 6,500 km from the lunar surface.`,
-    `- The spacecraft slows to almost a standstill at the apex of the arc (about 0.2 km/s at 393,000 km from Earth), then Earth's gravity pulls it back home. Real free-returns are "lazy U-turns," not Hollywood slingshots.`,
-    `- Crew: four astronauts including the first woman and first person of color to journey beyond low Earth orbit.`,
-    '',
-    `Get excited! This is the first time humans have flown to the Moon since 1972 — over 50 years! Encourage the child to explore the trajectory, and answer their questions about where the rocket is right now.`,
+    `[MISSION REPLAY] The app is showing ${mission.name} (${mission.agency}).`,
+    'A procedural trajectory illustration shows Earth, the Moon, and a spacecraft path. The user can pan and zoom. This is not live spacecraft telemetry or a verified current mission status.',
+    'Do not claim the spacecraft is flying right now, give a current flight phase from the wall clock, or describe this illustrative curve as the exact flown path.',
   ].join('\n');
 }
 
-function buildSunContext(): string {
+function buildSunContext(detailsVisible: boolean): string {
   return [
     `[SUN CLICK] The child just clicked on the Sun!`,
     `The Sun is a ${sun.spectralType} main-sequence star.`,
@@ -151,31 +109,31 @@ function buildSunContext(): string {
     `Age: ${sun.age}. Luminosity: ${sun.luminosity}.`,
     '',
     `[WHAT THE CHILD SEES]`,
-    `- An interactive visualization where they can peel back the Sun's layers`,
+    `- ${detailsVisible ? "An interactive visualization where they can peel back the Sun’s layers" : "The Sun in the scene; compact/cinema view hides layer controls"}`,
     `- Layers from outside in: ${sun.layers.map(l => l.name).join(' → ')}`,
-    `- Each layer shows its temperature and description when clicked`,
+    detailsVisible ? `- Each layer shows its temperature and description when clicked` : `- Explain layers verbally; no peeling control is visible`,
     '',
     sun.summary,
     '',
     `[FUN FACTS on screen]`,
     ...sun.funFacts.map((f, i) => `${i + 1}. ${f}`),
     '',
-    `Get excited about the Sun! Encourage the child to click through the layers.`,
+    detailsVisible ? `Encourage the child to explore the layers.` : `Explain the Sun without claiming any layer was peeled.`,
   ].join('\n');
 }
 
 function buildOrreryContext(displayTime: Date, nav: NavigationState): string {
   const dateStr = displayTime.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const parts = [
-    `[MODE: ORRERY] The user is viewing the real-time orrery — planets are positioned at their true locations for ${dateStr}.`,
-    `This is a scientifically accurate view powered by the VSOP87 ephemeris (astronomy-engine).`,
+    `[MODE: ORRERY] The user is viewing the real-time orrery — planet directions come from ephemerides for ${dateStr}, with compressed display distances.`,
+    `Orbital data comes from astronomy-engine; body sizes, moon spacing, and focused-system spacing are illustrative, not one physical scale.`,
     `The user can scrub time forward/backward and change playback speed.`,
   ];
   if (nav.level === 'planet') {
     const planet = planets.find(p => p.id === nav.planetId);
     if (planet) {
       const moons = getMoonsByPlanet(planet.id);
-      parts.push(``, `They're focused on ${planet.name} and can see its ${moons.length} moons orbiting at their real orbital periods.`);
+      parts.push(``, `They're focused on ${planet.name} and can see its ${moons.length} curated moons; the app uses a mix of ephemerides and illustrative moon orbits.`);
     }
   }
   parts.push(``, `You can navigate to any planet, moon, or the Sun — the navigation tools work in orrery mode too.`);
@@ -196,7 +154,7 @@ function buildSkyContext(displayTime: Date, observer: ObserverLocation): string 
     `Planets and the Sun are shown at their true altitude/azimuth positions. Objects below the horizon are hidden.`,
     `There's a compass on the ground showing N/E/S/W directions.`,
     ``,
-    `In this mode, do NOT navigate or change the view. Instead:`,
+    `Sky shows sky markers, not 3D body close-ups. User-requested time, speed, constellation, quality, and mode changes are supported; use their tools and honor the returned limitations.`,
     `- Answer questions about what they can see in the sky`,
     `- Point out bright stars, planets, or constellations that should be visible`,
     `- Explain what they're looking at if they ask`,
@@ -228,25 +186,25 @@ function buildFirstMessage(nav: NavigationState): string | undefined {
     case 'mission': {
       const mission = getMissionById(nav.missionId);
       if (!mission) return undefined;
-      return `Hi there! I'm Stella, your space guide! Whoa — you found the secret mission tracker! That's ${mission.name}, a real NASA mission flying to the Moon RIGHT NOW with four astronauts on board! Want me to tell you where the rocket is?`;
+      return `Hi there! I'm Stella, your space guide! Whoa — you found the secret mission tracker! That's the ${mission.name} trajectory illustration. Want to explore the path around Earth and the Moon?`;
     }
     default:
       return undefined;
   }
 }
 
-function buildContextForNav(nav: NavigationState): string | null {
+function buildContextForNav(nav: NavigationState, detailsVisible: boolean): string | null {
   switch (nav.level) {
     case 'sun':
-      return buildSunContext();
+      return buildSunContext(detailsVisible);
     case 'planet': {
       const planet = planets.find(p => p.id === nav.planetId);
-      return planet ? buildPlanetContext(planet) : null;
+      return planet ? buildPlanetContext(planet, detailsVisible) : null;
     }
     case 'moon': {
       const planet = planets.find(p => p.id === nav.planetId);
       const moon = getMoonById(nav.moonId);
-      return planet && moon ? buildMoonContext(moon, planet) : null;
+      return planet && moon ? buildMoonContext(moon, planet, detailsVisible) : null;
     }
     case 'mission': {
       const mission = getMissionById(nav.missionId);
@@ -257,7 +215,7 @@ function buildContextForNav(nav: NavigationState): string | null {
   }
 }
 
-export function useSolarConversation({ currentNav, currentTides = null, currentMode, currentObserver, displayTime, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate }: ConversationCallbacks) {
+export function useSolarConversation({ scene, onSetTides, onSetConstellations, onSetQuality, currentNav, currentTides = null, currentMode, currentObserver, displayTime, currentRate, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate }: ConversationCallbacks) {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
 
   // Live Conversation instance from @elevenlabs/client. We hold this in
@@ -278,6 +236,12 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
   const currentNavRef = useRef<string | null>(null);
   const latestNavRef = useRef<NavigationState>(currentNav);
   const tidesRef = useRef(currentTides);
+  const sceneRef = useRef<SceneVoiceState>({ ...scene, nav: currentNav, mode: currentMode, tides: !!currentTides });
+  const sceneHandlersRef = useRef({ onSetTides, onSetConstellations, onSetQuality });
+  useEffect(() => {
+    sceneRef.current = { ...scene, nav: currentNav, mode: currentMode, tides: !!currentTides };
+    sceneHandlersRef.current = { onSetTides, onSetConstellations, onSetQuality };
+  }, [scene, currentNav, currentMode, currentTides, onSetTides, onSetConstellations, onSetQuality]);
   const hadTidesContext = useRef(false);
 
   // Refs to navigation handlers so client tools always invoke the LATEST
@@ -290,6 +254,14 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
   const modeRef = useRef(currentMode);
   const observerRef = useRef(currentObserver);
   const displayTimeRef = useRef(displayTime);
+  const rateRef = useRef(currentRate);
+  useEffect(() => { rateRef.current = currentRate; }, [currentRate]);
+  const sceneContext = useCallback(() => [
+    buildSceneContext(sceneRef.current),
+    modeRef.current === 'sky' ? buildSkyContext(displayTimeRef.current, observerRef.current)
+      : modeRef.current === 'orrery' ? buildOrreryContext(displayTimeRef.current, latestNavRef.current) : '',
+    modeRef.current !== 'artistic' ? `Simulation snapshot: ${displayTimeRef.current.toISOString()}; rate ${rateRef.current} simulated seconds per real second. This snapshot advances while the rate is nonzero.` : '',
+  ].filter(Boolean).join('\n'), []);
 
   useEffect(() => {
     latestNavRef.current = currentNav;
@@ -336,9 +308,11 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
   // Tools dispatch through handlersRef so they always hit the current
   // React closures, not whatever was captured at session-start time.
   const buildClientTools = useCallback(() => ({
+    ...createSceneTools(() => sceneRef.current, () => sceneHandlersRef.current),
     navigate_to_planet: (params: { name?: unknown }) => {
       console.log('[voice] navigate_to_planet called:', params);
       try {
+        if (modeRef.current === 'sky') return 'Close-up navigation is unavailable in Sky. Switch to Explore or Orrery first.';
         const name = String(params.name ?? '');
         const match = planets.find(p =>
           p.name.toLowerCase() === name.toLowerCase() || p.id === name.toLowerCase()
@@ -354,6 +328,7 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
     navigate_to_moon: (params: { name?: unknown }) => {
       console.log('[voice] navigate_to_moon called:', params);
       try {
+        if (modeRef.current === 'sky') return 'Close-up navigation is unavailable in Sky. Switch to Explore or Orrery first.';
         const name = String(params.name ?? '');
         for (const planet of planets) {
           const moons = getMoonsByPlanet(planet.id);
@@ -374,6 +349,7 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
     navigate_to_sun: () => {
       console.log('[voice] navigate_to_sun called');
       try {
+        if (modeRef.current === 'sky') return 'Sun close-up navigation is unavailable in Sky. Switch to Explore or Orrery first.';
         handlersRef.current.onNavigateSun();
         return 'Navigated to the Sun';
       } catch (err) {
@@ -391,10 +367,11 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
           m.id.toLowerCase().includes(query) ||
           query.includes(m.name.toLowerCase()) ||
           query.includes(m.id.toLowerCase())
-        ) ?? missions[0];
-        if (!match) return 'No active missions to track right now.';
+        );
+        if (!match) return 'That mission is not available. The app supports the Artemis II trajectory replay.';
+        if (modeRef.current === 'sky') return 'Mission replay is unavailable in Sky. Switch to Explore or Orrery first.';
         handlersRef.current.onTrackMission(match.id);
-        return `Opened the live ${match.name} mission tracker. The solar system is paused and the camera is flying out to the spacecraft.`;
+        return `Opened the ${match.name} trajectory illustration. It is a replay, not live spacecraft telemetry.`;
       } catch (err) {
         console.error('[voice] track_mission failed:', err);
         return `Mission tracker failed: ${(err as Error)?.message ?? 'unknown error'}`;
@@ -413,6 +390,7 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
     set_time: (params: { date?: unknown }) => {
       console.log('[voice] set_time called:', params);
       try {
+        if (modeRef.current === 'artistic') return 'Explore uses illustrative motion. Switch to Orrery or Sky before setting simulation time.';
         const dateStr = String(params.date ?? '');
         const d = new Date(dateStr);
         if (isNaN(d.getTime())) return `Could not parse date "${dateStr}"`;
@@ -425,17 +403,9 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
     set_time_speed: (params: { speed?: unknown }) => {
       console.log('[voice] set_time_speed called:', params);
       try {
-        const speedStr = String(params.speed ?? '').toLowerCase();
-        const speedMap: Record<string, number> = {
-          paused: 0, pause: 0, stop: 0,
-          'real-time': 1, '1x': 1, normal: 1, realtime: 1,
-          '10 minutes': 600, '10 min': 600,
-          '1 hour': 3600, '1 hr': 3600,
-          '1 day': 86400,
-          '1 month': 86400 * 30,
-        };
-        const rate = speedMap[speedStr] ?? parseFloat(speedStr);
-        if (isNaN(rate)) return `Unknown speed "${speedStr}". Try: paused, real-time, 10 min, 1 hour, 1 day, 1 month`;
+        if (modeRef.current === 'artistic') return 'Explore uses illustrative motion. Switch to Orrery or Sky before changing simulation speed.';
+        const rate = parseTimeRate(params.speed);
+        if (rate === null) return 'Choose a finite time speed up to one month per second, such as paused, real-time, 1 hour, or 1 day.';
         handlersRef.current.onSetRate(rate);
         const labels: Record<number, string> = { 0: 'Paused', 1: '1x (real-time)', 600: '10 min/sec', 3600: '1 hr/sec', 86400: '1 day/sec' };
         return `Time speed set to ${labels[rate] ?? `${rate}x`}`;
@@ -465,6 +435,8 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
     peel_sun_layer: (params: { layer?: unknown }) => {
       console.log('[voice] peel_sun_layer called:', params);
       try {
+        if (!sceneRef.current.detailsVisible) return 'Sun layer controls are hidden in compact or cinema view. I can explain the layers, but cannot show peeling here.';
+        if (modeRef.current === 'sky') return 'Sun layers are unavailable in Sky. Switch to Explore or Orrery first.';
         const layerName = String(params.layer ?? '');
         const idx = sun.layers.findIndex(l => l.name.toLowerCase() === layerName.toLowerCase());
         if (idx === -1) {
@@ -527,7 +499,7 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
     }
 
     const navAtStart = latestNavRef.current;
-    const firstMessage = tidesRef.current ? 'Hi! We’re exploring why Earth has tides. Let’s look at how gravity pulls differently across our planet.' : buildFirstMessage(navAtStart);
+    const firstMessage = tidesRef.current ? 'Hi! We’re exploring why Earth has tides. Let’s look at how gravity pulls differently across our planet.' : navAtStart.level === 'sun' && !sceneRef.current.detailsVisible ? 'Hi! I’m Stella. You’re exploring the Sun. What would you like to know about our star?' : buildFirstMessage(navAtStart);
     if (navAtStart.level !== 'system') {
       pendingNavRef.current = navAtStart;
     }
@@ -587,6 +559,8 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
         return;
       }
       convRef.current = conv;
+      try { conv.sendContextualUpdate(sceneContext()); }
+      catch (error) { console.error('[voice] scene context failed:', error); }
 
       // Now that convRef is populated, flush any queued nav context.
       // This is necessary because onConnect fires INSIDE the await
@@ -602,7 +576,7 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
       } else if (pendingNavRef.current) {
         const queuedNav = pendingNavRef.current;
         pendingNavRef.current = null;
-        const ctx = buildContextForNav(queuedNav);
+        const ctx = buildContextForNav(queuedNav, sceneRef.current.detailsVisible);
         if (ctx) {
           try {
             conv.sendContextualUpdate(ctx);
@@ -617,14 +591,14 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
       setRawStatus('disconnected');
       setMicError('device');
     }
-  }, [agentId, sessionStarted, buildClientTools]);
+  }, [agentId, sessionStarted, buildClientTools, sceneContext]);
 
   useEffect(() => {
     if (!convRef.current || rawStatus !== 'connected') return;
     if (!currentTides && !hadTidesContext.current) return;
     hadTidesContext.current = !!currentTides;
-    const context = currentTides ? tidesVoiceContext(currentTides) : buildContextForNav(currentNav);
-    // A dragged phase slider should not stream dozens of voice updates a second.
+    const context = currentTides ? tidesVoiceContext(currentTides) : buildContextForNav(currentNav, sceneRef.current.detailsVisible);
+    // Allow the Earth layer and navigation to settle before describing them.
     const timer = window.setTimeout(() => {
       if (!context || !convRef.current) return;
       try { convRef.current.sendContextualUpdate(context); }
@@ -633,6 +607,21 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
     return () => window.clearTimeout(timer);
   }, [currentTides, currentNav, rawStatus]);
 
+  useEffect(() => {
+    if (!convRef.current || rawStatus !== 'connected') return;
+    try { convRef.current.sendContextualUpdate(sceneContext()); }
+    catch (error) { console.error('[voice] scene context failed:', error); }
+  }, [currentNav, currentMode, currentTides, scene.constellations, scene.quality, scene.missionActive, scene.detailsVisible, currentRate, currentObserver, rawStatus, sceneContext]);
+
+  useEffect(() => {
+    if (rawStatus !== 'connected' || currentMode === 'artistic') return;
+    const timer = window.setInterval(() => {
+      try { convRef.current?.sendContextualUpdate(sceneContext()); }
+      catch (error) { console.error('[voice] time context failed:', error); }
+    }, 10000);
+    return () => window.clearInterval(timer);
+  }, [rawStatus, currentMode, sceneContext]);
+
   const clearMicError = useCallback(() => setMicError(null), []);
 
   const notifyNavChange = useCallback((nav: NavigationState) => {
@@ -640,7 +629,7 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
     const key = JSON.stringify(nav);
     if (currentNavRef.current === key) return;
     currentNavRef.current = key;
-    const ctx = buildContextForNav(nav);
+    const ctx = buildContextForNav(nav, sceneRef.current.detailsVisible);
     if (!ctx) return;
     if (convRef.current && rawStatus === 'connected') {
       try {

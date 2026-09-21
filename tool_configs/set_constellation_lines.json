@@ -1,0 +1,19 @@
+{
+    "name": "set_constellation_lines",
+    "description": "Show or hide Western constellation guide lines in Orrery or Sky. These are imagined star patterns. Unavailable in Explore; do not silently switch mode.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "enabled": {
+                "type": "boolean",
+                "description": "True to show guide lines; false to hide them."
+            }
+        },
+        "required": [
+            "enabled"
+        ]
+    }
+}

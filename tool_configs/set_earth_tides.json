@@ -1,0 +1,19 @@
+{
+    "name": "set_earth_tides",
+    "description": "Turn the combined Sun-and-Moon water illustration on or off. Enabling focuses Earth in the current Explore or Orrery view. Unavailable in Sky or during mission replay; request a supported view first. No source, phase, pause, arrows, or recording controls. Water shape is exaggerated, not a coastal forecast.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "enabled": {
+                "type": "boolean",
+                "description": "True to show the water envelope around Earth; false to hide it."
+            }
+        },
+        "required": [
+            "enabled"
+        ]
+    }
+}
