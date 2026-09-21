@@ -1,6 +1,6 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useLayoutEffect, type RefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { PerspectiveCamera } from 'three';
+import { PerspectiveCamera, Vector3 } from 'three';
 import { moonVisualRadius, moonFocusDistance } from '../../utils/moonFraming';
 import { CameraControls } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
@@ -10,6 +10,8 @@ import { getMoonById } from '../../data/moons';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { benchmarkMode } from '../../performance/benchmark';
+import { tidesCaptureFraming } from '../../recording/captureLayout';
+import { cameraRestorationStep, type CameraDestination } from '../../recording/cameraRestoration';
 import type CameraControlsImpl from 'camera-controls';
 
 interface CameraRigProps {
@@ -17,6 +19,8 @@ interface CameraRigProps {
   planets: Planet[];
   /** When set, camera continuously tracks this mission in orrery mode */
   orreryMissionId?: string;
+  tidesCapture?: boolean;
+  captureReadyRef?: RefObject<boolean>;
 }
 
 // Artistic orbits span ~40 units; the log-compressed orrery only ~13.
@@ -25,10 +29,12 @@ const SYSTEM_POSITION_ARTISTIC = { x: 0, y: 35, z: 50 };
 const SYSTEM_POSITION_ORRERY = { x: 0, y: 15, z: 21 };
 const SYSTEM_TARGET = { x: 0, y: 0, z: 0 };
 
-export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
+export function CameraRig({ nav, planets, orreryMissionId, tidesCapture = false, captureReadyRef }: CameraRigProps) {
   const controlsRef = useRef<CameraControlsImpl>(null);
   const { mode } = useAstronomy();
-  const { size, camera } = useThree();
+  const { size, camera, gl } = useThree();
+  const captureSnapshot = useRef<{ json: string; navKey: string; mode: string; position: Vector3; target: Vector3 } | null>(null);
+  const restoredSameView = useRef<CameraDestination | null>(null);
   const framedView = useRef<{ navKey: string; mode: string } | null>(null);
   const reducedMotion = useReducedMotion();
   // With reduced motion, camera transitions snap instead of flying.
@@ -50,9 +56,55 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
     ? `mission:${nav.missionId}`
     : nav.level;
 
+  useLayoutEffect(() => {
+    const controls = controlsRef.current;
+    if (captureReadyRef) captureReadyRef.current = false;
+    if (!controls) return;
+    if (tidesCapture) {
+      if (!captureSnapshot.current) {
+        const earth = getPlanetPosition('earth');
+        const moon = getMoonPosition('moon');
+        if (!earth || !moon) return;
+        const data = JSON.parse(controls.toJSON());
+        data.position = controls.getPosition(new Vector3(), false).toArray();
+        data.target = controls.getTarget(new Vector3(), false).toArray();
+        data.zoom = camera.zoom;
+        data.focalOffset = controls.getFocalOffset(new Vector3(), false).toArray();
+        const direction = new Vector3().fromArray(data.position).sub(new Vector3().fromArray(data.target)).normalize();
+        const up = new Vector3(0, 1, 0).applyQuaternion(camera.quaternion).normalize();
+        const framing = tidesCaptureFraming(earth, moon, direction, up, planets.find(p => p.id === 'earth')!.visualRadius,
+          moonVisualRadius(getMoonById('moon')!.diameter),
+          camera instanceof PerspectiveCamera ? camera.fov : 50);
+        captureSnapshot.current = { json: JSON.stringify(data), navKey, mode, ...framing };
+      }
+      const { position, target } = captureSnapshot.current;
+      controls.enabled = false;
+      controls.setFocalOffset(0, 0, 0, false);
+      controls.zoomTo(1, false);
+      controls.setLookAt(position.x, position.y, position.z, target.x, target.y, target.z, false);
+      controls.update(0);
+      if (captureReadyRef) captureReadyRef.current = true;
+    } else if (captureSnapshot.current) {
+      const saved = captureSnapshot.current;
+      captureSnapshot.current = null;
+      controls.fromJSON(saved.json, false);
+      controls.update(0);
+      const sameDestination = saved.navKey === navKey && saved.mode === mode;
+      restoredSameView.current = sameDestination ? { navKey, mode } : null;
+      if (sameDestination) { flyInDone.current = true; settled.current = true; }
+    }
+  }, [tidesCapture, navKey, mode, size.width, size.height, camera, planets, captureReadyRef]);
+
   useEffect(() => {
     const controls = controlsRef.current;
-    if (!controls) return;
+    if (!controls || tidesCapture) return;
+    if (restoredSameView.current) {
+      const step = cameraRestorationStep(restoredSameView.current, { navKey, mode }, size,
+        gl.domElement.parentElement?.getBoundingClientRect() ?? null);
+      if (step === 'wait-for-layout') return;
+      restoredSameView.current = null;
+      if (step === 'restored') { framedView.current = { navKey, mode }; return; }
+    }
     const viewChanged = framedView.current?.navKey !== navKey || framedView.current.mode !== mode;
     framedView.current = { navKey, mode };
     // A viewport change should reframe tracked bodies, not discard a free
@@ -104,11 +156,11 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
       // Fly-in triggered once mission position is registered
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navKey, mode, size.width, size.height]);
+  }, [navKey, mode, tidesCapture, size.width, size.height]);
 
   useFrame((_, delta) => {
     const controls = controlsRef.current;
-    if (!controls) return;
+    if (!controls || tidesCapture || restoredSameView.current) return;
     if (benchmarkMode === 'orbit') void controls.rotate(delta * 0.15, 0, false);
 
     // After fly-in animation settles, reduce smooth time for responsive tracking

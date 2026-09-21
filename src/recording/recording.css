@@ -1,0 +1,10 @@
+.tides-recording { grid-column: 1 / -1; pointer-events: auto; border-top: 1px solid #91c2ea36; padding-top: 12px; }
+.tides-recording p { font-size: .8rem; color: #c9def1; margin: 8px 0 0; }
+.tides-recording button:disabled { opacity: .6; cursor: default; }
+.tides-recording--active { background: #071526f5; padding: 12px; border: 1px solid #91c2ea60; border-radius: 12px; text-align: center; }
+.tides-recording__result { display: grid; justify-items: start; gap: 10px; margin-top: 12px; }
+.tides-recording__result video { display: block; width: min(100%, 250px); max-height: 380px; background: #000; pointer-events: auto; }
+.tides-recording__result > div { display: flex; align-items: center; gap: 16px; }
+.tides-recording__result a { color: #b1dcff; padding: 12px 0; }
+
+.inline-tides--recording { left: 50%; right: auto; transform: translateX(-50%); width: min(90vw, 440px); border: 0; background: transparent; box-shadow: none; }
