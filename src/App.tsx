@@ -21,7 +21,7 @@ import { useDeviceOrientation } from './astronomy/useDeviceOrientation';
 import { trackModeSwitch } from './utils/analytics';
 import './App.css';
 import { useTidesLesson } from './lessons/tides/useTidesLesson';
-import { TidesControls } from './lessons/tides/TidesControls';
+import { InlineTidesControls } from './lessons/tides/InlineTidesControls';
 import { GraphicsQualityProvider } from './performance/GraphicsQualityProvider';
 import { GraphicsSettings } from './components/ui/GraphicsSettings';
 import { benchmarkEnabled, BENCHMARK_DATE } from './performance/benchmark';
@@ -191,9 +191,9 @@ function App() {
       }
       setSunLayerOverride(layerIndex);
     },
-    onSwitchMode: (nextMode) => { closeTides(false); setMode(nextMode); },
-    onSetDate: (date) => { closeTides(); setDate(date); },
-    onSetRate: (rate) => { closeTides(); setRate(rate); },
+    onSwitchMode: (nextMode) => { if (nextMode === 'sky') closeTides(false); setMode(nextMode); },
+    onSetDate: setDate,
+    onSetRate: setRate,
   });
 
   useEffect(() => {
@@ -245,7 +245,7 @@ function App() {
 
   return (
     <div className={`app${cinemaMode ? ' app--cinema' : ''}`} data-nav-level={nav.level}>
-      {!tides.state && !cinemaMode && mode === 'artistic' && (
+      {!cinemaMode && mode === 'artistic' && (
         <header className="app-header">
           <p className="app-subtitle">
             {nav.level === 'planet' ? 'Click any moon to explore' :
@@ -258,7 +258,7 @@ function App() {
 
       {/* Orrery/Sky positions come from the lazy-loaded astronomy engine —
           without this the first paint is a black void with no explanation. */}
-      {!tides.state && mode !== 'artistic' && !engineReady && (
+      {mode !== 'artistic' && !engineReady && (
         <div className="app__scene-loading" role="status">
           <span className="app__scene-loading-spinner" aria-hidden="true" />
           Calculating planet positions…
@@ -283,7 +283,7 @@ function App() {
         orreryMission={orreryMissionActive ? getMissionById('artemis-2') : undefined}
       />
 
-      <div inert={!!tides.state} style={tides.state ? { visibility: 'hidden' } : undefined}>
+      <div>
       <div className={`app__toolbar${toolbarOpen ? ' app__toolbar--open' : ''}`}>
         {/* Hamburger toggle — visible only on compact screens via CSS */}
         <button
@@ -354,10 +354,25 @@ function App() {
               <path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z" />
             </svg>
           </button>
+          {(mode === 'artistic' || mode === 'orrery') && !orreryMissionActive && nav.level !== 'mission' && (
+            <button className={`app__toolbar-btn${tides.state ? ' app__toolbar-btn--active' : ''}`} type="button"
+              data-tides-entry aria-label="Earth tides" title="Earth tides" aria-pressed={!!tides.state}
+              onClick={() => {
+                if (tides.state) closeTides();
+                else { goToPlanet('earth'); tides.open(); }
+                setToolbarOpen(false);
+              }}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+                <path d="M3 14c3-4 5 4 9 0s6 4 9 0M3 19c3-4 5 4 9 0s6 4 9 0" />
+                <path d="M15 3a4 4 0 1 0 5 5 4 4 0 0 1-5-5Z" />
+              </svg>
+            </button>
+          )}
           {(mode === 'artistic' || mode === 'orrery') && (
             <button
               className={`app__toolbar-btn${(nav.level === 'mission' || orreryMissionActive) ? ' app__toolbar-btn--mission-on' : ''}`}
               onClick={() => {
+                closeTides(false);
                 if (mode === 'orrery') {
                   handleOrreryMissionToggle();
                 } else {
@@ -442,7 +457,7 @@ function App() {
         </a>
       )}
 
-      {nav.level !== 'system' && (hideDetails || nav.level === 'mission') && (
+      {nav.level !== 'system' && (hideDetails || nav.level === 'mission' || !!tides.state) && (
         <div className="app__cinema-nav">
           <button
             className="app__cinema-nav-btn"
@@ -511,7 +526,6 @@ function App() {
       {!tides.state && !hideDetails && nav.level === 'planet' && currentPlanet && (
         <PlanetDetail
           planet={currentPlanet}
-          onTides={mode !== 'sky' && !orreryMissionActive ? tides.open : undefined}
           onClose={handleClose}
           onMoonClick={handleMoonClick}
         />
@@ -557,12 +571,9 @@ function App() {
         </>
       )}
       <ModeToggle />
-      {hideDetails && nav.level === 'planet' && nav.planetId === 'earth' && mode !== 'sky' && !orreryMissionActive && (
-        <button type="button" data-tides-entry className="tides-entry tides-entry--compact" onClick={tides.open}>Why tides?</button>
-      )}
       </div>
-      {tides.state && <TidesControls waterMotionPaused={tides.waterMotionPaused} onToggleWaterMotion={() => tides.setWaterMotionPaused(!tides.waterMotionPaused)} state={tides.state} onChange={tides.update} onClose={() => closeTides()}
-        voice={voice.agentId ? { label: voice.status === 'off' ? 'Talk to Stella' : 'Stop Stella', onClick: () => { void voice.toggle(); } } : undefined} />}
+      {tides.state && <InlineTidesControls state={tides.state} onChange={tides.update} onClose={() => closeTides()}
+        waterMotionPaused={tides.waterMotionPaused} onToggleWaterMotion={() => tides.setWaterMotionPaused(!tides.waterMotionPaused)} />}
 
       <Analytics />
       <SpeedInsights />

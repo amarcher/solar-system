@@ -1,42 +1,37 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NavigationState } from '../../types/celestialBody';
 import { useAstronomy } from '../../astronomy/useAstronomy';
-import { INITIAL_TIDES, type TidesState } from './model';
-import { isSameDestination, restoreExploration, snapshotExploration, type ExplorationSnapshot } from './session';
+import type { TidesState } from './model';
 
+/** A scene layer; it never borrows the exploration camera or clock. */
 export function useTidesLesson(nav: NavigationState) {
-  const { mode, timeRef, rate, setDate, setRate } = useAstronomy();
+  const { mode } = useAstronomy();
   const [state, setState] = useState<TidesState | null>(null);
   const [waterMotionPaused, setWaterMotionPaused] = useState(false);
-  const snapshot = useRef<ExplorationSnapshot | null>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
-  const navKey = JSON.stringify(nav);
   const close = useCallback((restoreFocus = true) => {
-    const saved = snapshot.current;
-    if (!saved) return;
-    snapshot.current = null;
-    restoreExploration(saved, setDate, setRate);
     setState(null);
     if (restoreFocus) requestAnimationFrame(() => {
-      const target = returnFocus.current;
-      if (target?.isConnected) target.focus();
-      else document.querySelector<HTMLElement>('[data-tides-entry]')?.focus();
+      const original = returnFocus.current;
+      const detailClose = document.querySelector<HTMLElement>('[role="dialog"][aria-label="Details for Earth"] .detail__close');
+      const target = detailClose ?? (original?.isConnected && original.getClientRects().length ? original
+        : document.querySelector<HTMLElement>('.app__toolbar-toggle'));
+      target?.focus();
     });
-  }, [setDate, setRate]);
+  }, []);
   const open = useCallback(() => {
-    if (snapshot.current || nav.level !== 'planet' || nav.planetId !== 'earth' || mode === 'sky') return;
-    snapshot.current = snapshotExploration(timeRef.current, rate, navKey, mode);
+    if (mode === 'sky') return;
     returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setRate(0);
     setWaterMotionPaused(false);
-    setState({ ...INITIAL_TIDES });
-  }, [nav, mode, timeRef, rate, navKey, setRate]);
+    setState({ step: 'water', source: 'both', phase: 0, live: true });
+  }, [mode]);
   useEffect(() => {
-    // External navigation owns the new destination; releasing the lesson must
-    // synchronously restore its borrowed clock before another frame is drawn.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (snapshot.current && !isSameDestination(snapshot.current, navKey, mode)) close(false);
-  }, [navKey, mode, close]);
-  const update = useCallback((patch: Partial<TidesState>) => setState((previous) => previous ? { ...previous, ...patch } : null), []);
+    // Navigation owns the destination. An Earth layer cannot remain on another body.
+    if (mode === 'sky' || nav.level !== 'planet' || nav.planetId !== 'earth') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setState(null);
+    }
+  }, [nav, mode]);
+  const update = useCallback((patch: Partial<TidesState>) => setState(previous => previous ? { ...previous, ...patch, live: true } : null), []);
   return { state, open, close, update, waterMotionPaused, setWaterMotionPaused };
 }
