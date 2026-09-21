@@ -4,8 +4,9 @@ import type { ViewMode, ObserverLocation } from './types';
 import { DEFAULT_OBSERVER } from './types';
 import * as AstronomyService from './AstronomyService';
 import { AstronomyCtx } from './useAstronomy';
+import { benchmarkEnabled, BENCHMARK_DATE } from '../performance/benchmark';
 
-const INITIAL_SIM_TIME_MS = Date.now();
+const INITIAL_SIM_TIME_MS = benchmarkEnabled ? Date.parse(BENCHMARK_DATE) : Date.now();
 
 export function AstronomyProvider({ children }: { children: ReactNode }) {
   const [mode, setModeRaw] = useState<ViewMode>('orrery');
@@ -14,9 +15,9 @@ export function AstronomyProvider({ children }: { children: ReactNode }) {
 
   // Time state: ref for per-frame reads, useState for 1Hz UI updates.
   const timeRef = useRef<number>(INITIAL_SIM_TIME_MS);
-  const rateRef = useRef<number>(1);
-  const [displayTime, setDisplayTime] = useState(() => new Date());
-  const [rate, setRateState] = useState(1);
+  const rateRef = useRef<number>(benchmarkEnabled ? 0 : 1);
+  const [displayTime, setDisplayTime] = useState(() => new Date(INITIAL_SIM_TIME_MS));
+  const [rate, setRateState] = useState(benchmarkEnabled ? 0 : 1);
 
   // Throttled display-time sync (~1Hz)
   useEffect(() => {

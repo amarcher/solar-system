@@ -1,147 +1,48 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { TextureLoader, Texture, SRGBColorSpace, CanvasTexture, RepeatWrapping } from 'three';
+import { estimateTextureBytes, getBodyTexture } from '../data/textureManifest';
+import type { TextureSelection } from '../data/textureManifest';
+import { createTextureStore } from './textureStore';
 
 const loader = new TextureLoader();
-const textureCache = new Map<string, Texture | null>();
-
-interface TextureLoadState {
-  key: string;
-  texture: Texture | null;
-}
+const textureStore = createTextureStore<Texture>({
+  load: async (url) => {
+    const texture = await loader.loadAsync(url);
+    texture.colorSpace = SRGBColorSpace;
+    return texture;
+  },
+  dispose: (texture) => texture.dispose(),
+  estimateBytes: (texture) => {
+    const image = texture.image as { width?: number; height?: number } | undefined;
+    return estimateTextureBytes(image?.width ?? 2048, image?.height ?? 1024);
+  },
+});
 
 export const CDN_URL = import.meta.env.VITE_TEXTURE_CDN_URL as string | undefined;
 
-/**
- * Opt-in flag to fetch 8K planet diffuse maps from the CDN in the background
- * and upgrade the bundled 2K textures. Leave unset until the 8K textures are
- * actually uploaded to the CDN — otherwise every planet 404s on page load.
- *
- * To enable: set VITE_TEXTURE_CDN_HIRES=true and upload the files to
- *   {VITE_TEXTURE_CDN_URL}/textures/8k/{planetId}_diffuse.jpg
- */
-const CDN_HIRES_ENABLED =
-  (import.meta.env.VITE_TEXTURE_CDN_HIRES as string | undefined)?.toLowerCase() === 'true';
-
-/**
- * Planet IDs that have 8K (or 4K) diffuse maps uploaded to the CDN.
- * Sourced from Solar System Scope (CC BY 4.0). Uranus, Neptune, Pluto, and
- * Ceres are not in this list because no 8K equirectangular versions exist
- * from a free source — they continue to use the bundled 2K.
- */
-const HIRES_AVAILABLE_PLANETS = new Set<string>([
-  'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'moon',
-]);
-
 /** Resolve a texture path, preferring CDN when configured. */
 export function texturePath(path: string): string {
-  return CDN_URL ? `${CDN_URL}${path}` : path;
+  if (!path.trim()) return '';
+  return CDN_URL ? `${CDN_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}` : path;
 }
 
-/**
- * Load a planet's diffuse texture. Always loads the bundled 2K first, then
- * optionally upgrades to 8K from the CDN if `VITE_TEXTURE_CDN_HIRES=true`.
- * Returns null if no texture file exists (falls back to solid color).
- */
-export function usePlanetTexture(planetId: string): Texture | null {
-  const [loadState, setLoadState] = useState<TextureLoadState | null>(() =>
-    textureCache.has(planetId)
-      ? { key: planetId, texture: textureCache.get(planetId) ?? null }
-      : null,
-  );
-  const hasCachedTexture = textureCache.has(planetId);
-  const texture = hasCachedTexture
-    ? textureCache.get(planetId) ?? null
-    : loadState?.key === planetId ? loadState.texture : null;
-  const loaded = hasCachedTexture || loadState?.key === planetId;
-
-  useEffect(() => {
-    if (textureCache.has(planetId)) return;
-
-    let cancelled = false;
-    const path = `/textures/2k/${planetId}_diffuse.jpg`;
-
-    loader.load(
-      path,
-      (tex) => {
-        if (cancelled) return;
-        tex.colorSpace = SRGBColorSpace;
-        textureCache.set(planetId, tex);
-        setLoadState({ key: planetId, texture: tex });
-
-        // Optional background upgrade to 8K. Gated behind an explicit
-        // opt-in AND a per-planet allowlist so we don't 404-spam the
-        // console for planets we don't have hi-res for.
-        if (CDN_URL && CDN_HIRES_ENABLED && HIRES_AVAILABLE_PLANETS.has(planetId)) {
-          const hiResPath = `${CDN_URL}/textures/8k/${planetId}_diffuse.jpg`;
-          loader.load(
-            hiResPath,
-            (hiTex) => {
-              if (cancelled) return;
-              hiTex.colorSpace = SRGBColorSpace;
-              textureCache.set(planetId, hiTex);
-              setLoadState({ key: planetId, texture: hiTex });
-              tex.dispose();
-            },
-            undefined,
-            () => { /* hi-res not available, keep 2k */ },
-          );
-        }
-      },
-      undefined,
-      () => {
-        // No texture file found — solid color fallback
-        if (!cancelled) {
-          textureCache.set(planetId, null);
-          setLoadState({ key: planetId, texture: null });
-        }
-      },
-    );
-
-    return () => { cancelled = true; };
-  }, [planetId]);
-
-  return loaded ? texture : null;
+/** Known maps only. Higher resolution requires explicit detail selection. */
+export function usePlanetTexture(planetId: string, options: TextureSelection = {}): Texture | null {
+  const variant = getBodyTexture(planetId, options);
+  const overview = getBodyTexture(planetId, { maxWidth: Math.min(options.maxWidth ?? 2048, 1024) });
+  const baseTexture = useTexturePath(overview?.path ?? '');
+  const detailTexture = useTexturePath(variant?.path !== overview?.path ? variant?.path ?? '' : '');
+  return detailTexture ?? baseTexture;
 }
 
-/**
- * Load an arbitrary texture by path from public/.
- * Returns null while loading or if the file doesn't exist.
- */
+const emptySnapshot = () => null;
+
+/** Loads are shared by URL; every mounted consumer holds a reference. */
 export function useTexturePath(path: string): Texture | null {
-  const [loadState, setLoadState] = useState<TextureLoadState | null>(() =>
-    textureCache.has(path)
-      ? { key: path, texture: textureCache.get(path) ?? null }
-      : null,
-  );
-  const texture = textureCache.has(path)
-    ? textureCache.get(path) ?? null
-    : loadState?.key === path ? loadState.texture : null;
-
-  useEffect(() => {
-    if (textureCache.has(path)) return;
-
-    let cancelled = false;
-    loader.load(
-      path,
-      (tex) => {
-        if (cancelled) return;
-        tex.colorSpace = SRGBColorSpace;
-        textureCache.set(path, tex);
-        setLoadState({ key: path, texture: tex });
-      },
-      undefined,
-      () => {
-        if (!cancelled) {
-          textureCache.set(path, null);
-          setLoadState({ key: path, texture: null });
-        }
-      },
-    );
-
-    return () => { cancelled = true; };
-  }, [path]);
-
-  return texture;
+  const url = path.trim();
+  const subscribe = useCallback((notify: () => void) => textureStore.acquire(url, notify), [url]);
+  const getSnapshot = useCallback(() => textureStore.getSnapshot(url), [url]);
+  return useSyncExternalStore(subscribe, getSnapshot, emptySnapshot);
 }
 
 /** Simple seeded PRNG for deterministic ring noise. */
@@ -160,7 +61,7 @@ function mulberry32(seed: number) {
  * and color variation to simulate realistic icy ring structure.
  */
 export function useRingTexture(planetId: 'saturn' | 'uranus'): Texture {
-  return useMemo(() => {
+  const ringTexture = useMemo(() => {
     const W = 2048;
     const H = 64;
     const canvas = document.createElement('canvas');
@@ -181,6 +82,8 @@ export function useRingTexture(planetId: 'saturn' | 'uranus'): Texture {
     texture.needsUpdate = true;
     return texture;
   }, [planetId]);
+  useEffect(() => () => ringTexture.dispose(), [ringTexture]);
+  return ringTexture;
 }
 
 function paintSaturnRings(ctx: CanvasRenderingContext2D, W: number, H: number) {

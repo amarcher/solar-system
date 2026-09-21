@@ -128,7 +128,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false }: M
 
   // R3F doesn't always detect map changing from undefined → Texture on re-render.
   useEffect(() => {
-    if (moonMeshRef.current?.material && diffuseMap) {
+    if (moonMeshRef.current?.material) {
       const mat = moonMeshRef.current.material as MeshStandardMaterial;
       mat.map = diffuseMap;
       mat.needsUpdate = true;
@@ -209,7 +209,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false }: M
         >
           {!irregularGeo && <sphereGeometry args={[visualRadius, 24, 24]} />}
           <meshStandardMaterial
-            map={diffuseMap ?? undefined}
+            map={diffuseMap}
             color={tintColor}
             roughness={0.75}
             metalness={0}

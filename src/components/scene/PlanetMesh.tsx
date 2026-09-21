@@ -106,7 +106,7 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
   // R3F doesn't always detect map changing from undefined → Texture on re-render.
   // Imperatively apply the texture when it finishes loading.
   useEffect(() => {
-    if (meshRef.current?.material && diffuseMap) {
+    if (meshRef.current?.material) {
       const mat = meshRef.current.material as MeshStandardMaterial;
       mat.map = diffuseMap;
       mat.needsUpdate = true;
@@ -145,7 +145,7 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
         >
           <sphereGeometry args={[planet.visualRadius, segments, segments]} />
           <meshStandardMaterial
-            map={diffuseMap ?? undefined}
+            map={diffuseMap}
             color={tintColor}
             roughness={0.7}
             metalness={0}

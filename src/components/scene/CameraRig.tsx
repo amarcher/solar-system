@@ -7,6 +7,7 @@ import { getMissionPosition } from '../../utils/missionPositions';
 import { getMoonById } from '../../data/moons';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { benchmarkMode } from '../../performance/benchmark';
 import type CameraControlsImpl from 'camera-controls';
 
 interface CameraRigProps {
@@ -98,6 +99,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
   useFrame((_, delta) => {
     const controls = controlsRef.current;
     if (!controls) return;
+    if (benchmarkMode === 'orbit') void controls.rotate(delta * 0.15, 0, false);
 
     // After fly-in animation settles, reduce smooth time for responsive tracking
     if (!settled.current && flyInDone.current) {

@@ -114,7 +114,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: Realisti
   }, [moonColor, diffuseMap]);
 
   useEffect(() => {
-    if (moonMeshRef.current?.material && diffuseMap) {
+    if (moonMeshRef.current?.material) {
       const mat = moonMeshRef.current.material as MeshStandardMaterial;
       mat.map = diffuseMap;
       mat.needsUpdate = true;
@@ -192,7 +192,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: Realisti
         >
           {!irregularGeo && <sphereGeometry args={[visualRadius, 24, 24]} />}
           <meshStandardMaterial
-            map={diffuseMap ?? undefined}
+            map={diffuseMap}
             color={tintColor}
             roughness={0.75}
             metalness={0}

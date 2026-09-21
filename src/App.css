@@ -215,7 +215,7 @@ body {
   white-space: nowrap;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 899px) {
   .app__device-orient-btn {
     bottom: 92px;
   }
@@ -249,7 +249,7 @@ body {
   text-decoration: underline;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 899px) {
   .app__credits-link {
     bottom: 8px;
     right: 10px;
@@ -342,7 +342,7 @@ body {
   font-weight: 600;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 899px) {
   .app__mission-hud {
     top: auto;
     bottom: 70px;
@@ -415,7 +415,7 @@ body {
 
 /* (voice agent moved to toolbar) */
 
-@media (max-width: 560px) {
+@media (max-width: 899px) {
   .app-header {
     padding: 8px 12px 2px;
   }
