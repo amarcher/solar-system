@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import type { TidesCaptureFrame } from '../../recording/useTidesRecording';
 import { Html } from '@react-three/drei';
 import { DoubleSide, Vector2, Vector3, type ShaderMaterial } from 'three';
 import { usePlanetTexture } from '../../utils/textures';
@@ -91,13 +92,13 @@ function makeArrows(state: TidesState) {
   return { positions: new Float32Array(positions), colors: new Float32Array(colors) };
 }
 /** Mounted only during a lesson: no animation loop or lesson resources while off. */
-export function TidesScene({ state, waterMotionPaused = false }: { state: TidesState; waterMotionPaused?: boolean }) {
+export function TidesScene({ state, waterMotionPaused = false, capture = false, onFrame }: { state: TidesState; waterMotionPaused?: boolean; capture?: boolean; onFrame?: (frame: TidesCaptureFrame) => void }) {
   const reducedMotion = useReducedMotion();
   const rippleClock = useRef(0);
   const waterMaterial = useRef<ShaderMaterial>(null);
   const earth = usePlanetTexture('earth', { maxWidth: 2048 });
   const moon = usePlanetTexture('moon', { maxWidth: 2048 });
-  useFrame((_, delta) => {
+  useFrame(({ gl }, delta) => {
     if (state.step === 'water' && !waterMotionPaused && !reducedMotion) rippleClock.current += Math.min(delta, 0.05);
     const material = waterMaterial.current;
     if (material) {
@@ -106,6 +107,7 @@ export function TidesScene({ state, waterMotionPaused = false }: { state: TidesS
       material.uniforms.strengths.value.set(state.source === 'sun' ? 0 : 1, state.source === 'moon' ? 0 : SOLAR_TIDE_RATIO);
       material.uniformsNeedUpdate = true;
     }
+    onFrame?.({ canvas: gl.domElement, state, texturesReady: !!earth && !!moon, portrait: capture });
   });
   const direction = bodyDirection('moon', state.phase);
   // Three caches this object when linking the program; mutate its values rather
@@ -139,11 +141,11 @@ export function TidesScene({ state, waterMotionPaused = false }: { state: TidesS
       <mesh position={[direction[0] * 2.35, direction[1] * 2.35, 0]}>
         <sphereGeometry args={[0.22, 24, 16]} />
         <meshStandardMaterial map={moon} color="#dddde3" />
-        <Html position={[0, -0.35, 0]} center style={{ pointerEvents: 'none', color: '#cde9ff', fontSize: 12 }}><span aria-hidden="true">Moon</span></Html>
+        {!capture && <Html position={[0, -0.35, 0]} center style={{ pointerEvents: 'none', color: '#cde9ff', fontSize: 12 }}><span aria-hidden="true">Moon</span></Html>}
       </mesh>
       <mesh position={[3.05, 0, 0]}>
         <sphereGeometry args={[0.25, 24, 16]} /><meshBasicMaterial color="#ffc966" />
-        <Html position={[-0.15, -0.8, 0]} center style={{ pointerEvents: 'none', color: '#ffde98', fontSize: 12, whiteSpace: 'nowrap' }}><span aria-hidden="true">Sun direction</span></Html>
+        {!capture && <Html position={[-0.15, -0.8, 0]} center style={{ pointerEvents: 'none', color: '#ffde98', fontSize: 12, whiteSpace: 'nowrap' }}><span aria-hidden="true">Sun direction</span></Html>}
       </mesh>
     </group>
   );

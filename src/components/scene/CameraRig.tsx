@@ -11,6 +11,7 @@ import { useAstronomy } from '../../astronomy/useAstronomy';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { benchmarkMode } from '../../performance/benchmark';
 import type CameraControlsImpl from 'camera-controls';
+import { tidesCaptureFraming } from '../../recording/captureLayout';
 
 interface CameraRigProps {
   nav: NavigationState;
@@ -18,6 +19,7 @@ interface CameraRigProps {
   /** When set, camera continuously tracks this mission in orrery mode */
   orreryMissionId?: string;
   lessonActive?: boolean;
+  lessonCapture?: boolean;
 }
 
 // Artistic orbits span ~40 units; the log-compressed orrery only ~13.
@@ -26,7 +28,7 @@ const SYSTEM_POSITION_ARTISTIC = { x: 0, y: 35, z: 50 };
 const SYSTEM_POSITION_ORRERY = { x: 0, y: 15, z: 21 };
 const SYSTEM_TARGET = { x: 0, y: 0, z: 0 };
 
-export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false }: CameraRigProps) {
+export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false, lessonCapture = false }: CameraRigProps) {
   const controlsRef = useRef<CameraControlsImpl>(null);
   const { mode } = useAstronomy();
   const { size, camera } = useThree();
@@ -71,13 +73,15 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false 
       controls.maxDistance = 1000;
       const aspect = size.width / size.height;
       const availableHeight = size.height * (size.width <= 700 ? 0.44 : 0.58);
+      const captureFrame = lessonCapture ? tidesCaptureFraming(aspect) : null;
       const span = Math.max(7.5 / aspect, 5.8 * size.height / availableHeight);
-      const distance = span / (2 * Math.tan(25 * Math.PI / 180));
+      const distance = captureFrame?.distance ?? span / (2 * Math.tan(25 * Math.PI / 180));
       const centerY = size.height * (size.width <= 700 ? 0.30 : 0.33);
-      const targetY = -(1 - 2 * centerY / size.height) * span / 2;
+      const targetY = captureFrame?.targetY ?? -(1 - 2 * centerY / size.height) * span / 2;
       controls.setFocalOffset(0, 0, 0, false);
       controls.zoomTo(1, false);
-      controls.setLookAt(0.15, targetY, distance, 0.15, targetY, 0, false);
+      const targetX = captureFrame?.targetX ?? 0.15;
+      controls.setLookAt(targetX, targetY, distance, targetX, targetY, 0, false);
       controls.update(0);
     } else if (lessonSnapshot.current) {
       const saved = lessonSnapshot.current;
@@ -86,7 +90,7 @@ export function CameraRig({ nav, planets, orreryMissionId, lessonActive = false 
       controls.update(0);
       restoredSameView.current = saved.navKey === navKey && saved.mode === mode;
     }
-  }, [lessonActive, navKey, mode, size.width, size.height, camera]);
+  }, [lessonActive, lessonCapture, navKey, mode, size.width, size.height, camera]);
 
   useEffect(() => {
     const controls = controlsRef.current;

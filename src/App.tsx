@@ -22,6 +22,7 @@ import { trackModeSwitch } from './utils/analytics';
 import './App.css';
 import { useTidesLesson } from './lessons/tides/useTidesLesson';
 import { TidesControls } from './lessons/tides/TidesControls';
+import { useTidesRecording } from './recording/useTidesRecording';
 import { GraphicsQualityProvider } from './performance/GraphicsQualityProvider';
 import { GraphicsSettings } from './components/ui/GraphicsSettings';
 import { benchmarkEnabled, BENCHMARK_DATE } from './performance/benchmark';
@@ -46,7 +47,11 @@ function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
   const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady } = useAstronomy();
   const tides = useTidesLesson(nav);
-  const { close: closeTides, state: tidesState } = tides;
+  const recording = useTidesRecording(tides.state, tides.update);
+  const { cancel: cancelRecording } = recording.ui;
+  const { close: closeLesson } = tides;
+  const closeTides = useCallback((restoreFocus = true) => { cancelRecording(); closeLesson(restoreFocus); }, [cancelRecording, closeLesson]);
+  const tidesState = tides.state;
   const [showLabels, setShowLabels] = useState(true);
   const [showConstellations, setShowConstellations] = useState(false);
   const [cinemaMode, setCinemaMode] = useState(false);
@@ -268,6 +273,8 @@ function App() {
       <SolarSystemScene
         tides={tides.state}
         waterMotionPaused={tides.waterMotionPaused}
+        tidesCapture={recording.active}
+        onTidesFrame={recording.onFrame}
         planets={planets}
         moonsByPlanet={moonsByPlanet}
         missions={missions}
@@ -561,7 +568,7 @@ function App() {
         <button type="button" data-tides-entry className="tides-entry tides-entry--compact" onClick={tides.open}>Why tides?</button>
       )}
       </div>
-      {tides.state && <TidesControls waterMotionPaused={tides.waterMotionPaused} onToggleWaterMotion={() => tides.setWaterMotionPaused(!tides.waterMotionPaused)} state={tides.state} onChange={tides.update} onClose={() => closeTides()}
+      {tides.state && <TidesControls recording={recording.ui} waterMotionPaused={tides.waterMotionPaused} onToggleWaterMotion={() => tides.setWaterMotionPaused(!tides.waterMotionPaused)} state={tides.state} onChange={tides.update} onClose={() => closeTides()}
         voice={voice.agentId ? { label: voice.status === 'off' ? 'Talk to Stella' : 'Stop Stella', onClick: () => { void voice.toggle(); } } : undefined} />}
 
       <Analytics />
