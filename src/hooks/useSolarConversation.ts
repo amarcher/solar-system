@@ -593,7 +593,12 @@ export function useSolarConversation({ currentNav, currentTides = null, currentM
       // above, before convRef.current = conv runs.
       if (tidesRef.current) {
         pendingNavRef.current = null;
-        conv.sendContextualUpdate(tidesVoiceContext(tidesRef.current));
+        try {
+          conv.sendContextualUpdate(tidesVoiceContext(tidesRef.current));
+          hadTidesContext.current = true;
+        } catch (err) {
+          console.error('[voice] sendContextualUpdate failed:', err);
+        }
       } else if (pendingNavRef.current) {
         const queuedNav = pendingNavRef.current;
         pendingNavRef.current = null;
