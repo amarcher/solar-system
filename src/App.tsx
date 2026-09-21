@@ -21,8 +21,7 @@ import { useDeviceOrientation } from './astronomy/useDeviceOrientation';
 import { trackModeSwitch } from './utils/analytics';
 import './App.css';
 import { useTidesLesson } from './lessons/tides/useTidesLesson';
-import { useTidesRecording } from './recording/useTidesRecording';
-import { InlineTidesControls } from './lessons/tides/InlineTidesControls';
+import { TIDES_QUALIFICATION } from './lessons/tides/model';
 import { GraphicsQualityProvider } from './performance/GraphicsQualityProvider';
 import { GraphicsSettings } from './components/ui/GraphicsSettings';
 import { benchmarkEnabled, BENCHMARK_DATE } from './performance/benchmark';
@@ -47,10 +46,7 @@ function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
   const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady } = useAstronomy();
   const tides = useTidesLesson(nav);
-  const recording = useTidesRecording(tides.state, tides.update);
-  const { cancel: cancelRecording } = recording.ui;
-  const { close: closeLayer, state: tidesState } = tides;
-  const closeTides = useCallback((restoreFocus = true) => { cancelRecording(); closeLayer(restoreFocus); }, [cancelRecording, closeLayer]);
+  const { close: closeTides, state: tidesState } = tides;
   const [showLabels, setShowLabels] = useState(true);
   const [showConstellations, setShowConstellations] = useState(false);
   const [cinemaMode, setCinemaMode] = useState(false);
@@ -195,9 +191,9 @@ function App() {
       }
       setSunLayerOverride(layerIndex);
     },
-    onSwitchMode: (nextMode) => { cancelRecording(); if (nextMode === 'sky') closeTides(false); setMode(nextMode); },
-    onSetDate: date => { cancelRecording(); setDate(date); },
-    onSetRate: rate => { cancelRecording(); setRate(rate); },
+    onSwitchMode: (nextMode) => { if (nextMode === 'sky') closeTides(false); setMode(nextMode); },
+    onSetDate: setDate,
+    onSetRate: setRate,
   });
 
   useEffect(() => {
@@ -270,10 +266,7 @@ function App() {
       )}
 
       <SolarSystemScene
-        tidesCapture={recording.active}
-        onTidesFrame={recording.onFrame}
         tides={tides.state}
-        waterMotionPaused={tides.waterMotionPaused}
         planets={planets}
         moonsByPlanet={moonsByPlanet}
         missions={missions}
@@ -289,7 +282,6 @@ function App() {
         orreryMission={orreryMissionActive ? getMissionById('artemis-2') : undefined}
       />
 
-      <div hidden={recording.active} inert={recording.active}>
       <div className={`app__toolbar${toolbarOpen ? ' app__toolbar--open' : ''}`}>
         {/* Hamburger toggle — visible only on compact screens via CSS */}
         <button
@@ -577,9 +569,7 @@ function App() {
         </>
       )}
       <ModeToggle />
-      </div>
-      {tides.state && <InlineTidesControls recording={recording.ui} state={tides.state} onChange={tides.update} onClose={() => closeTides()}
-        waterMotionPaused={tides.waterMotionPaused} onToggleWaterMotion={() => tides.setWaterMotionPaused(!tides.waterMotionPaused)} />}
+      {tides.state && <p className="app__tides-note" role="status">{TIDES_QUALIFICATION}</p>}
 
       <Analytics />
       <SpeedInsights />
