@@ -1,3 +1,4 @@
+import { moonVisualRadius } from '../../utils/moonFraming';
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -96,7 +97,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick }: Realisti
   const { timeRef, rate } = useAstronomy();
 
   const radius = moon.orbitRadius;
-  const visualRadius = Math.max(moon.diameter / 25000, 0.04);
+  const visualRadius = moonVisualRadius(moon.diameter);
   // Positive angle = clockwise from above (+X toward +Z), so prograde moons
   // need a decreasing angle to match prograde planet spin (+rotation.y).
   const orbitDirection = moon.retrograde ? 1 : -1;

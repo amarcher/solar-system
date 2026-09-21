@@ -1,3 +1,4 @@
+import { moonVisualRadius } from '../../utils/moonFraming';
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -138,7 +139,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false }: M
   // Derive a visual radius from real diameter, clamped for visibility.
   // Divisor of 25000 keeps moons visually smaller than their parent planet
   // while still large enough to see and click.
-  const visualRadius = Math.max(moon.diameter / 25000, 0.04);
+  const visualRadius = moonVisualRadius(moon.diameter);
 
   const irregularGeo = useMemo(
     () => moon.shape === 'irregular' ? createIrregularGeometry(visualRadius, moon.id) : null,
