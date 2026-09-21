@@ -155,16 +155,16 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
             // Voyager mapped the southern hemisphere. Move the camera to that
             // side; do not rotate the map or invent the unobserved north.
             controls.setLookAt(moonPos.x, moonPos.y - dist * 0.8, moonPos.z + dist * 0.6,
-              moonPos.x, moonPos.y, moonPos.z, true);
+              moonPos.x, moonPos.y, moonPos.z, !reducedMotion);
           } else {
-            controls.moveTo(moonPos.x, moonPos.y, moonPos.z, true);
-            controls.dollyTo(dist, true);
+            controls.moveTo(moonPos.x, moonPos.y, moonPos.z, !reducedMotion);
+            controls.dollyTo(dist, !reducedMotion);
           }
           flyInDone.current = true;
           flyInTime.current = 0;
         } else {
           // Continuously track the orbiting moon
-          controls.moveTo(moonPos.x, moonPos.y, moonPos.z, true);
+          controls.moveTo(moonPos.x, moonPos.y, moonPos.z, !reducedMotion);
         }
       }
     } else if (trackingPlanetId.current) {
