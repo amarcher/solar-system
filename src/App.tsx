@@ -452,7 +452,7 @@ function App() {
         </div>
       )}
 
-      {hideDetails && nav.level === 'moon' && currentMoon && (
+      {hideDetails && !toolbarOpen && nav.level === 'moon' && currentMoon && (
         <MoonTextureInfo moon={currentMoon} compact />
       )}
 

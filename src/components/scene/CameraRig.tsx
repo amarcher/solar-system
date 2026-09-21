@@ -186,7 +186,7 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
         }
       }
     }
-  });
+  }, -1.5);
 
   // Reset flyInDone when orrery mission changes
   useEffect(() => {
