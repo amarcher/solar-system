@@ -1,0 +1,61 @@
+{
+  "sourcePage": "https://svs.gsfc.nasa.gov/4851/",
+  "sourceUrl": "https://svs.gsfc.nasa.gov/vis/a000000/a004800/a004851/milkyway_2020_4k.exr",
+  "sourceSha256": "2eb802d6e68d170b410f766c7fec07f7518619f6b6708fdc81e9302d93e74fdb",
+  "sourceBytes": 36436668,
+  "credit": "NASA/Goddard Space Flight Center Scientific Visualization Studio. Gaia DR2: ESA/Gaia/DPAC.",
+  "license": "Public domain under the NASA SVS policy unless otherwise noted; no asset-specific restriction listed",
+  "licenseUrl": "https://svs.gsfc.nasa.gov/help/",
+  "verifiedDate": "2026-09-21",
+  "sourceDescription": "Milky Way background in celestial coordinates, omitting the bright Hipparcos and Tycho stars",
+  "frame": "ICRF/J2000 geocentric right ascension and declination",
+  "projection": "plate carree / equirectangular, unchanged from source",
+  "rasterMapping": {
+    "u": "fract(0.5 - raDegrees / 360)",
+    "yFromTop": "0.5 - decDegrees / 180",
+    "centerRaHours": 0,
+    "seamRaHours": 12,
+    "raIncreases": "left",
+    "north": "top"
+  },
+  "processing": {
+    "decode": "FFmpeg native gbrpf16le output; reorder G,B,R to R,G,B",
+    "resize": "2K uses exact 2x2 area average in linear light; 4K native dimensions",
+    "exposureStops": 1,
+    "toneCurve": "per-channel x/(1+x), x=2*linearSource",
+    "transfer": "IEC sRGB piecewise encoding",
+    "jpegQuality": 92,
+    "jpegSubsampling": 0,
+    "addedContent": "none",
+    "rotationOrFlip": "none"
+  },
+  "toolVersions": {
+    "ffmpeg": "ffmpeg version 8.1 Copyright (c) 2000-2026 the FFmpeg developers",
+    "numpy": "2.3.5",
+    "pillow": "12.3.0"
+  },
+  "outputs": [
+    {
+      "path": "public/textures/skybox/galaxy_milky_way_2k.jpg",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 729202,
+      "sha256": "96dd4e49eb312662d30661809bb97b027361108704ed1a56a7c8a66798dae58e",
+      "colorSpace": "sRGB",
+      "rgbaBaseBytes": 8388608
+    },
+    {
+      "path": "public/textures/skybox/galaxy_milky_way_4k.jpg",
+      "width": 4096,
+      "height": 2048,
+      "bytes": 3541208,
+      "sha256": "3f63ae2f22465bd29bf79afd5234814fbcfbf1f88ae5391437bc61259fbaa27c",
+      "colorSpace": "sRGB",
+      "rgbaBaseBytes": 33554432
+    }
+  ],
+  "contactSheet": {
+    "path": "docs/assets/nasa-celestial-sky-contact.jpg",
+    "sha256": "4dadb3a6d9c58bf4b8444193eebf93ff1580916d5f8dc51dc610711583793748"
+  }
+}
