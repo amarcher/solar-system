@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "reviewedOn": "2026-09-21",
+  "usageTermsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+  "coverage": "Partial Voyager 2 southern-hemisphere mosaics; blank northern region and margins. No global photographic coverage claimed.",
+  "projection": "Equirectangular display interpretation from 2:1 planetary texture layout and pole stretching. Source pages do not specify longitude origin, handedness or latitude convention. No georeferenced feature coordinates claimed.",
+  "bodies": [
+    {
+      "id": "miranda",
+      "filename": "miranda.tif",
+      "pageUrl": "https://science.nasa.gov/3d-resources/uranus-miranda/",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/cds/3d/resources/image/uranus---miranda/Uranus%20-%20Miranda.tif",
+      "credit": "USGS/Tammy Becker & JPL/Caltech",
+      "dimensions": [
+        1440,
+        720
+      ],
+      "sha256": "86f6b6f9e1641095b926a46050648739bb3fd41a21394a54159cf1e9dcd0cf00"
+    },
+    {
+      "id": "ariel",
+      "filename": "ariel.jpg",
+      "pageUrl": "https://science.nasa.gov/3d-resources/uranus-ariel/",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/cds/3d/resources/image/uranus---ariel/Uranus%20-%20Ariel.jpg",
+      "credit": "USGS/Tammy Becker & JPL/Caltech",
+      "dimensions": [
+        1440,
+        720
+      ],
+      "sha256": "fc0f8a59b5c29e44e4a3409e452f0427f5b53b8c9b41c89dc35d28babaae5cee"
+    },
+    {
+      "id": "titania",
+      "filename": "titania.tif",
+      "pageUrl": "https://science.nasa.gov/3d-resources/uranus-titania/",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/cds/3d/resources/image/uranus---titania/Uranus%20-%20Titania.tif",
+      "credit": "USGS/Tammy Becker & JPL/Caltech",
+      "dimensions": [
+        1440,
+        720
+      ],
+      "sha256": "1a56f85c0ecd3b99f5a868f2b6c7a42cdba53a804e47b7955811e6efe366d09f"
+    },
+    {
+      "id": "oberon",
+      "filename": "oberon.tif",
+      "pageUrl": "https://science.nasa.gov/3d-resources/uranus-oberon/",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/cds/3d/resources/image/uranus---oberon/Uranus%20-%20Oberon.tif",
+      "credit": "USGS/Tammy Becker & JPL/Caltech",
+      "dimensions": [
+        1440,
+        720
+      ],
+      "sha256": "0d609cc834478c95be1078dff8527634b66bf58afaad8ea59a6c2d8bce64a4d0"
+    },
+    {
+      "id": "umbriel",
+      "filename": "umbriel.tif",
+      "pageUrl": "https://science.nasa.gov/3d-resources/uranus-umbriel/",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/cds/3d/resources/image/uranus---umbriel/Uranus%20-%20Umbriel.tif",
+      "credit": "USGS/Tammy Becker & JPL/Caltech",
+      "dimensions": [
+        1440,
+        720
+      ],
+      "sha256": "9d63a9b2f43cb36ee2e832094dd6031f1e313830be40398e2a56c725ccc07766"
+    }
+  ]
+}

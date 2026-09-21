@@ -97,7 +97,10 @@ Orrery mode uses true `astronomy-engine` heliocentric ephemeris vectors, then ma
 
 ## Credits
 
-**Planet & moon diffuse textures** — [Solar System Scope](https://www.solarsystemscope.com/textures/) · licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Body maps now use an explicit bundled inventory with bounded texture ownership. The old eager 8K CDN upgrade has been retired to avoid upgrading every planet at startup. Individual legacy moon-map provenance is under review; see `src/data/textureManifest.ts` for known limitations.
+**Original planet & moon diffuse textures** — Existing collection attributed to [Solar System Scope](https://www.solarsystemscope.com/textures/) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Body maps now use an explicit bundled inventory with bounded texture ownership. The old eager 8K CDN upgrade has been retired to avoid upgrading every planet at startup. Individual legacy moon-map provenance is under review; collection-level attribution is not individual verification. See `src/data/textureManifest.ts` for known limitations.
+
+**Miranda, Ariel, Titania, Oberon, and Umbriel textures** — Voyager imagery: **USGS/Tammy Becker & JPL/Caltech**, via [NASA 3D Resources](https://science.nasa.gov/3d-resources/), used under [NASA's media usage guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/). Resized for display; areas without imagery shown in plain gray. These are partial southern-hemisphere mosaics, not complete global observations. [Sources, coverage, transformations, and hashes](docs/assets/uranian-moons.md).
+
 
 **Milky Way starfield backdrop** — Solar System Scope · CC BY 4.0. The bundled 8K source was verified byte-for-byte against the publisher. Automatic/Smoother use 2K; More detail uses a 4K derivative. See `docs/assets/sky-quality.md` for the conversion and source hash.
 

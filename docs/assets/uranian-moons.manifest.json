@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "sourceCatalog": "scripts/assets/uranian-moons.sources.json",
+  "pillowVersion": "12.3.0",
+  "jpegEncoding": {
+    "quality": 92,
+    "subsampling": 0,
+    "optimize": true
+  },
+  "noDataTreatment": {
+    "method": "4-connected near-black region seeded from the top image edge",
+    "maximumRgbChannel": 8,
+    "replacementRgb": [
+      96,
+      96,
+      96
+    ],
+    "scientificFootprint": false
+  },
+  "bodies": [
+    {
+      "id": "miranda",
+      "sourceSha256": "86f6b6f9e1641095b926a46050648739bb3fd41a21394a54159cf1e9dcd0cf00",
+      "noDataPixelCount": 587202,
+      "outputs": [
+        {
+          "path": "public/textures/1k/miranda_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 73868,
+          "sha256": "2140864a3506a01c1f5d027f515a1b3ffb3b473bcdef9a36e4d531eb230a51da"
+        },
+        {
+          "path": "public/textures/2k/miranda_diffuse.jpg",
+          "width": 1440,
+          "height": 720,
+          "bytes": 136940,
+          "sha256": "e39a5f9a0d301ebf3e9946e622d6e37be4166628da5b94f63a8391e1ca87b4d1"
+        }
+      ]
+    },
+    {
+      "id": "ariel",
+      "sourceSha256": "fc0f8a59b5c29e44e4a3409e452f0427f5b53b8c9b41c89dc35d28babaae5cee",
+      "noDataPixelCount": 633560,
+      "outputs": [
+        {
+          "path": "public/textures/1k/ariel_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 52767,
+          "sha256": "6881c6a172f347dee4b89da326d7c1126cce75b1a2055949bd4fb54365ba6833"
+        },
+        {
+          "path": "public/textures/2k/ariel_diffuse.jpg",
+          "width": 1440,
+          "height": 720,
+          "bytes": 95418,
+          "sha256": "2268edde55eee1e0f55f12febffaa38e374314ed8f1e366b7f45a031c835941e"
+        }
+      ]
+    },
+    {
+      "id": "titania",
+      "sourceSha256": "1a56f85c0ecd3b99f5a868f2b6c7a42cdba53a804e47b7955811e6efe366d09f",
+      "noDataPixelCount": 644834,
+      "outputs": [
+        {
+          "path": "public/textures/1k/titania_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 61880,
+          "sha256": "85482ad2f3df1a7b3c3c1df2f38ee204cf8b97a08422db2daee21ded820cb817"
+        },
+        {
+          "path": "public/textures/2k/titania_diffuse.jpg",
+          "width": 1440,
+          "height": 720,
+          "bytes": 116080,
+          "sha256": "e369b1009a8ac2b5444590a96d9c3295e9cb15c127ed1b0c8505b1d8dfd12e54"
+        }
+      ]
+    },
+    {
+      "id": "oberon",
+      "sourceSha256": "0d609cc834478c95be1078dff8527634b66bf58afaad8ea59a6c2d8bce64a4d0",
+      "noDataPixelCount": 633376,
+      "outputs": [
+        {
+          "path": "public/textures/1k/oberon_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 54074,
+          "sha256": "d85d482599989b59a7f0a7833df50b4d78aa3613134f5cf4fb0030855e2bacf9"
+        },
+        {
+          "path": "public/textures/2k/oberon_diffuse.jpg",
+          "width": 1440,
+          "height": 720,
+          "bytes": 97764,
+          "sha256": "bfca79f49996a9dd1a8dd10a028b6a9e4894b9e7e75ab52a453b1d19f9ffd87a"
+        }
+      ]
+    },
+    {
+      "id": "umbriel",
+      "sourceSha256": "9d63a9b2f43cb36ee2e832094dd6031f1e313830be40398e2a56c725ccc07766",
+      "noDataPixelCount": 608797,
+      "outputs": [
+        {
+          "path": "public/textures/1k/umbriel_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 39818,
+          "sha256": "8ea665118d965ec4cd574c31f867dd5e310f0b08d2a2cd5ab79e39f0c240c7c5"
+        },
+        {
+          "path": "public/textures/2k/umbriel_diffuse.jpg",
+          "width": 1440,
+          "height": 720,
+          "bytes": 70337,
+          "sha256": "a019b8a40d5d92cfc37eb197ec7ffb94aad28f4ddedb29d91dcb97ac6c6782cc"
+        }
+      ]
+    }
+  ],
+  "contactSheet": {
+    "path": "docs/assets/uranian-moons-contact-sheet.jpg",
+    "width": 1200,
+    "height": 1790,
+    "bytes": 299120,
+    "sha256": "aa6f6bad7c7c420a4f268e2f95eab87c4d2060883259f03bd4438b880ff673f3"
+  }
+}
