@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { TextureLoader, Texture, SRGBColorSpace, CanvasTexture, RepeatWrapping } from 'three';
 import { estimateTextureBytes, getBodyTexture } from '../data/textureManifest';
 import type { TextureSelection } from '../data/textureManifest';
@@ -29,7 +29,10 @@ export function texturePath(path: string): string {
 /** Known maps only. Higher resolution requires explicit detail selection. */
 export function usePlanetTexture(planetId: string, options: TextureSelection = {}): Texture | null {
   const variant = getBodyTexture(planetId, options);
-  return useTexturePath(variant?.path ?? '');
+  const overview = getBodyTexture(planetId, { maxWidth: Math.min(options.maxWidth ?? 2048, 1024) });
+  const baseTexture = useTexturePath(overview?.path ?? '');
+  const detailTexture = useTexturePath(variant?.path !== overview?.path ? variant?.path ?? '' : '');
+  return detailTexture ?? baseTexture;
 }
 
 const emptySnapshot = () => null;
@@ -58,7 +61,7 @@ function mulberry32(seed: number) {
  * and color variation to simulate realistic icy ring structure.
  */
 export function useRingTexture(planetId: 'saturn' | 'uranus'): Texture {
-  return useMemo(() => {
+  const ringTexture = useMemo(() => {
     const W = 2048;
     const H = 64;
     const canvas = document.createElement('canvas');
@@ -79,6 +82,8 @@ export function useRingTexture(planetId: 'saturn' | 'uranus'): Texture {
     texture.needsUpdate = true;
     return texture;
   }, [planetId]);
+  useEffect(() => () => ringTexture.dispose(), [ringTexture]);
+  return ringTexture;
 }
 
 function paintSaturnRings(ctx: CanvasRenderingContext2D, W: number, H: number) {

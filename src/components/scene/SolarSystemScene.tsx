@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ACESFilmicToneMapping, DirectionalLight } from 'three';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
@@ -14,6 +14,10 @@ import { SkyScene } from './SkyScene';
 import { TerrestrialRig } from './TerrestrialRig';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { benchmarkEnabled } from '../../performance/benchmark';
+import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
+import { QualityMonitor } from '../../performance/QualityMonitor';
+import { SceneBenchmark } from '../../performance/SceneBenchmark';
 
 /**
  * Camera-relative fill light that activates when zoomed into a planet/moon.
@@ -58,7 +62,10 @@ interface SolarSystemSceneProps {
 
 export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission }: SolarSystemSceneProps) {
   const { mode } = useAstronomy();
+  const [benchmarkReport, setBenchmarkReport] = useState('Preparing benchmark…');
+  const [benchmarkRun, setBenchmarkRun] = useState(0);
   const reducedMotion = useReducedMotion();
+  const { settings } = useGraphicsQuality();
   const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun' || nav.level === 'mission';
   // Planet and moon detail views keep the full system visible so kids can
   // orbit the camera around the focused body and understand its surroundings.
@@ -81,12 +88,15 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
       <Canvas
+        dpr={[1, settings.dpr]}
         camera={{ position: [0, 35, 50], fov: 50, near: 0.001, far: 600 }}
         gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.75 }}
         // Hide only the canvas itself from assistive tech — NOT the container,
         // which also hosts the <Html> label buttons that must stay reachable.
         onCreated={({ gl }) => gl.domElement.setAttribute('aria-hidden', 'true')}
       >
+        <QualityMonitor />
+        {benchmarkEnabled && <SceneBenchmark key={`${mode}:${JSON.stringify(nav)}:${benchmarkRun}`} scenario={`${mode}:${JSON.stringify(nav)}`} onReport={setBenchmarkReport} />}
         {/* No shadow maps: the only shadow in the scene (planet → rings) is
             computed analytically in the ring shader. See PlanetMesh.tsx. */}
         {mode !== 'sky' && (
@@ -173,7 +183,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
           <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} />
         )}
 
-        {!reducedMotion && (
+        {!reducedMotion && settings.bloom && (
           <EffectComposer>
             <Bloom
               intensity={1.2}
@@ -184,6 +194,12 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
           </EffectComposer>
         )}
       </Canvas>
+      {benchmarkEnabled && (
+        <aside style={{ position: 'fixed', right: 8, top: 8, zIndex: 10000, background: '#080d18ee', color: '#fff', padding: 12, maxHeight: '85vh', overflow: 'auto', width: 330, fontSize: 11 }} aria-label="Scene benchmark">
+          <button type="button" onClick={() => setBenchmarkRun((n) => n + 1)}>Restart measurement</button>
+          <pre data-testid="benchmark-report" style={{ whiteSpace: 'pre-wrap' }}>{benchmarkReport}</pre>
+        </aside>
+      )}
     </div>
   );
 }

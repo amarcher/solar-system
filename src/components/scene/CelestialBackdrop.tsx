@@ -1,52 +1,32 @@
-import { useEffect, useMemo } from 'react';
-import { useThree, useLoader } from '@react-three/fiber';
-import { TextureLoader, EquirectangularReflectionMapping, SRGBColorSpace } from 'three';
-import type { Scene, Texture } from 'three';
-import { texturePath } from '../../utils/textures';
+import { useEffect } from 'react';
+import { useThree } from '@react-three/fiber';
+import { EquirectangularReflectionMapping, type Scene, type Texture } from 'three';
+import { useTexturePath } from '../../utils/textures';
+import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+export function CelestialBackdrop() {
+  const { preference, settings } = useGraphicsQuality();
+  // Automatic starts with the inexpensive sky; detail is an explicit choice.
+  const width = preference === 'detailed' ? settings.skyWidth : 2048;
+  const overview = useTexturePath('/textures/skybox/stars_milky_way_2k.jpg');
+  const detail = useTexturePath(width === 4096 ? '/textures/skybox/stars_milky_way_4k.jpg' : '');
+  const texture = detail ?? overview;
+  const { scene } = useThree();
 
-function applyCelestialBackdrop(scene: Scene, texture: Texture): () => void {
+  useEffect(() => texture ? applyBackdrop(scene, texture) : undefined, [texture, scene]);
+  return null;
+}
+
+function applyBackdrop(scene: Scene, texture: Texture) {
   texture.mapping = EquirectangularReflectionMapping;
-  texture.colorSpace = SRGBColorSpace;
   const previousBackground = scene.background;
   const previousIntensity = scene.backgroundIntensity;
   scene.background = texture;
   scene.backgroundIntensity = 0.5;
-
   return () => {
     if (scene.background === texture) {
       scene.background = previousBackground;
       scene.backgroundIntensity = previousIntensity;
     }
   };
-}
-
-/**
- * Immersive Milky Way backdrop. Loads the equirectangular JPG directly via
- * Three.js's TextureLoader and assigns it to the scene background. We used
- * to render this through drei's <Environment>, but that pipes JPGs through
- * HDRJPGLoader (expects gain-map metadata) and bakes a low-res cubemap as
- * the background — even when the source is 8K. Going through TextureLoader
- * preserves the full source resolution and skips the noisy "Gain map
- * metadata not found" warning.
- *
- * Mobile uses a 2K version to avoid memory crashes on lower-end devices.
- */
-export function CelestialBackdrop() {
-  const file = useMemo(
-    () => texturePath(
-      isMobile
-        ? '/textures/skybox/stars_milky_way_2k.jpg'
-        : '/textures/skybox/stars_milky_way_8k.jpg',
-    ),
-    [],
-  );
-
-  const texture = useLoader(TextureLoader, file);
-  const { scene } = useThree();
-
-  useEffect(() => applyCelestialBackdrop(scene, texture), [texture, scene]);
-
-  return null;
 }

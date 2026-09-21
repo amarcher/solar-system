@@ -97,9 +97,9 @@ Orrery mode uses true `astronomy-engine` heliocentric ephemeris vectors, then ma
 
 ## Credits
 
-**Planet & moon diffuse textures** — [Solar System Scope](https://www.solarsystemscope.com/textures/) · licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). 8K versions for Mercury, Venus, Earth, Mars, Jupiter, Saturn, and the Moon are served from Cloudflare R2. Uranus, Neptune, Pluto, and Ceres use 2K versions bundled with the app.
+**Planet & moon diffuse textures** — [Solar System Scope](https://www.solarsystemscope.com/textures/) · licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Body maps now use an explicit bundled inventory with bounded texture ownership. The old eager 8K CDN upgrade has been retired to avoid upgrading every planet at startup. Individual legacy moon-map provenance is under review; see `src/data/textureManifest.ts` for known limitations.
 
-**Milky Way starfield backdrop** — Solar System Scope · CC BY 4.0.
+**Milky Way starfield backdrop** — Solar System Scope · CC BY 4.0. The bundled 8K source was verified byte-for-byte against the publisher. Automatic/Smoother use 2K; More detail uses a 4K derivative. See `docs/assets/sky-quality.md` for the conversion and source hash.
 
 **Orion spacecraft 3D model** (Artemis II mission tracker) — "Orion Spacecraft" by [wisemanmods](https://sketchfab.com/3d-models/none-fb89e865dcd446b89eaf78deaf213974) on Sketchfab · licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 

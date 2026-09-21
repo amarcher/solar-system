@@ -19,6 +19,10 @@ import { ObserverPicker } from './components/ui/ObserverPicker';
 import { useDeviceOrientation } from './astronomy/useDeviceOrientation';
 import { trackModeSwitch } from './utils/analytics';
 import './App.css';
+import { GraphicsQualityProvider } from './performance/GraphicsQualityProvider';
+import { GraphicsSettings } from './components/ui/GraphicsSettings';
+import { benchmarkEnabled, BENCHMARK_DATE } from './performance/benchmark';
+import { DEFAULT_OBSERVER } from './astronomy/types';
 
 function viewTransition(update: () => void, types: string[]) {
   if (!document.startViewTransition) {
@@ -58,9 +62,10 @@ function App() {
   // try geolocation so the sky matches reality out of the box.
   useEffect(() => {
     if (mode === 'sky') {
-      setDate(new Date());
-      setRate(1);
-      if (navigator.geolocation) {
+      setDate(new Date(benchmarkEnabled ? BENCHMARK_DATE : Date.now()));
+      setRate(benchmarkEnabled ? 0 : 1);
+      if (benchmarkEnabled) setObserver(DEFAULT_OBSERVER);
+      if (!benchmarkEnabled && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             setObserver({
@@ -286,6 +291,7 @@ function App() {
           </svg>
         </button>
         <div className="app__toolbar-items">
+          <GraphicsSettings />
           {voice.agentId && (
             <button
               className={`app__toolbar-btn${voice.status !== 'off' ? ' app__toolbar-btn--voice-on' : ''}`}
@@ -517,9 +523,11 @@ function App() {
 
 function AppWithProviders() {
   return (
-    <AstronomyProvider>
-      <App />
-    </AstronomyProvider>
+    <GraphicsQualityProvider>
+      <AstronomyProvider>
+        <App />
+      </AstronomyProvider>
+    </GraphicsQualityProvider>
   );
 }
 

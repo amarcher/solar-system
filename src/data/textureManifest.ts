@@ -58,13 +58,14 @@ export const textureManifest: readonly TextureAsset[] = [
     id: 'milky-way', kind: 'sky',
     variants: [
       { path: '/textures/skybox/stars_milky_way_2k.jpg', width: 2048, height: 1024 },
+      { path: '/textures/skybox/stars_milky_way_4k.jpg', width: 4096, height: 2048, detailOnly: true },
       { path: '/textures/skybox/stars_milky_way_8k.jpg', width: 8192, height: 4096, detailOnly: true },
     ],
     provenance: {
-      status: 'pending', credit: 'Solar System Scope (existing README attribution; verification pending)',
+      status: 'verified', credit: 'Solar System Scope',
       sourceUrl: 'https://www.solarsystemscope.com/textures/',
       licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
-      notes: 'Verify the source file before redistributing modified versions.',
+      notes: '8K source verified byte-for-byte against publisher on 2026-09-21. 4K derived with sips; see docs/assets/sky-quality.md. Star-rich artistic panorama.',
     },
   },
   ...['01', '02', '03'].map((number): TextureAsset => ({
