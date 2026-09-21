@@ -163,8 +163,10 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
           flyInDone.current = true;
           flyInTime.current = 0;
         } else {
-          // Continuously track the orbiting moon
-          controls.moveTo(moonPos.x, moonPos.y, moonPos.z, !reducedMotion);
+          // At close range, smoothing a moving target can leave the moon
+          // outside the frame. Preserve the user's orbit offset while tracking
+          // its center exactly once the initial flight has settled.
+          controls.moveTo(moonPos.x, moonPos.y, moonPos.z, !settled.current && !reducedMotion);
         }
       }
     } else if (trackingPlanetId.current) {
