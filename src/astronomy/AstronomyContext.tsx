@@ -15,9 +15,11 @@ export function AstronomyProvider({ children }: { children: ReactNode }) {
 
   // Time state: ref for per-frame reads, useState for 1Hz UI updates.
   const timeRef = useRef<number>(INITIAL_SIM_TIME_MS);
-  const rateRef = useRef<number>(benchmarkEnabled ? 0 : 1);
   const [displayTime, setDisplayTime] = useState(() => new Date(INITIAL_SIM_TIME_MS));
-  const [rate, setRateState] = useState(benchmarkEnabled ? 0 : 1);
+  const [rate, setRateState] = useState(() => (
+    benchmarkEnabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 86400
+  ));
+  const rateRef = useRef<number>(rate);
 
   // Throttled display-time sync (~1Hz)
   useEffect(() => {
