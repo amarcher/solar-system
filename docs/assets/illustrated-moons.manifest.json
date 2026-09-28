@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "generator": "scripts/assets/build_illustrated_moons.py",
+  "pillowVersion": "12.3.0",
+  "numpyVersion": "2.4.6",
+  "observedData": "None beyond approximate mean brightness. Artist's illustration.",
+  "bodies": [
+    {
+      "id": "proteus",
+      "parameters": {
+        "seed": 8,
+        "base": 0.4,
+        "contrast": 0.2,
+        "tint": [
+          1.0,
+          0.99,
+          0.97
+        ],
+        "craters": 220,
+        "max_radius": 0.45,
+        "giant": [
+          0.62,
+          -0.17,
+          -1.5
+        ]
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/proteus_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 53979,
+          "sha256": "a80b163ec1fc83b4ab036e66d5c9316054d8d7b825521760f7255d3a40510d64"
+        },
+        {
+          "path": "public/textures/2k/proteus_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 141894,
+          "sha256": "2a30b9b38a521ba7d5098322726364ec0273b02e893a9810a4ecbead0371fdf6"
+        }
+      ]
+    },
+    {
+      "id": "nereid",
+      "parameters": {
+        "seed": 2,
+        "base": 0.5,
+        "contrast": 0.16,
+        "tint": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "craters": 160,
+        "max_radius": 0.4
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/nereid_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 45464,
+          "sha256": "27d3aeb398558e4a6cda8d297031fa11e594767348403485702a1be8c13fb13c"
+        },
+        {
+          "path": "public/textures/2k/nereid_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 118000,
+          "sha256": "5076cb324079be6d7e64a79a644d8dd4d694cb5bb72355a8fe663d84a68aee90"
+        }
+      ]
+    },
+    {
+      "id": "styx",
+      "parameters": {
+        "seed": 5,
+        "base": 0.72,
+        "contrast": 0.12,
+        "tint": [
+          0.99,
+          0.99,
+          1.0
+        ],
+        "craters": 90,
+        "max_radius": 0.45
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/styx_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 33755,
+          "sha256": "1fe2ecada8dc9b3336faf80226a322a046e2d9f0d0b40ef734adf9f2eae616b3"
+        },
+        {
+          "path": "public/textures/2k/styx_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 92067,
+          "sha256": "a372c232a77203a4833bc6e48b99fe6de9094b0064c6a8cae067d6160d4067d0"
+        }
+      ]
+    },
+    {
+      "id": "kerberos",
+      "parameters": {
+        "seed": 4,
+        "base": 0.66,
+        "contrast": 0.13,
+        "tint": [
+          0.99,
+          0.99,
+          1.0
+        ],
+        "craters": 110,
+        "max_radius": 0.45
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/kerberos_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 38720,
+          "sha256": "befa74e7943bfeda859c1817cae1b0f00b3f9bae349122a42b60fa5e1d2fb736"
+        },
+        {
+          "path": "public/textures/2k/kerberos_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 104133,
+          "sha256": "73a5df1cd82fd7723e466d8897e663610ee29e9816e0a8545b569552116373a1"
+        }
+      ]
+    }
+  ]
+}

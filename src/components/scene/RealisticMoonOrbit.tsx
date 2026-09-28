@@ -10,6 +10,8 @@ import { useAstronomy } from '../../astronomy/useAstronomy';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
+import { useLabelBelow } from './useLabelBelow';
+import { weldSeamNormals } from '../../utils/weldSeamNormals';
 import { LUNAR_ORRERY_RADIUS, LUNAR_PATH_SEGMENTS, lunarOrreryPosition, nextLunarPathSample, sampleLunarOrreryPath, type LunarPathSample } from '../../astronomy/lunarOrrery';
 
 const TWO_PI = Math.PI * 2;
@@ -84,6 +86,7 @@ function createIrregularGeometry(radius: number, moonId: string): SphereGeometry
   }
   pos.needsUpdate = true;
   geo.computeVertexNormals();
+  weldSeamNormals(geo);
   return geo;
 }
 
@@ -138,6 +141,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
     () => moon.shape === 'irregular' ? createIrregularGeometry(visualRadius, moon.id) : null,
     [moon.shape, moon.id, visualRadius],
   );
+  const labelRef = useLabelBelow(visualRadius, { irregularMesh: irregularGeo ? moonMeshRef : undefined });
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
@@ -176,16 +180,17 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
     if (moonMeshRef.current && rate !== 0) {
       const simDelta = delta * rate; // sim-seconds this frame
       if (moon.chaoticRotation) {
-        // Chaotic: scale tumble with time but keep it moderate
+        // Tumble about all three axes at the measured mean spin rate, in sim time.
         const seed = hashString(moon.id);
         const r1 = 0.2 + (seed % 100) / 500;
         const r2 = 0.15 + ((seed >> 8) % 100) / 400;
         const r3 = 0.1 + ((seed >> 16) % 100) / 600;
-        // Use sqrt of simDelta to keep tumble visible but not insane at high rates
-        const tumbleDelta = Math.sqrt(Math.abs(simDelta)) * Math.sign(simDelta);
-        moonMeshRef.current.rotation.x += tumbleDelta * r1;
-        moonMeshRef.current.rotation.y += tumbleDelta * r2;
-        moonMeshRef.current.rotation.z += tumbleDelta * r3;
+        const norm = Math.hypot(r1, r2, r3);
+        const periodSec = (moon.tumblePeriod ?? moon.orbitalPeriod * 24) * 3600;
+        const angle = simDelta * TWO_PI / periodSec;
+        moonMeshRef.current.rotation.x += angle * r1 / norm;
+        moonMeshRef.current.rotation.y += angle * r2 / norm;
+        moonMeshRef.current.rotation.z += angle * r3 / norm;
       } else {
         const periodHours = moon.rotationPeriod ?? (moon.orbitalPeriod * 24);
         const periodSec = Math.abs(periodHours) * 3600;
@@ -245,20 +250,21 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
         </mesh>
 
         {showLabel && (
-          <Html
-            position={[0, -(visualRadius + 0.15), 0]}
-            center
-            style={{ pointerEvents: 'none' }}
-          >
-            <button
-              type="button"
-              className="scene-label scene-label--moon"
-              aria-label={`Explore ${moon.name}`}
-              onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+          <group ref={labelRef}>
+            <Html
+              center
+              style={{ pointerEvents: 'none' }}
             >
-              {moon.name}
-            </button>
-          </Html>
+              <button
+                type="button"
+                className="scene-label scene-label--moon scene-label--below"
+                aria-label={`Explore ${moon.name}`}
+                onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+              >
+                {moon.name}
+              </button>
+            </Html>
+          </group>
         )}
       </group>
     </>

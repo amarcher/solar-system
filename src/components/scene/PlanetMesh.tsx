@@ -10,6 +10,7 @@ import { usePlanetTexture, useTexturePath, useRingTexture } from '../../utils/te
 import * as AstronomyService from '../../astronomy/AstronomyService';
 import { celestialRotationMatrix } from '../../astronomy/celestialCoordinates';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
+import { useLabelBelow } from './useLabelBelow';
 import './SceneLabels.css';
 
 interface PlanetMeshProps {
@@ -123,6 +124,10 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
     : Math.max(planet.visualRadius * 3, 1.0);
 
   const axialTiltRad = planet.axialTilt * (Math.PI / 180);
+  const ringed = planet.hasRings && (planet.id === 'saturn' || planet.id === 'uranus');
+  const labelRef = useLabelBelow(planet.visualRadius, {
+    ring: ringed ? { plane: axisRef, radius: planet.visualRadius * planetRingOuterMultiplier(planet.id) } : undefined,
+  });
 
   return (
     <group>
@@ -180,20 +185,18 @@ export function PlanetMesh({ planet, onClick, showLabel = true, showMoons = fals
           A real <button> so the planet is clickable and keyboard-reachable
           even though the mesh itself is a tiny moving target. */}
       {showLabel && (
-        <Html
-          position={[0, -(planet.visualRadius + 0.3), 0]}
-          center
-          style={{ pointerEvents: 'none' }}
-        >
-          <button
-            type="button"
-            className="scene-label"
-            aria-label={`Explore ${planet.name}`}
-            onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-          >
-            {planet.name}
-          </button>
-        </Html>
+        <group ref={labelRef}>
+          <Html center style={{ pointerEvents: 'none' }}>
+            <button
+              type="button"
+              className="scene-label scene-label--below"
+              aria-label={`Explore ${planet.name}`}
+              onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+            >
+              {planet.name}
+            </button>
+          </Html>
+        </group>
       )}
     </group>
   );

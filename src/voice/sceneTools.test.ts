@@ -77,7 +77,9 @@ describe('Stella scene tools', () => {
     expect(buildSceneContext(state)).toContain('Plain gray areas have no imagery');
     expect(buildSceneContext(state)).toContain('Body sizes and local moon offsets stay unchanged');
     state.nav = { level: 'moon', planetId: 'mars', moonId: 'phobos' };
-    expect(buildSceneContext(state)).toContain('attribution remains under review');
+    expect(buildSceneContext(state)).toContain('Credit: Phil Stooke');
+    state.nav = { level: 'moon', planetId: 'neptune', moonId: 'nereid' };
+    expect(buildSceneContext(state)).toContain('invented, not observed');
     state.nav = { level: 'moon', planetId: 'saturn', moonId: 'unknown' };
     expect(buildSceneContext(state)).toContain('no mapped texture');
   });

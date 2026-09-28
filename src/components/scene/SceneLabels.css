@@ -42,6 +42,12 @@
   background: rgba(255, 215, 0, 0.12);
 }
 
+/* Hang the label just under its anchor point in screen pixels, so the gap
+   stays tight at any zoom instead of scaling with scene units. */
+.scene-label--below {
+  transform: translateY(calc(50% + 2px));
+}
+
 .scene-label--moon {
   font-size: 10px;
   color: rgba(255, 255, 255, 0.65);

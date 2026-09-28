@@ -97,9 +97,19 @@ Orrery mode uses true `astronomy-engine` heliocentric ephemeris vectors, then ma
 
 ## Credits
 
-**Original planet & moon diffuse textures** — Existing collection attributed to [Solar System Scope](https://www.solarsystemscope.com/textures/) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Body maps now use an explicit bundled inventory with bounded texture ownership. The old eager 8K CDN upgrade has been retired to avoid upgrading every planet at startup. Individual legacy moon-map provenance is under review; collection-level attribution is not individual verification. See `src/data/textureManifest.ts` for known limitations.
+**Planet, Sun, Earth, and Moon textures** — [Solar System Scope](https://www.solarsystemscope.com/textures/) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (Mercury, Venus, Earth, Moon, Mars, Jupiter, Saturn, Uranus, Neptune, Sun; unmodified).
+
+**Pluto, Ceres, and most moon textures** — Public-domain NASA, USGS Astrogeology, and NASA Planetary Data System mosaics: NASA/JHUAPL/SwRI (Pluto, Charon); NASA/JPL-Caltech/UCLA/MPS/DLR/IDA (Ceres); NASA/JPL/USGS (Io, Europa, Ganymede, Callisto); NASA/JPL-Caltech/Univ. Arizona (Titan); NASA/JPL-Caltech/SSI/LPI, Paul Schenk (Enceladus, Mimas, Rhea, Dione, Tethys, Iapetus, Triton); Stooke, P., *Stooke Small Bodies Maps V2.0*, NASA PDS (Phobos, Deimos). Resized; some colors toned down, grayscale mosaics tinted, and unimaged areas shown in plain gray. [Sources, terms, and processing](docs/assets/public-domain-maps.md).
+
+**Hyperion texture** — ItzImcool, via [CelestiaContent](https://github.com/CelestiaProject/CelestiaContent) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Unmodified.
 
 **Miranda, Ariel, Titania, Oberon, and Umbriel textures** — Voyager imagery: **USGS/Tammy Becker & JPL/Caltech**, via [NASA 3D Resources](https://science.nasa.gov/3d-resources/), used under [NASA's media usage guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/). Resized for display; areas without imagery shown in plain gray. These are partial southern-hemisphere mosaics, not complete global observations. [Sources, coverage, transformations, and hashes](docs/assets/uranian-moons.md).
+
+**Amalthea texture** — Shaded-relief map drawn from Voyager images by Phil Stooke: *Stooke, P., Stooke Small Bodies Maps V2.0, MULTI-SA-MULTI-6-STOOKEMAPS-V2.0, NASA Planetary Data System, 2012* (public domain). Resized for display.
+
+**Nix and Hydra textures** — [Askaniy](https://www.deviantart.com/askaniy), from NASA/JHUAPL/SwRI New Horizons images · [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Gray-calibrated variants, resized and re-encoded. Partial, low-resolution coverage. [Sources and hashes](docs/assets/small-moons.md).
+
+**Proteus, Nereid, Styx, and Kerberos textures** — Procedurally generated artist's illustrations; no observed surface maps exist. Labeled as imagined in the app. [How they are made](docs/assets/illustrated-moons.md).
 
 
 **Milky Way starfield backdrop** — Solar System Scope · CC BY 4.0. The bundled 8K source was verified byte-for-byte against the publisher. Automatic/Smoother use 2K; More detail uses a 4K derivative. See `docs/assets/sky-quality.md` for the conversion and source hash.

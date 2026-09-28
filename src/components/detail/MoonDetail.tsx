@@ -111,7 +111,7 @@ export function MoonDetail({ moon, onClose, onBack }: MoonDetailProps) {
               <span className="moon-detail__prop-label">Day Length</span>
               <span className="moon-detail__prop-value">
                 {moon.chaoticRotation
-                  ? 'Chaotic (unpredictable)'
+                  ? `Chaotic${moon.tumblePeriod ? ` (spins about every ${moon.tumblePeriod < 48 ? `${Math.round(moon.tumblePeriod)} hours` : `${(moon.tumblePeriod / 24).toFixed(1)} days`})` : ' (unpredictable)'}`
                   : `${(moon.rotationPeriod ?? moon.orbitalPeriod * 24).toFixed(1)} hours`}
               </span>
             </div>

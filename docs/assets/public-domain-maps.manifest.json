@@ -1,0 +1,500 @@
+{
+  "schemaVersion": 1,
+  "sourceCatalog": "scripts/assets/public-domain-maps.sources.json",
+  "pillowVersion": "12.3.0",
+  "numpyVersion": "2.4.6",
+  "jpegEncoding": {
+    "quality": 90,
+    "subsampling": 0,
+    "optimize": true
+  },
+  "bodies": [
+    {
+      "id": "phobos",
+      "sourceSha256": "d7f2d96f63076bc0150779e9dca7fdec2f1acff94d275602dbc3eaf75524b743",
+      "steps": {
+        "sourceDimensions": [
+          14400,
+          7200
+        ]
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/phobos_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 163894,
+          "sha256": "166fa38e8f8597021bcff09b119cc07f429ad89507198d3cd8a2176f1fd3480a"
+        },
+        {
+          "path": "public/textures/2k/phobos_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 563377,
+          "sha256": "0eece0f0fc47944c839a5dadee3f7c3754a47e6687c02670232b9a6401b1a9b1"
+        }
+      ]
+    },
+    {
+      "id": "deimos",
+      "sourceSha256": "90ff4ac7f23ece9255774cf72f9ed9ca5be861d9f2aa136977fc2d460141ad6d",
+      "steps": {
+        "sourceDimensions": [
+          7200,
+          3600
+        ]
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/deimos_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 82174,
+          "sha256": "b1dea07422f5de362daf7cd381f0d94ec1dc2f71ef5ff2c54b7114d363b76838"
+        },
+        {
+          "path": "public/textures/2k/deimos_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 270386,
+          "sha256": "08ea686c6686139b0a4b87ac23ab675b8b80fb1baf79a381b4ec30a4682a49f4"
+        }
+      ]
+    },
+    {
+      "id": "io",
+      "sourceSha256": "135f88cb645bfdb4e045b380971ab2ba14e230590c96c9c86cfe7310fda881ac",
+      "steps": {
+        "sourceDimensions": [
+          11445,
+          5723
+        ],
+        "rollFraction": 0.5
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/io_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 153055,
+          "sha256": "4fdc3084122edc138b9e231347f2ebeef8c129e83497abe26f305cecc3d5e129"
+        },
+        {
+          "path": "public/textures/2k/io_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 485441,
+          "sha256": "e60f35ba0cb3342cf9c1b257ff6f4f654fb0e63bad5a2e215d518bfc1ba4f91a"
+        }
+      ]
+    },
+    {
+      "id": "europa",
+      "sourceSha256": "a323f0c9ccb47d5af9902ea8297fe81f9a9708795645b80801f103c3f7c9a624",
+      "steps": {
+        "sourceDimensions": [
+          19631,
+          9816
+        ],
+        "noDataFilledFraction": 0.0431,
+        "tint": [
+          1.0,
+          0.96,
+          0.88
+        ]
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/europa_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 152281,
+          "sha256": "73cdc978afa635feda651c5f1c8333a8a3b897a42e03e4c241cad23db6b849ff"
+        },
+        {
+          "path": "public/textures/2k/europa_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 600018,
+          "sha256": "f5359ec954f0de0d03166ce4dc2b5a8aadd42eee8095443410f7b4922b26ac9e"
+        }
+      ]
+    },
+    {
+      "id": "ganymede",
+      "sourceSha256": "da47087e75bc530456d8206d5100ad3c687706353700b0cb44a8400957005a33",
+      "steps": {
+        "sourceDimensions": [
+          11520,
+          5760
+        ],
+        "noDataFilledFraction": 0.0359
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/ganymede_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 140544,
+          "sha256": "b92ab92657f28091b337bc22277feb1555b3618ef564c864a14a32444af5a11f"
+        },
+        {
+          "path": "public/textures/2k/ganymede_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 537798,
+          "sha256": "aed182d2a6807c815bca47d1cecf3711efb049b2a4f70de116000360f5cd75ff"
+        }
+      ]
+    },
+    {
+      "id": "callisto",
+      "sourceSha256": "e1f0bd2e0e05de605d067d6b5f5ededddaf31ca6c064562a1ca770f15a7dbaa3",
+      "steps": {
+        "sourceDimensions": [
+          15138,
+          7569
+        ],
+        "noDataFilledFraction": 0.0382,
+        "tint": [
+          1.0,
+          0.94,
+          0.86
+        ]
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/callisto_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 122857,
+          "sha256": "0ec01e9bed11bba639c615b73cba4d2f5d7c5c675a7d03d5e2a1eaa6028cf3ce"
+        },
+        {
+          "path": "public/textures/2k/callisto_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 492270,
+          "sha256": "0cd53b1e4374b5b78ca4fbdfb7521a7c089706af2cb160c5347fe90969e59bb4"
+        }
+      ]
+    },
+    {
+      "id": "titan",
+      "sourceSha256": "fb0bede43c59e34f313ba0306808ef60b10d2793673cf199c277a2f03432f07c",
+      "steps": {
+        "sourceDimensions": [
+          5760,
+          2880
+        ],
+        "tint": [
+          1.0,
+          0.92,
+          0.78
+        ]
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/titan_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 107637,
+          "sha256": "f26a8f50b7fe419dd9ece579efc7eb640c17d38c383d592dfb9ee93ce8f610e4"
+        },
+        {
+          "path": "public/textures/2k/titan_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 334505,
+          "sha256": "0f43f49d376887c11c91eda90c4aa916e9c434e0205321d6370ce2ddfe099f19"
+        }
+      ]
+    },
+    {
+      "id": "enceladus",
+      "sourceSha256": "5b60d0161efd659f6d95281559ad4b30826fd02ee72944dbb3f8b7679f65ed4d",
+      "steps": {
+        "sourceDimensions": [
+          15960,
+          7980
+        ],
+        "saturation": 0.3
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/enceladus_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 235039,
+          "sha256": "1259ab2e914bc327909ddb6d46db10cbb1f8611e1740742e81d1f8f8d7c3e8ac"
+        },
+        {
+          "path": "public/textures/2k/enceladus_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 960083,
+          "sha256": "0312f85be6c6fd2c8ef0a0c286aec2f2bbcaa67baff8ff26175a30a1e4dc4bfe"
+        }
+      ]
+    },
+    {
+      "id": "mimas",
+      "sourceSha256": "303d5653875d507e8859a26d0afdedd0173c7d4e691f27c3266ca63d1aa4f97f",
+      "steps": {
+        "sourceDimensions": [
+          6356,
+          3178
+        ],
+        "saturation": 0.3
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/mimas_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 206610,
+          "sha256": "97df2892af0f44544f4a483955f0aea50b0472db0e69717593c144b4fbbc4f04"
+        },
+        {
+          "path": "public/textures/2k/mimas_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 626633,
+          "sha256": "ef731dc1f251b80cfb07760b5b25ad96984e19095f27ea35005c50ca08346613"
+        }
+      ]
+    },
+    {
+      "id": "rhea",
+      "sourceSha256": "4a3f4c5cca6ec558a6dcd664ee818dd700df527fc07fe623d1c56d4e2ae81bc4",
+      "steps": {
+        "sourceDimensions": [
+          12015,
+          6008
+        ],
+        "saturation": 0.3
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/rhea_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 244868,
+          "sha256": "a8433db1be8cfe9760dd82e6fabcb65c1ac20d21581ae7c3bc589ec244e1e56e"
+        },
+        {
+          "path": "public/textures/2k/rhea_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 938971,
+          "sha256": "39b5e7234035fa2ca3c79fefc42e3455f826892a227f82e7792f4d0d670de7b2"
+        }
+      ]
+    },
+    {
+      "id": "dione",
+      "sourceSha256": "5e885d0e3bac1e1ee36934063d5c9cdf609dc10ad44677cba31bc9e703b674ff",
+      "steps": {
+        "sourceDimensions": [
+          14134,
+          7067
+        ],
+        "saturation": 0.3
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/dione_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 205062,
+          "sha256": "b970517927cde6ba7cc21b4201b4babf49571e311531cfe7992322cad7dc615f"
+        },
+        {
+          "path": "public/textures/2k/dione_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 766491,
+          "sha256": "73b2dcf0e08891950f9da4820a76985e0b1049ebb49fd0b2ba0370abd376c636"
+        }
+      ]
+    },
+    {
+      "id": "tethys",
+      "sourceSha256": "aa3c249de2432699157638dae11c6f5c5e22c3dda94dd803af8666269f1a3da4",
+      "steps": {
+        "sourceDimensions": [
+          13467,
+          6734
+        ],
+        "saturation": 0.3
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/tethys_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 241927,
+          "sha256": "f848e7f47d7f8da7d4bb34befe6fe88b96ef752923a1428183550ee719f617e4"
+        },
+        {
+          "path": "public/textures/2k/tethys_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 887007,
+          "sha256": "b76d8b25edec94073a00574ae8082b4bd145e79a89a79de1cefd184a1d21764e"
+        }
+      ]
+    },
+    {
+      "id": "iapetus",
+      "sourceSha256": "6e0e1d17a50343d9176912d047392c4f7cd67c48bdb30789918a4ff24d9f683b",
+      "steps": {
+        "sourceDimensions": [
+          11741,
+          5871
+        ],
+        "saturation": 0.3
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/iapetus_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 154502,
+          "sha256": "2dd96a12b3069f2f34afab0bd27b4b8a197fdb0b60d3aa106fbc30a1f219c6e2"
+        },
+        {
+          "path": "public/textures/2k/iapetus_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 546569,
+          "sha256": "e82387b6577f0af929d58ba5f6b10c16729e0481e29a7832f0831cb94f88542a"
+        }
+      ]
+    },
+    {
+      "id": "triton",
+      "sourceSha256": "eabcd1c5e4170a271d09cd4a525e838063f470ec88844265f916f42b8dfbd2cc",
+      "steps": {
+        "sourceDimensions": [
+          14138,
+          7069
+        ],
+        "noDataFilledFraction": 0.3859,
+        "saturation": 0.5
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/triton_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 89967,
+          "sha256": "0f982bc45798b46ca708d42d71bab891985cb6e8da40e3d0a986b2d4af807cae"
+        },
+        {
+          "path": "public/textures/2k/triton_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 299054,
+          "sha256": "a25063bbc5e9c59339d5b21bd7b4e19918c74ebf657b288c03c7046cfca96211"
+        }
+      ]
+    },
+    {
+      "id": "charon",
+      "sourceSha256": "4a874809e0a33a851cd026b8e4647f5875ed15807e677d413812367509564b00",
+      "steps": {
+        "sourceDimensions": [
+          12693,
+          6347
+        ],
+        "noDataFilledFraction": 0.3411
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/charon_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 98845,
+          "sha256": "6fb88638a49753d6c6fcc635ebfb29e82925e22f024f6342201f8d11cf2b5a55"
+        },
+        {
+          "path": "public/textures/2k/charon_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 340043,
+          "sha256": "fa08ab1a5ae87038ccdb2a6ed2e433947102344213308dbb5aff7e74ecc6e736"
+        }
+      ]
+    },
+    {
+      "id": "pluto",
+      "sourceSha256": "e5a2717a8c8baaa580ab64b87ed5f30a9a1d91456538eb130b8ee6af6163a8e5",
+      "steps": {
+        "sourceDimensions": [
+          5926,
+          2963
+        ],
+        "noDataFilledFraction": 0.3028
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/pluto_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 112547,
+          "sha256": "885ef56bd059cfa495c0d0a4b1f624fd33a432c5de41d1106ca6f2f07211bc3b"
+        },
+        {
+          "path": "public/textures/2k/pluto_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 400058,
+          "sha256": "0d7bf5e86b2b89138ec8d38ba7658564f7897a3625fed755dd73d643e9cc30fb"
+        }
+      ]
+    },
+    {
+      "id": "ceres",
+      "sourceSha256": "920f65e7d0718c9f8d5e86783f35e0b466096251a8c1f2d01a7748a6d534c154",
+      "steps": {
+        "sourceDimensions": [
+          7383,
+          3691
+        ]
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/ceres_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 216566,
+          "sha256": "27d1b554e107e0482baac850e0796c1e0683d2dfa3db5d45d7fe4132e300760b"
+        },
+        {
+          "path": "public/textures/2k/ceres_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 805001,
+          "sha256": "e3e750dca331c40361a16810844d1688dfd61258a99e8a78e7ff2ec3fccc757f"
+        }
+      ]
+    },
+    {
+      "id": "uranus",
+      "sourceSha256": "d15239d46f82d3ea13d2b260b5b29b2a382f42f2916dae0694d0387b1204a09d",
+      "steps": {
+        "copiedUnmodified": true
+      },
+      "outputs": [
+        {
+          "path": "public/textures/2k/uranus_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 77751,
+          "sha256": "d15239d46f82d3ea13d2b260b5b29b2a382f42f2916dae0694d0387b1204a09d"
+        }
+      ]
+    }
+  ]
+}

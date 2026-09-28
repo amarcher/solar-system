@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "reviewedOn": "2026-09-28",
+  "bodies": [
+    {
+      "id": "phobos",
+      "filename": "phobos_cyl_cor_control.jpg",
+      "downloadUrl": "https://sbnarchive.psi.edu/pds3/multi_mission/MULTI_SA_MULTI_6_STOOKEMAPS_V2_0/document/m1phobos/phobos_cyl_cor_control.jpg",
+      "pageUrl": "https://sbnarchive.psi.edu/pds3/multi_mission/MULTI_SA_MULTI_6_STOOKEMAPS_V2_0/document/aamapdesc.html",
+      "credit": "Stooke, P., Stooke Small Bodies Maps V2.0, MULTI-SA-MULTI-6-STOOKEMAPS-V2.0, NASA Planetary Data System, 2012",
+      "termsUrl": "https://sbnarchive.psi.edu/pds3/multi_mission/MULTI_SA_MULTI_6_STOOKEMAPS_V2_0/document/aamapdesc.html",
+      "sha256": "d7f2d96f63076bc0150779e9dca7fdec2f1acff94d275602dbc3eaf75524b743",
+      "description": "Stooke Phobos photomosaic (Viking, MGS, Mars Express, MRO), Cornell/Thomas control, grayscale"
+    },
+    {
+      "id": "deimos",
+      "filename": "deimos_cyl_viking_mro.jpg",
+      "downloadUrl": "https://sbnarchive.psi.edu/pds3/multi_mission/MULTI_SA_MULTI_6_STOOKEMAPS_V2_0/document/m2deimos/deimos_cyl_viking_mro.jpg",
+      "pageUrl": "https://sbnarchive.psi.edu/pds3/multi_mission/MULTI_SA_MULTI_6_STOOKEMAPS_V2_0/document/aamapdesc.html",
+      "credit": "Stooke, P., Stooke Small Bodies Maps V2.0, MULTI-SA-MULTI-6-STOOKEMAPS-V2.0, NASA Planetary Data System, 2012",
+      "termsUrl": "https://sbnarchive.psi.edu/pds3/multi_mission/MULTI_SA_MULTI_6_STOOKEMAPS_V2_0/document/aamapdesc.html",
+      "sha256": "90ff4ac7f23ece9255774cf72f9ed9ca5be861d9f2aa136977fc2d460141ad6d",
+      "description": "Stooke Deimos photomosaic (Viking + MRO HiRISE), grayscale"
+    },
+    {
+      "id": "io",
+      "filename": "Io_GalileoSSI-Voyager_Global_Mosaic_ClrMerge_1km.tif",
+      "downloadUrl": "https://planetarymaps.usgs.gov/mosaic/Io_GalileoSSI-Voyager_Global_Mosaic_ClrMerge_1km.tif",
+      "pageUrl": "https://astrogeology.usgs.gov/search/map/io_galileo_ssi_voyager_color_merged_global_mosaic_1km",
+      "credit": "NASA/JPL/USGS Astrogeology Science Center (Galileo SSI, Voyager)",
+      "termsUrl": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits",
+      "roll": 0.5,
+      "description": "USGS Io Galileo SSI / Voyager Color Merged Global Mosaic 1km; source centered on 180\u00b0, rolled to match app convention",
+      "sha256": "135f88cb645bfdb4e045b380971ab2ba14e230590c96c9c86cfe7310fda881ac"
+    },
+    {
+      "id": "europa",
+      "filename": "Europa_Voyager_GalileoSSI_global_mosaic_500m.tif",
+      "downloadUrl": "https://planetarymaps.usgs.gov/mosaic/Europa_Voyager_GalileoSSI_global_mosaic_500m.tif",
+      "pageUrl": "https://astrogeology.usgs.gov/search/map/Europa/Voyager-Galileo/Europa_Voyager_GalileoSSI_global_mosaic_500m",
+      "credit": "NASA/JPL/USGS Astrogeology Science Center (Voyager, Galileo SSI)",
+      "termsUrl": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits",
+      "fillNoData": true,
+      "tint": [
+        1.0,
+        0.96,
+        0.88
+      ],
+      "description": "USGS Europa Voyager - Galileo SSI Global Mosaic 500m (grayscale)",
+      "sha256": "a323f0c9ccb47d5af9902ea8297fe81f9a9708795645b80801f103c3f7c9a624"
+    },
+    {
+      "id": "ganymede",
+      "filename": "Ganymede_Voyager_GalileoSSI_Global_ClrMosaic_1435m.tif",
+      "downloadUrl": "https://planetarymaps.usgs.gov/mosaic/Ganymede_Voyager_GalileoSSI_Global_ClrMosaic_1435m.tif",
+      "pageUrl": "https://astrogeology.usgs.gov/search/map/ganymede_voyager_galileo_ssi_color_global_mosaic_1_4km",
+      "credit": "NASA/JPL/USGS Astrogeology Science Center (Voyager, Galileo SSI)",
+      "termsUrl": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits",
+      "fillNoData": true,
+      "description": "USGS Ganymede Voyager - Galileo SSI Color Global Mosaic 1.4km",
+      "sha256": "da47087e75bc530456d8206d5100ad3c687706353700b0cb44a8400957005a33"
+    },
+    {
+      "id": "callisto",
+      "filename": "Callisto_Voyager_GalileoSSI_global_mosaic_1km.tif",
+      "downloadUrl": "https://planetarymaps.usgs.gov/mosaic/Callisto_Voyager_GalileoSSI_global_mosaic_1km.tif",
+      "pageUrl": "https://astrogeology.usgs.gov/search/map/callisto_galileo_voyager_global_mosaic_1km",
+      "credit": "NASA/JPL/USGS Astrogeology Science Center (Voyager, Galileo SSI)",
+      "termsUrl": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits",
+      "fillNoData": true,
+      "tint": [
+        1.0,
+        0.94,
+        0.86
+      ],
+      "description": "USGS Callisto Voyager - Galileo SSI Global Mosaic 1km (grayscale)",
+      "sha256": "e1f0bd2e0e05de605d067d6b5f5ededddaf31ca6c064562a1ca770f15a7dbaa3"
+    },
+    {
+      "id": "titan",
+      "filename": "PIA22770.jpg",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia22/pia22770/PIA22770.jpg",
+      "pageUrl": "https://photojournal.jpl.nasa.gov/catalog/PIA22770",
+      "credit": "NASA/JPL-Caltech/Univ. Arizona",
+      "termsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "tint": [
+        1.0,
+        0.92,
+        0.78
+      ],
+      "description": "PIA22770 Titan Mosaic: The Surface Under the Haze (Cassini ISS 938 nm, grayscale)",
+      "sha256": "fb0bede43c59e34f313ba0306808ef60b10d2793673cf199c277a2f03432f07c"
+    },
+    {
+      "id": "enceladus",
+      "filename": "PIA18435.jpg",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia18/pia18435/PIA18435.jpg",
+      "pageUrl": "https://photojournal.jpl.nasa.gov/catalog/PIA18435",
+      "credit": "NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute",
+      "termsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "saturation": 0.3,
+      "description": "Color Maps of Enceladus (Paul Schenk, LPI): Cassini ISS + Voyager enhanced-color global mosaic, 2014",
+      "sha256": "5b60d0161efd659f6d95281559ad4b30826fd02ee72944dbb3f8b7679f65ed4d"
+    },
+    {
+      "id": "mimas",
+      "filename": "PIA18437.jpg",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia18/pia18437/PIA18437.jpg",
+      "pageUrl": "https://photojournal.jpl.nasa.gov/catalog/PIA18437",
+      "credit": "NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute",
+      "termsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "saturation": 0.3,
+      "description": "Color Maps of Mimas (Paul Schenk, LPI): Cassini ISS + Voyager enhanced-color global mosaic, 2014",
+      "sha256": "303d5653875d507e8859a26d0afdedd0173c7d4e691f27c3266ca63d1aa4f97f"
+    },
+    {
+      "id": "rhea",
+      "filename": "PIA18438.jpg",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia18/pia18438/PIA18438.jpg",
+      "pageUrl": "https://photojournal.jpl.nasa.gov/catalog/PIA18438",
+      "credit": "NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute",
+      "termsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "saturation": 0.3,
+      "description": "Color Maps of Rhea (Paul Schenk, LPI): Cassini ISS + Voyager enhanced-color global mosaic, 2014",
+      "sha256": "4a3f4c5cca6ec558a6dcd664ee818dd700df527fc07fe623d1c56d4e2ae81bc4"
+    },
+    {
+      "id": "dione",
+      "filename": "PIA18434.jpg",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia18/pia18434/PIA18434.jpg",
+      "pageUrl": "https://photojournal.jpl.nasa.gov/catalog/PIA18434",
+      "credit": "NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute",
+      "termsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "saturation": 0.3,
+      "description": "Color Maps of Dione (Paul Schenk, LPI): Cassini ISS + Voyager enhanced-color global mosaic, 2014",
+      "sha256": "5e885d0e3bac1e1ee36934063d5c9cdf609dc10ad44677cba31bc9e703b674ff"
+    },
+    {
+      "id": "tethys",
+      "filename": "PIA18439.jpg",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia18/pia18439/PIA18439.jpg",
+      "pageUrl": "https://photojournal.jpl.nasa.gov/catalog/PIA18439",
+      "credit": "NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute",
+      "termsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "saturation": 0.3,
+      "description": "Color Maps of Tethys (Paul Schenk, LPI): Cassini ISS + Voyager enhanced-color global mosaic, 2014",
+      "sha256": "aa3c249de2432699157638dae11c6f5c5e22c3dda94dd803af8666269f1a3da4"
+    },
+    {
+      "id": "iapetus",
+      "filename": "PIA18436.jpg",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia18/pia18436/PIA18436.jpg",
+      "pageUrl": "https://photojournal.jpl.nasa.gov/catalog/PIA18436",
+      "credit": "NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute",
+      "termsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "saturation": 0.3,
+      "description": "Color Maps of Iapetus (Paul Schenk, LPI): Cassini ISS + Voyager enhanced-color global mosaic, 2014",
+      "sha256": "6e0e1d17a50343d9176912d047392c4f7cd67c48bdb30789918a4ff24d9f683b"
+    },
+    {
+      "id": "triton",
+      "filename": "PIA18668.jpg",
+      "downloadUrl": "https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia18/pia18668/PIA18668.jpg",
+      "pageUrl": "https://science.nasa.gov/photojournal/map-of-triton",
+      "credit": "NASA/JPL-Caltech/Lunar & Planetary Institute (Paul Schenk)",
+      "termsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "sha256": "eabcd1c5e4170a271d09cd4a525e838063f470ec88844265f916f42b8dfbd2cc",
+      "fillNoData": true,
+      "saturation": 0.5,
+      "description": "PIA18668 Map of Triton (Voyager 2 enhanced-color global mosaic; also USGS Triton Voyager 2 Global Color Mosaic 600m)"
+    },
+    {
+      "id": "charon",
+      "filename": "Charon_NewHorizons_Global_Mosaic_300m_Jul2017_8bit.tif",
+      "downloadUrl": "https://planetarymaps.usgs.gov/mosaic/Charon_NewHorizons_Global_Mosaic_300m_Jul2017_8bit.tif",
+      "pageUrl": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m",
+      "credit": "NASA/Johns Hopkins University Applied Physics Laboratory/Southwest Research Institute/Lunar and Planetary Institute (New Horizons Team), via USGS Astrogeology",
+      "termsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "sha256": "4a874809e0a33a851cd026b8e4647f5875ed15807e677d413812367509564b00",
+      "fillNoData": true,
+      "description": "USGS Charon New Horizons LORRI MVIC Global Mosaic 300m (grayscale)"
+    },
+    {
+      "id": "pluto",
+      "filename": "PIA11707.jpg",
+      "downloadUrl": "https://images-assets.nasa.gov/image/PIA11707/PIA11707~orig.jpg",
+      "pageUrl": "https://photojournal.jpl.nasa.gov/catalog/PIA11707",
+      "credit": "NASA/Johns Hopkins University Applied Physics Laboratory/Southwest Research Institute",
+      "termsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "fillNoData": true,
+      "noDataThreshold": 24,
+      "description": "PIA11707 Pluto Color Map (New Horizons LORRI + Ralph/MVIC)",
+      "sha256": "e5a2717a8c8baaa580ab64b87ed5f30a9a1d91456538eb130b8ee6af6163a8e5"
+    },
+    {
+      "id": "ceres",
+      "filename": "Ceres_Dawn_FC_DLR_global_20ppd_Oct2015.tif",
+      "downloadUrl": "https://planetarymaps.usgs.gov/mosaic/Ceres_Dawn_FC_DLR_global_20ppd_Oct2015.tif",
+      "pageUrl": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_global_mosaic_400m",
+      "credit": "NASA/JPL-Caltech/UCLA/MPS/DLR/IDA, via USGS Astrogeology",
+      "termsUrl": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits",
+      "description": "USGS Ceres Dawn FC Global Mosaic 400m (grayscale)",
+      "sha256": "920f65e7d0718c9f8d5e86783f35e0b466096251a8c1f2d01a7748a6d534c154"
+    },
+    {
+      "id": "uranus",
+      "filename": "2k_uranus.jpg",
+      "downloadUrl": "https://www.solarsystemscope.com/textures/download/2k_uranus.jpg",
+      "pageUrl": "https://www.solarsystemscope.com/textures/",
+      "credit": "Solar System Scope",
+      "termsUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "copyUnmodified": true,
+      "description": "Solar System Scope 2k Uranus, CC BY 4.0",
+      "sha256": "d15239d46f82d3ea13d2b260b5b29b2a382f42f2916dae0694d0387b1204a09d"
+    }
+  ]
+}

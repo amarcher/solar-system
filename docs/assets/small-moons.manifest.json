@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "sourceCatalog": "scripts/assets/small-moons.sources.json",
+  "pillowVersion": "12.3.0",
+  "jpegEncoding": {
+    "quality": 92,
+    "subsampling": 0,
+    "optimize": true
+  },
+  "bodies": [
+    {
+      "id": "amalthea",
+      "sourceSha256": "ce06bc8736a29f57724aa572b3606ffb9c0bf5beabb373acc61aeded3808ee96",
+      "outputs": [
+        {
+          "path": "public/textures/1k/amalthea_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 66433,
+          "sha256": "f4a444de24c820b55ae71c2b1cf500a49ef3c9d992dbf1b478e64b202cfa1000"
+        },
+        {
+          "path": "public/textures/2k/amalthea_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 196240,
+          "sha256": "3c7df9b6d591c40d448e8aa805d439763a37a53d1759bcbb982c492f20c75a76"
+        }
+      ]
+    },
+    {
+      "id": "nix",
+      "sourceSha256": "dd127e2234cb0198eb19be08a83a7c9f00c82ec21c903d2790047bf18f9f5252",
+      "outputs": [
+        {
+          "path": "public/textures/1k/nix_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 26560,
+          "sha256": "2d2b1ca03fd5dd7e02d104ee64ba08b580a8e291ea992ebdd4e768fda4a41510"
+        },
+        {
+          "path": "public/textures/2k/nix_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 79208,
+          "sha256": "b346021722eec2bea013a3e47630d9768504b6dc9908d749a7ce3781e6f8dc80"
+        }
+      ]
+    },
+    {
+      "id": "hydra",
+      "sourceSha256": "c5fedcd7feb168db65d188f294b1fc268b94b1c64b3d3540dd6b4a17e6610fea",
+      "outputs": [
+        {
+          "path": "public/textures/1k/hydra_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 16901,
+          "sha256": "3015085914fc5ad63f0d0f1ece2b25ee52b52d28961af611ebe523ee747c0365"
+        }
+      ]
+    }
+  ],
+  "contactSheet": {
+    "path": "docs/assets/small-moons-contact-sheet.jpg",
+    "width": 1200,
+    "height": 1110,
+    "bytes": 151428,
+    "sha256": "5747e88a3bf4ba906f4f03e621422b608bc3e8321e83f84a1a45d0f62e3273c6"
+  }
+}

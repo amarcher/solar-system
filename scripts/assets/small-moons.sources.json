@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "reviewedOn": "2026-09-28",
+  "bodies": [
+    {
+      "id": "amalthea",
+      "filename": "amalcyl.jpg",
+      "pageUrl": "https://sbnarchive.psi.edu/pds3/multi_mission/MULTI_SA_MULTI_6_STOOKEMAPS_V2_0/document/aamapdesc.html",
+      "downloadUrl": "https://sbnarchive.psi.edu/pds3/multi_mission/MULTI_SA_MULTI_6_STOOKEMAPS_V2_0/document/j5amalthea/amalcyl.jpg",
+      "credit": "Stooke, P., Stooke Small Bodies Maps V2.0, MULTI-SA-MULTI-6-STOOKEMAPS-V2.0, NASA Planetary Data System, 2012",
+      "terms": "Public domain; the archive asks for the citation above.",
+      "dimensions": [3600, 1800],
+      "tiers": [["1k", 1024], ["2k", 2048]],
+      "seamBlendPx": 60,
+      "sha256": "ce06bc8736a29f57724aa572b3606ffb9c0bf5beabb373acc61aeded3808ee96"
+    },
+    {
+      "id": "nix",
+      "filename": "nix_true_color_gray_calibrated.png",
+      "pageUrl": "https://www.deviantart.com/askaniy/art/Nix-Color-Texture-Maps-926588947",
+      "downloadUrl": "https://drive.usercontent.google.com/download?id=17CS9K5WCpNwBHGn3vjBtlPSf5I6m4u5e&export=download",
+      "credit": "Askaniy, from NASA/JHUAPL/SwRI New Horizons images",
+      "terms": "CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)",
+      "dimensions": [2048, 1024],
+      "tiers": [["1k", 1024], ["2k", 2048]],
+      "sha256": "dd127e2234cb0198eb19be08a83a7c9f00c82ec21c903d2790047bf18f9f5252"
+    },
+    {
+      "id": "hydra",
+      "filename": "hydra_true_color_gray_calibrated.png",
+      "pageUrl": "https://www.deviantart.com/askaniy/art/Hydra-Color-Texture-Maps-926623163",
+      "downloadUrl": "https://drive.usercontent.google.com/download?id=1U9QLw9Bvt90aZos4fZPnOOvJwsjYJc6n&export=download",
+      "credit": "Askaniy, from NASA/JHUAPL/SwRI New Horizons images",
+      "terms": "CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)",
+      "dimensions": [1024, 512],
+      "tiers": [["1k", 1024]],
+      "sha256": "c5fedcd7feb168db65d188f294b1fc268b94b1c64b3d3540dd6b4a17e6610fea"
+    }
+  ]
+}

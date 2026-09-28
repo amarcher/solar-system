@@ -1,5 +1,7 @@
 # Existing moon texture provenance audit
 
+> **Resolved 2026-09-28.** Every file in this audit has been traced to its origin. Non-commercial and unclear sources were replaced with public-domain or CC BY maps; see [public-domain-maps.md](public-domain-maps.md). The text below is kept as the historical record. Its hashes describe the replaced files.
+
 Read-only asset audit, 2026-09-21. Scope: the 17 moon textures already present before the five Uranian imports in `039c218839ae8b289843056c870d44f1b85fe0db`. No legacy texture or application behavior was changed by this audit.
 
 **Result: Earth's Moon has a verified byte-identical publisher source. Callisto has a strong image-level match to a named contributor's source, with the exact transformation chain unresolved. The remaining 15 files have historical source leads but no verified file-level provenance. The original blanket Solar System Scope credit is not supported for these 16 outer/small-moon maps.**
