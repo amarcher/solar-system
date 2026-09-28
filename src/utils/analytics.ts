@@ -16,6 +16,8 @@ export function initAnalytics() {
     capture_pageview: true,
     persistence: 'localStorage',
   });
+  // Several apps share one PostHog project; tag every event with its app.
+  posthog.register({ app: 'space-explorer' });
   initialized = true;
 }
 
