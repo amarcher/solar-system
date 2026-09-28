@@ -39,6 +39,8 @@ interface ConversationCallbacks extends SceneToolHandlers {
   onSetRate: (rate: number) => void;
   /** ElevenLabs refused a session for lack of credit: stop offering Stella for this visit. */
   onUnavailable?: () => void;
+  /** A session failed like an out-of-credit refusal (possibly something else). */
+  onSessionRefused?: () => void;
 }
 
 export type VoiceStatus = 'off' | 'connecting' | 'connected' | 'error';
@@ -220,7 +222,7 @@ function buildContextForNav(nav: NavigationState, detailsVisible: boolean): stri
   }
 }
 
-export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality, currentNav, currentTides = null, currentMode, currentObserver, displayTime, currentRate, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate, onUnavailable }: ConversationCallbacks) {
+export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality, currentNav, currentTides = null, currentMode, currentObserver, displayTime, currentRate, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate, onUnavailable, onSessionRefused }: ConversationCallbacks) {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
 
   // Live Conversation instance from @elevenlabs/client. We hold this in
@@ -239,6 +241,8 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
   const [micError, setMicError] = useState<MicError>(null);
   const onUnavailableRef = useRef(onUnavailable);
   useEffect(() => { onUnavailableRef.current = onUnavailable; }, [onUnavailable]);
+  const onSessionRefusedRef = useRef(onSessionRefused);
+  useEffect(() => { onSessionRefusedRef.current = onSessionRefused; }, [onSessionRefused]);
   const pendingNavRef = useRef<NavigationState | null>(null);
   const currentNavRef = useRef<string | null>(null);
   const latestNavRef = useRef<NavigationState>(currentNav);
@@ -536,9 +540,11 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
             trackVoiceAgentFailed('out_of_credit');
             setMicError('unavailable');
             onUnavailableRef.current?.();
+            onSessionRefusedRef.current?.();
           } else if (details?.reason === 'error' && !session.connectedAt) {
             trackVoiceAgentFailed('connect_failed');
             setMicError('unavailable');
+            onSessionRefusedRef.current?.();
           }
           if (session.connectedAt) {
             trackVoiceSessionEnded((performance.now() - session.connectedAt) / 1000, session.userTurns, session.agentTurns);
@@ -616,6 +622,7 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
       const outOfCredit = QUOTA_PATTERN.test(String((err as Error)?.message ?? err));
       trackVoiceAgentFailed(outOfCredit ? 'out_of_credit' : 'connect_failed');
       if (outOfCredit) onUnavailableRef.current?.();
+      onSessionRefusedRef.current?.();
       setSessionStarted(false);
       setRawStatus('disconnected');
       // The mic already worked (pre-flight above); the session itself failed.

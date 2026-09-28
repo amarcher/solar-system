@@ -51,3 +51,4 @@ public/videos/*.mp4
 test_configs/
 .env*.local
 .vercel
+.env*
