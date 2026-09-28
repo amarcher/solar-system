@@ -20,6 +20,11 @@ describe('moon rotation data', () => {
     expect(chaoticIds).toEqual(['hydra', 'hyperion', 'kerberos', 'nix', 'styx']);
   });
 
+  it('chaotic tumblers carry a measured mean spin period', () => {
+    const periods = Object.fromEntries(moons.filter(m => m.chaoticRotation).map(m => [m.id, m.tumblePeriod]));
+    expect(periods).toEqual({ hyperion: 119, styx: 77.8, nix: 43.9, kerberos: 127.4, hydra: 10.31 });
+  });
+
   it('Nereid has an explicit fast rotation period', () => {
     const nereid = moons.find(m => m.id === 'nereid')!;
     expect(nereid.rotationPeriod).toBe(11.52);

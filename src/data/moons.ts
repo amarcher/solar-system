@@ -348,6 +348,7 @@ export const moons: Moon[] = [
     orbitRadius: 3.0,
     shape: 'irregular',
     chaoticRotation: true,
+    tumblePeriod: 119, // ~4.3x synchronous (Cassini 2005; Harbison et al. 2011)
   },
 
   // ─── Uranus ───────────────────────────────────────────────────────────────
@@ -569,6 +570,7 @@ export const moons: Moon[] = [
     orbitRadius: 2.1,
     shape: 'irregular',
     chaoticRotation: true,
+    tumblePeriod: 77.8, // 3.24 d (Weaver et al. 2016, Science, Table 2)
   },
   {
     id: 'nix',
@@ -592,6 +594,7 @@ export const moons: Moon[] = [
     orbitRadius: 2.5,
     shape: 'irregular',
     chaoticRotation: true,
+    tumblePeriod: 43.9, // 1.829 d (Weaver et al. 2016, Science, Table 2)
   },
   {
     id: 'kerberos',
@@ -615,6 +618,7 @@ export const moons: Moon[] = [
     orbitRadius: 2.9,
     shape: 'irregular',
     chaoticRotation: true,
+    tumblePeriod: 127.4, // 5.31 d (Weaver et al. 2016, Science, Table 2)
   },
   {
     id: 'hydra',
@@ -638,6 +642,7 @@ export const moons: Moon[] = [
     orbitRadius: 3.3,
     shape: 'irregular',
     chaoticRotation: true,
+    tumblePeriod: 10.31, // 0.4295 d (Weaver et al. 2016, Science, Table 2)
   },
 ];
 
