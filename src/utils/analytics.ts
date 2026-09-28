@@ -74,7 +74,7 @@ export function trackVoiceAgentActivated() {
   track('voice_agent_activated');
 }
 
-export function trackVoiceAgentFailed(reason: 'mic_denied' | 'mic_unavailable' | 'connect_failed') {
+export function trackVoiceAgentFailed(reason: 'mic_denied' | 'mic_unavailable' | 'connect_failed' | 'out_of_credit') {
   track('voice_agent_failed', { reason });
 }
 

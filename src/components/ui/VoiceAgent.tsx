@@ -27,6 +27,7 @@ const MIC_ERROR_MESSAGES: Record<NonNullable<MicError>, string> = {
     "Couldn't access your microphone. Please check that a microphone is connected.",
   'no-input':
     'No audio input detected. Your microphone may be muted or the wrong device is selected. Check your input device in System Settings \u2192 Sound \u2192 Input.',
+  unavailable: 'Stella is resting right now. Try again later. You can keep exploring!',
 };
 
 function statusText(status: VoiceStatus, isSpeaking: boolean, micError: MicError): string {

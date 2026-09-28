@@ -37,10 +37,15 @@ interface ConversationCallbacks extends SceneToolHandlers {
   onSwitchMode: (mode: ViewMode) => void;
   onSetDate: (date: Date) => void;
   onSetRate: (rate: number) => void;
+  /** ElevenLabs refused a session for lack of credit: stop offering Stella for this visit. */
+  onUnavailable?: () => void;
 }
 
 export type VoiceStatus = 'off' | 'connecting' | 'connected' | 'error';
-export type MicError = 'timeout' | 'not-allowed' | 'device' | 'no-input' | null;
+export type MicError = 'timeout' | 'not-allowed' | 'device' | 'no-input' | 'unavailable' | null;
+
+/** ElevenLabs refuses sessions with a quota/credit message when the account runs dry. */
+const QUOTA_PATTERN = /quota|credit|exceed|limit reached/i;
 
 function buildPlanetContext(planet: Planet, detailsVisible: boolean): string {
   const moons = getMoonsByPlanet(planet.id);
@@ -215,7 +220,7 @@ function buildContextForNav(nav: NavigationState, detailsVisible: boolean): stri
   }
 }
 
-export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality, currentNav, currentTides = null, currentMode, currentObserver, displayTime, currentRate, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate }: ConversationCallbacks) {
+export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality, currentNav, currentTides = null, currentMode, currentObserver, displayTime, currentRate, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate, onUnavailable }: ConversationCallbacks) {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
 
   // Live Conversation instance from @elevenlabs/client. We hold this in
@@ -232,6 +237,8 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   const [micError, setMicError] = useState<MicError>(null);
+  const onUnavailableRef = useRef(onUnavailable);
+  useEffect(() => { onUnavailableRef.current = onUnavailable; }, [onUnavailable]);
   const pendingNavRef = useRef<NavigationState | null>(null);
   const currentNavRef = useRef<string | null>(null);
   const latestNavRef = useRef<NavigationState>(currentNav);
@@ -523,7 +530,16 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
           // convRef.current hasn't been assigned yet. The send happens
           // immediately after the await resolves below.
         },
-        onDisconnect: () => {
+        onDisconnect: (details?: { reason?: string; message?: string; closeReason?: string }) => {
+          const refusal = `${details?.message ?? ''} ${details?.closeReason ?? ''}`;
+          if (details?.reason !== 'user' && QUOTA_PATTERN.test(refusal)) {
+            trackVoiceAgentFailed('out_of_credit');
+            setMicError('unavailable');
+            onUnavailableRef.current?.();
+          } else if (details?.reason === 'error' && !session.connectedAt) {
+            trackVoiceAgentFailed('connect_failed');
+            setMicError('unavailable');
+          }
           if (session.connectedAt) {
             trackVoiceSessionEnded((performance.now() - session.connectedAt) / 1000, session.userTurns, session.agentTurns);
             session.connectedAt = 0;
@@ -597,10 +613,13 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
       }
     } catch (err) {
       console.error('[voice] startSession failed:', err);
-      trackVoiceAgentFailed('connect_failed');
+      const outOfCredit = QUOTA_PATTERN.test(String((err as Error)?.message ?? err));
+      trackVoiceAgentFailed(outOfCredit ? 'out_of_credit' : 'connect_failed');
+      if (outOfCredit) onUnavailableRef.current?.();
       setSessionStarted(false);
       setRawStatus('disconnected');
-      setMicError('device');
+      // The mic already worked (pre-flight above); the session itself failed.
+      setMicError('unavailable');
     }
   }, [agentId, sessionStarted, buildClientTools, sceneContext]);
 

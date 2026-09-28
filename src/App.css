@@ -484,3 +484,8 @@ body {
     display: none;
   }
 }
+
+/* Stella unavailable (out of credit or switched off): still visible, clearly inactive. */
+.app__toolbar-btn[data-resting] {
+  opacity: 0.45;
+}
