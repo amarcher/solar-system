@@ -10,7 +10,7 @@ import { PlanetOrbit } from './PlanetOrbit';
 import { AsteroidBelt } from './AsteroidBelt';
 import { CameraRig } from './CameraRig';
 import { RealisticScene } from './RealisticScene';
-import { rubinSceneExtent, type RubinAsteroid } from '../../data/rubinAsteroids';
+import { rubinSceneExtent, rubinVisualRadius, type RubinAsteroid } from '../../data/rubinAsteroids';
 import { SkyScene } from './SkyScene';
 import { TerrestrialRig } from './TerrestrialRig';
 import { useAstronomy } from '../../astronomy/useAstronomy';
@@ -84,7 +84,7 @@ interface SolarSystemSceneProps {
 export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, rubin = null, tides = null }: SolarSystemSceneProps) {
   const rubinSelection = rubin?.asteroids.find((a) => a.id === rubin.selectedId);
   const rubinFocus = rubinSelection && rubin
-    ? { id: rubinSelection.id, view: rubin.view, fitRadius: rubinSceneExtent(rubinSelection) * 1.1 }
+    ? { id: rubinSelection.id, view: rubin.view, fitRadius: rubinSceneExtent(rubinSelection) * 1.1, bodyRadius: rubinVisualRadius(rubinSelection.diameterKm) }
     : null;
   const { mode } = useAstronomy();
   const [benchmarkReport, setBenchmarkReport] = useState('Preparing benchmark…');

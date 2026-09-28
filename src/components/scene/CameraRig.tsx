@@ -25,11 +25,11 @@ interface CameraRigProps {
    * it centered so zoom and rotate work around it; 'orbit' frames its whole
    * path around the Sun (fitRadius, scene units).
    */
-  rubinFocus?: { id: string; view: 'follow' | 'orbit'; fitRadius: number } | null;
+  rubinFocus?: { id: string; view: 'follow' | 'orbit'; fitRadius: number; bodyRadius: number } | null;
 }
 
-/** Camera distance when following a Rubin find: close enough to see the dot, far enough to keep its neighborhood. */
-const RUBIN_FOLLOW_DISTANCE = 5;
+/** Follow distance in rock radii: the rock fills a good part of the view, orbit lines still visible. */
+const RUBIN_FOLLOW_RADII = 14;
 
 // Artistic orbits span ~40 units; the log-compressed orrery only ~13.
 // Each mode gets a default framing that fills the viewport with the system.
@@ -68,7 +68,9 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: 
   const rubinFocusId = nav.level === 'system' ? rubinFocus?.id ?? null : null;
   const rubinView = rubinFocus?.view ?? 'follow';
   const rubinFitRadius = rubinFocus?.fitRadius ?? 0;
+  const rubinBodyRadius = rubinFocus?.bodyRadius ?? 0.05;
   const trackingRubinId = useRef<string | null>(null);
+  const rubinScratch = useRef({ view: new Vector3(), up: new Vector3(0, 1, 0), origin: new Vector3() }).current;
   const wasTrackingRubin = useRef(false);
   useEffect(() => {
     const controls = controlsRef.current;
@@ -261,8 +263,15 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: 
       if (pos) {
         if (!flyInDone.current) {
           controls.smoothTime = flightSmoothTime;
-          controls.moveTo(pos.x, pos.y, pos.z, !reducedMotion);
-          controls.dollyTo(RUBIN_FOLLOW_DISTANCE, !reducedMotion);
+          // Arrive on the sunlit side, about 70° off the Sun line and a little
+          // above, so low sunlight rakes across the craters instead of showing
+          // the night side or flattening them head-on.
+          const sun = getPlanetPosition('sun') ?? rubinScratch.origin;
+          const view = rubinScratch.view.subVectors(sun, pos).normalize()
+            .applyAxisAngle(rubinScratch.up, 1.2);
+          view.y += 0.45;
+          view.normalize().multiplyScalar(rubinBodyRadius * RUBIN_FOLLOW_RADII).add(pos);
+          controls.setLookAt(view.x, view.y, view.z, pos.x, pos.y, pos.z, !reducedMotion);
           flyInDone.current = true;
           flyInTime.current = 0;
         } else {
@@ -330,7 +339,7 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: 
     minDist = 0.02;
     maxDist = 8;
   } else if (rubinFocusId && rubinView === 'follow') {
-    minDist = 0.4;
+    minDist = rubinBodyRadius * 3;
   }
 
   return (

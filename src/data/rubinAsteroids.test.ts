@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rubinAsteroids } from './rubinAsteroids';
+import { formatDiameter, rubinAsteroids } from './rubinAsteroids';
 
 describe('rubinAsteroids', () => {
   it('has unique ids and a usable orbit for every curated object', () => {
@@ -15,4 +15,14 @@ describe('rubinAsteroids', () => {
     const open = rubinAsteroids.filter((a) => a.elements.e >= 1).map((a) => a.kind);
     expect(open).toEqual(['interstellar']);
   });
+});
+
+describe('sizes', () => {
+  it('formats diameters for kids', () => {
+    expect(formatDiameter(216.5)).toBe('220 km');
+    expect(formatDiameter(4.1)).toBe('4.1 km');
+    expect(formatDiameter(0.71)).toBe('710 m');
+    expect(formatDiameter(0.0094)).toBe('9 m');
+  });
+
 });

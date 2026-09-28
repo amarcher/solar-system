@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { BufferAttribute, BufferGeometry, Line, LineBasicMaterial, LineLoop, Vector3, type Group } from 'three';
+import { AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, Line, LineBasicMaterial, LineLoop, Vector3, type Group, type Mesh, type Points } from 'three';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import { keplerPath, keplerPosition } from '../../astronomy/keplerOrbit';
 import { scaleAUVector } from '../../astronomy/realisticScale';
 import { useFocusedSpace } from '../../sceneLayout/useFocusedSpace';
 import { applyFocusSpace } from '../../sceneLayout/focusedSpace';
 import { setSmallBodyPosition } from '../../utils/planetPositions';
-import { RUBIN_KIND_COLORS, type RubinAsteroid } from '../../data/rubinAsteroids';
+import { RUBIN_KIND_COLORS, rubinVisualRadius, type RubinAsteroid } from '../../data/rubinAsteroids';
+import { createRockGeometry, irregularityForDiameter, seedFromString } from '../../utils/asteroidRock';
 
 /** Minimum recompute interval in ms of simulation time. */
 const RECOMPUTE_THRESHOLD_MS = 1000;
-const PATH_SAMPLES = 256;
+// Dense enough that log-compressed, very eccentric orbits stay smooth.
+const PATH_SAMPLES = 2048;
 /** How far out to draw an interstellar path, AU. */
 const HYPERBOLIC_PATH_LIMIT_AU = 40;
 
@@ -22,6 +24,29 @@ function toScene(p: { x: number; y: number; z: number }, target: Vector3): Vecto
   return target.set(s.x, s.y, s.z);
 }
 
+/** Fastest on-screen spin, radians per real second, so accelerated time doesn't strobe. */
+const MAX_SPIN = (Math.PI * 2) / 1.5;
+/** Spin period drawn when none has been measured, hours. */
+const DEFAULT_SPIN_HOURS = 6;
+/** Beyond this many radii from the camera, the rock is subpixel: show the pinpoint. */
+const PINPOINT_DISTANCE_RADII = 60;
+
+let comaTexture: CanvasTexture | null = null;
+function getComaTexture(): CanvasTexture {
+  if (comaTexture) return comaTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d')!;
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(220,255,250,0.9)');
+  g.addColorStop(0.25, 'rgba(140,240,230,0.35)');
+  g.addColorStop(1, 'rgba(100,220,220,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  comaTexture = new CanvasTexture(canvas);
+  return comaTexture;
+}
+
 function AsteroidMarker({ asteroid, selected, showLabel, onSelect }: {
   asteroid: RubinAsteroid;
   selected: boolean;
@@ -29,20 +54,53 @@ function AsteroidMarker({ asteroid, selected, showLabel, onSelect }: {
   onSelect: (id: string) => void;
 }) {
   const group = useRef<Group>(null);
+  const rock = useRef<Mesh>(null);
+  const pinpoint = useRef<Points>(null);
+  const hit = useRef<Mesh>(null);
   const raw = useRef(new Vector3());
   const lastComputed = useRef(Number.NaN);
-  const { timeRef } = useAstronomy();
+  const { timeRef, rate } = useAstronomy();
   const space = useFocusedSpace();
   const color = RUBIN_KIND_COLORS[asteroid.kind];
+  const radius = rubinVisualRadius(asteroid.diameterKm);
+  const seed = seedFromString(asteroid.id);
 
-  useFrame(() => {
+  // Close-up detail only for the selected object; the rest stay cheap.
+  const geometry = useMemo(
+    () => createRockGeometry({
+      seed,
+      composition: asteroid.composition,
+      detail: selected ? 48 : 6,
+      irregularity: irregularityForDiameter(asteroid.diameterKm),
+    }),
+    [seed, asteroid.composition, asteroid.diameterKm, selected],
+  );
+  useEffect(() => () => geometry.dispose(), [geometry]);
+
+  const spinAxis = useMemo(() => {
+    const r = (n: number) => ((seed >>> n) & 0xff) / 255 - 0.5;
+    return new Vector3(r(0) * 0.8, 1, r(8) * 0.8).normalize();
+  }, [seed]);
+  const spinRate = (Math.PI * 2) / ((asteroid.rotationHours ?? DEFAULT_SPIN_HOURS) * 3600);
+
+  useFrame(({ camera }, delta) => {
     if (!group.current) return;
     const now = timeRef.current;
     if (!(Math.abs(now - lastComputed.current) <= RECOMPUTE_THRESHOLD_MS)) {
       lastComputed.current = now;
       toScene(keplerPosition(asteroid.elements, now), raw.current);
     }
-    setSmallBodyPosition(asteroid.id, applyFocusSpace(space, raw.current, group.current.position));
+    const position = applyFocusSpace(space, raw.current, group.current.position);
+    setSmallBodyPosition(asteroid.id, position);
+
+    if (rock.current && rate !== 0) {
+      const spin = Math.sign(rate) * Math.min(MAX_SPIN, Math.abs(spinRate * rate));
+      rock.current.rotateOnAxis(spinAxis, spin * Math.min(delta, 0.1));
+    }
+    const distance = camera.position.distanceTo(position);
+    if (pinpoint.current) pinpoint.current.visible = distance > radius * PINPOINT_DISTANCE_RADII;
+    // Keep the tap target roughly finger-sized on screen at any zoom.
+    if (hit.current) hit.current.scale.setScalar(Math.max(radius * 1.4, distance * 0.025));
   }, -3);
 
   const select = (e: ThreeEvent<MouseEvent>) => {
@@ -52,17 +110,26 @@ function AsteroidMarker({ asteroid, selected, showLabel, onSelect }: {
 
   return (
     <group ref={group}>
-      <mesh>
-        <sphereGeometry args={[selected ? 0.07 : 0.05, 16, 16]} />
-        <meshBasicMaterial color={color} toneMapped={false} />
+      <mesh ref={rock} geometry={geometry} scale={radius}>
+        <meshStandardMaterial vertexColors roughness={0.95} metalness={0} />
       </mesh>
-      {/* Generous invisible hit area: the visible dot is far too small for a finger. */}
-      <mesh onClick={select} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = ''; }}>
-        <sphereGeometry args={[0.3, 8, 8]} />
+      {asteroid.composition === 'comet' && (
+        <sprite scale={radius * 4.5}>
+          <spriteMaterial map={getComaTexture()} transparent opacity={0.45} depthWrite={false} blending={AdditiveBlending} />
+        </sprite>
+      )}
+      <points ref={pinpoint}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[new Float32Array(3), 3]} />
+        </bufferGeometry>
+        <pointsMaterial color={color} size={selected ? 9 : 6} sizeAttenuation={false} toneMapped={false} />
+      </points>
+      <mesh ref={hit} onClick={select} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = ''; }}>
+        <sphereGeometry args={[1, 8, 8]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
       {showLabel && (
-        <Html position={[0, -0.28, 0]} center style={{ pointerEvents: 'none' }}>
+        <Html position={[0, -radius * 2.2, 0]} center style={{ pointerEvents: 'none' }}>
           <button
             type="button"
             className="scene-label scene-label--asteroid"

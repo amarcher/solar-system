@@ -3,7 +3,7 @@ import type { ViewMode } from '../astronomy/types';
 import type { QualityPreference } from '../performance/qualityPolicy';
 import { textureManifest } from '../data/textureManifest';
 import { tidesVoiceContext, TIDES_OVERLAY_STATE } from '../lessons/tides/model';
-import { aphelionAu, getRubinAsteroidById, RUBIN_KIND_LABELS, rubinAsteroids } from '../data/rubinAsteroids';
+import { aphelionAu, COMPOSITION_NOTES, getRubinAsteroidById, RUBIN_KIND_LABELS, rubinAsteroids } from '../data/rubinAsteroids';
 
 export interface SceneVoiceState {
   nav: NavigationState;
@@ -71,7 +71,7 @@ function rubinContext({ visible, selectedId }: SceneVoiceState['rubin']): string
   const lines = [`Rubin Observatory finds layer is on: ${rubinAsteroids.length} hand-picked objects shown as small colored dots, each moving on its real orbit (two-body approximation from JPL elements). Picking one draws its orbit and shows a short card. "Discovered by Rubin" means MPC credits Rubin with the discovery; "Seen by Rubin" means Rubin photographed an object found earlier. Rubin found over 11,000 new asteroids in about six weeks of 2025 testing. Its public data currently runs through mid-July 2026, so this is not a live feed.`];
   const selected = selectedId ? getRubinAsteroidById(selectedId) : undefined;
   if (selected) {
-    lines.push(`Selected: ${selected.name} (${RUBIN_KIND_LABELS[selected.kind]}), "${selected.headline}". ${selected.rubinDiscovered ? 'Discovered by Rubin.' : 'Seen by Rubin, discovered earlier by others.'} Card text: ${selected.blurb}${selected.sizeLabel ? ` Size: ${selected.sizeLabel}.` : ''}`);
+    lines.push(`Selected: ${selected.name} (${RUBIN_KIND_LABELS[selected.kind]}), "${selected.headline}". ${selected.rubinDiscovered ? 'Discovered by Rubin.' : 'Seen by Rubin, discovered earlier by others.'} Card text: ${selected.blurb}Size: ${selected.sizeText} Likely make-up: ${selected.compositionNote ?? COMPOSITION_NOTES[selected.composition]} The 3D rock is procedural art: shape invented, colors guessed from its orbit family, drawn far larger than true scale.`);
     if (selected.orbitEstimated) lines.push('This orbit comes from only a short stretch of observations and may change as astronomers learn more.');
     if (aphelionAu(selected) > 50) lines.push('The orrery squeezes distance logarithmically, so this far-out path looks much smaller than it really is.');
   }

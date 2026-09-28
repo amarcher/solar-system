@@ -1,5 +1,5 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
-import { aphelionAu, RUBIN_KIND_COLORS, RUBIN_KIND_LABELS, type RubinAsteroid } from '../../data/rubinAsteroids';
+import { aphelionAu, COMPOSITION_NOTES, RUBIN_KIND_COLORS, RUBIN_KIND_LABELS, type RubinAsteroid } from '../../data/rubinAsteroids';
 import './RubinPanel.css';
 
 interface RubinPanelProps {
@@ -55,7 +55,11 @@ export function RubinPanel({ asteroids, selectedId, view, onSelect, onViewChange
             >
               {view === 'follow' ? 'See its whole orbit' : `Zoom in on ${selected.name}`}
             </button>
-            {selected.sizeLabel && <p className="rubin-panel__meta">{selected.sizeLabel}</p>}
+            <p className="rubin-panel__meta">{selected.sizeText}</p>
+            <p className="rubin-panel__meta">{selected.compositionNote ?? COMPOSITION_NOTES[selected.composition]}</p>
+            <p className="rubin-panel__meta">
+              The 3D rock is an artist's guess. Nobody has seen its real shape, and it's drawn much bigger than life so you can find it.
+            </p>
             {aphelionAu(selected) > 50 && (
               <p className="rubin-panel__meta">
                 This map squeezes big distances to fit on screen. The real path reaches far beyond what you see.
