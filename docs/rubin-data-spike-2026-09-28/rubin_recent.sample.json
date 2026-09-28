@@ -1,0 +1,872 @@
+{
+ "generated": "2026-09-28",
+ "source": {
+  "obs": "Asteroid Institute MPC X05 export",
+  "elements": "JPL SBDB"
+ },
+ "stats": {
+  "x05ObjectsObserved": 300720,
+  "x05DiscoveryFlags": 26713,
+  "rubinDiscovered": 23755,
+  "plotSafe": 11629,
+  "byGroup": {
+   "main belt": 20712,
+   "TNO": 1466,
+   "outer main belt": 819,
+   "Hilda (3:2 w/ Jupiter)": 258,
+   "Mars-crosser": 217,
+   "inner main belt": 191,
+   "NEO Amor": 42,
+   "Centaur": 25,
+   "Jupiter Trojan": 15,
+   "NEO Apollo": 7,
+   "NEO Aten": 1,
+   "comet (ETc)": 1,
+   "other asteroid": 1
+  },
+  "byMonth": {
+   "2024-11": 90,
+   "2025-04": 1170,
+   "2025-05": 915,
+   "2025-06": 5947,
+   "2025-07": 11398,
+   "2025-08": 3480,
+   "2025-09": 4,
+   "2025-11": 14,
+   "2025-12": 3,
+   "2026-01": 20,
+   "2026-02": 30,
+   "2026-03": 455,
+   "2026-04": 183,
+   "2026-05": 18,
+   "2026-07": 1
+  }
+ },
+ "objects": [
+  {
+   "id": "2025 LS2",
+   "name": "(2025 LS2)",
+   "group": "TNO",
+   "rubinDiscovered": true,
+   "tags": [
+    "farthest-reliable"
+   ],
+   "blurb": "Rubin find that swings out ~1,000 au from the Sun (\u224812,000-yr orbit)",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 523.1,
+    "e": 0.9175,
+    "i": 12.62,
+    "om": 144.09,
+    "w": 192.08,
+    "ma": 359.61,
+    "q": 43.178
+   },
+   "H": 6.44,
+   "diameterKm": {
+    "value": 216.533,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 5,
+    "arcDays": 350.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "2026 EB130",
+   "name": "(2026 EB130)",
+   "group": "TNO",
+   "rubinDiscovered": true,
+   "tags": [
+    "farthest-candidate"
+   ],
+   "blurb": "If confirmed, travels ~4,700 au out; orbit from only 13 days of data",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 2353.0,
+    "e": 0.989,
+    "i": 8.74,
+    "om": 313.65,
+    "w": 161.81,
+    "ma": 0.08,
+    "q": 25.935
+   },
+   "H": 7.29,
+   "diameterKm": {
+    "value": 146.395,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 8,
+    "arcDays": 13.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "2025 NE552",
+   "name": "(2025 NE552)",
+   "group": "TNO",
+   "rubinDiscovered": true,
+   "tags": [
+    "largest-new"
+   ],
+   "blurb": "Brightest (biggest) Rubin TNO find, maybe ~600 km (albedo guess); dwarf-planet size candidate",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 214.0,
+    "e": 0.8871,
+    "i": 18.11,
+    "om": 338.77,
+    "w": 139.77,
+    "ma": 353.22,
+    "q": 24.147
+   },
+   "H": 4.23,
+   "diameterKm": {
+    "value": 599.135,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 9,
+    "arcDays": 20.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "2026 BS14",
+   "name": "(2026 BS14)",
+   "group": "TNO",
+   "rubinDiscovered": true,
+   "tags": [
+    "largest-new + tilted"
+   ],
+   "blurb": "Big (~500\u2013650 km est.) world tilted 54\u00b0",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 44.2,
+    "e": 0.1426,
+    "i": 53.68,
+    "om": 179.2,
+    "w": 167.14,
+    "ma": 168.4,
+    "q": 37.894
+   },
+   "H": 4.55,
+   "diameterKm": {
+    "value": 517.041,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 7,
+    "arcDays": 82.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "2026 FQ35",
+   "name": "(2026 FQ35)",
+   "group": "TNO",
+   "rubinDiscovered": true,
+   "tags": [
+    "most-inclined-new"
+   ],
+   "blurb": "Most tilted Rubin TNO: ~60\u00b0 to the planets",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 125.0,
+    "e": 0.633,
+    "i": 59.59,
+    "om": 44.37,
+    "w": 210.58,
+    "ma": 356.51,
+    "q": 45.891
+   },
+   "H": 6.21,
+   "diameterKm": {
+    "value": 240.727,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 9,
+    "arcDays": 28.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "2026 GN18",
+   "name": "(2026 GN18)",
+   "group": "NEO Amor",
+   "rubinDiscovered": true,
+   "tags": [
+    "sentry"
+   ],
+   "blurb": "Rubin-found ~0.7 km NEO on JPL Sentry (1-in-72-million, 2054-2118), 4-day arc",
+   "elements": {
+    "epochJD": 2461140.5,
+    "a": 3.002,
+    "e": 0.5879,
+    "i": 1.06,
+    "om": 254.91,
+    "w": 135.27,
+    "ma": 53.52,
+    "q": 1.237
+   },
+   "H": 18.08,
+   "diameterKm": {
+    "value": 0.831,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 9,
+    "arcDays": 4.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "2025 OX529",
+   "name": "(2025 OX529)",
+   "group": "NEO Amor",
+   "rubinDiscovered": true,
+   "tags": [
+    "biggest-new-NEO"
+   ],
+   "blurb": "~1 km Amor NEO, 3-day arc",
+   "elements": {
+    "epochJD": 2460875.5,
+    "a": 5.042,
+    "e": 0.7449,
+    "i": 8.43,
+    "om": 357.2,
+    "w": 78.27,
+    "ma": 336.98,
+    "q": 1.286
+   },
+   "H": 17.68,
+   "diameterKm": {
+    "value": 0.999,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 9,
+    "arcDays": 3.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "2025 PQ124",
+   "name": "(2025 PQ124)",
+   "group": "NEO Amor",
+   "rubinDiscovered": true,
+   "tags": [
+    "well-known-new-NEO"
+   ],
+   "blurb": "Rubin NEO with precoveries to 2004 (cc 2) \u2013 safe to plot",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 2.073,
+    "e": 0.4417,
+    "i": 2.74,
+    "om": 124.75,
+    "w": 70.53,
+    "ma": 193.47,
+    "q": 1.158
+   },
+   "H": 19.24,
+   "diameterKm": {
+    "value": 0.487,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 2,
+    "arcDays": 7686.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "2025 OC338",
+   "name": "(2025 OC338)",
+   "group": "NEO Apollo",
+   "rubinDiscovered": true,
+   "tags": [
+    "tiniest-new"
+   ],
+   "blurb": "~8 m rock; orbit passes 0.005 au (2 LD) from Earth's orbit",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 1.272,
+    "e": 0.4047,
+    "i": 1.83,
+    "om": 282.37,
+    "w": 111.15,
+    "ma": 173.4,
+    "q": 0.757
+   },
+   "H": 27.5,
+   "diameterKm": {
+    "value": 0.011,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 7,
+    "arcDays": 5.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "2025 OP161",
+   "name": "(2025 OP161)",
+   "group": "NEO Apollo",
+   "rubinDiscovered": true,
+   "tags": [
+    "closest-to-Sun-new"
+   ],
+   "blurb": "Rubin NEO dipping inside Venus's orbit (q 0.66 au), 28\u00b0 tilt, 335-d arc",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 2.054,
+    "e": 0.6788,
+    "i": 28.24,
+    "om": 118.46,
+    "w": 330.56,
+    "ma": 37.52,
+    "q": 0.66
+   },
+   "H": 19.48,
+   "diameterKm": {
+    "value": 0.436,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 4,
+    "arcDays": 335.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "2025 OD43",
+   "name": "(2025 OD43)",
+   "group": "NEO Apollo",
+   "rubinDiscovered": true,
+   "tags": [
+    "earth-like-orbit-new"
+   ],
+   "blurb": "Rubin NEO with a\u22481.04 au \u2013 a year almost exactly like Earth's",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 1.042,
+    "e": 0.2994,
+    "i": 4.43,
+    "om": 308.26,
+    "w": 131.01,
+    "ma": 186.7,
+    "q": 0.73
+   },
+   "H": 24.96,
+   "diameterKm": {
+    "value": 0.035,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 6,
+    "arcDays": 12.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "2025 MU34",
+   "name": "(2025 MU34)",
+   "group": "NEO Apollo",
+   "rubinDiscovered": true,
+   "tags": [
+    "new-NEO"
+   ],
+   "blurb": "Rubin NEO with 97 X05 detections",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 1.148,
+    "e": 0.1961,
+    "i": 4.57,
+    "om": 59.92,
+    "w": 20.74,
+    "ma": 75.82,
+    "q": 0.923
+   },
+   "H": 24.41,
+   "diameterKm": {
+    "value": 0.045,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 4,
+    "arcDays": 86.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "2026 N2",
+   "name": "P/2026 N2",
+   "group": "comet (ETc)",
+   "rubinDiscovered": true,
+   "tags": [
+    "new-comet"
+   ],
+   "blurb": "Encke-type comet flagged as X05 discovery (precovered to 2021)",
+   "elements": {
+    "epochJD": 2460616.5,
+    "a": 3.072,
+    "e": 0.2123,
+    "i": 2.25,
+    "om": 96.38,
+    "w": 219.03,
+    "ma": 233.13,
+    "q": 2.42
+   },
+   "H": 17.1,
+   "diameterKm": {
+    "value": 1.91,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 3,
+    "arcDays": 1822.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "2025 MP34",
+   "name": "(2025 MP34)",
+   "group": "Jupiter Trojan",
+   "rubinDiscovered": true,
+   "tags": [
+    "trojan-new"
+   ],
+   "blurb": "Rubin Jupiter Trojan sharing Jupiter's orbit (cc 1)",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 5.247,
+    "e": 0.044,
+    "i": 10.75,
+    "om": 138.03,
+    "w": 294.1,
+    "ma": 148.67,
+    "q": 5.016
+   },
+   "H": 15.43,
+   "diameterKm": {
+    "value": 4.121,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 1,
+    "arcDays": 2838.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "2025 NE203",
+   "name": "(2025 NE203)",
+   "group": "Centaur",
+   "rubinDiscovered": true,
+   "tags": [
+    "centaur-new"
+   ],
+   "blurb": "Rubin Centaur roaming near Neptune (a\u224830 au)",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 29.98,
+    "e": 0.0693,
+    "i": 10.26,
+    "om": 354.03,
+    "w": 319.85,
+    "ma": 346.1,
+    "q": 27.897
+   },
+   "H": 6.88,
+   "diameterKm": {
+    "value": 211.337,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 6,
+    "arcDays": 383.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "2025 PN7",
+   "name": "(2025 PN7)",
+   "group": "NEO Apollo",
+   "rubinDiscovered": false,
+   "tags": [
+    "quasi-satellite"
+   ],
+   "blurb": "Earth's quasi-moon (not a Rubin discovery; imaged by X05)",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 1.001,
+    "e": 0.1082,
+    "i": 1.98,
+    "om": 112.19,
+    "w": 79.91,
+    "ma": 54.05,
+    "q": 0.893
+   },
+   "H": 26.41,
+   "diameterKm": {
+    "value": 0.018,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 0,
+    "arcDays": 4651.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "2025 N1",
+   "name": "C/2025 N1 (ATLAS)",
+   "group": "interstellar comet (HYP)",
+   "rubinDiscovered": false,
+   "tags": [
+    "interstellar"
+   ],
+   "blurb": "3I/ATLAS \u2013 interstellar comet imaged by Rubin Jul 2025 (not discovered)",
+   "elements": {
+    "epochJD": 2461090.5,
+    "a": -0.2638,
+    "e": 6.1414,
+    "i": 175.12,
+    "om": 322.17,
+    "w": 128.02,
+    "ma": 818.22,
+    "q": 1.356
+   },
+   "H": 12.5,
+   "diameterKm": {
+    "value": NaN,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": null,
+    "arcDays": 280.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "434620",
+   "name": "434620 (2005 VD)",
+   "group": "Centaur",
+   "rubinDiscovered": false,
+   "tags": [
+    "retrograde"
+   ],
+   "blurb": "Orbits backwards (i=172\u00b0) \u2013 observed by X05",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 6.692,
+    "e": 0.2547,
+    "i": 172.2,
+    "om": 174.95,
+    "w": 180.82,
+    "ma": 62.64,
+    "q": 4.988
+   },
+   "H": 14.18,
+   "diameterKm": {
+    "value": 7.328,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 0,
+    "arcDays": 8585.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "2025 KF49",
+   "name": "(2025 KF49)",
+   "group": "Centaur",
+   "rubinDiscovered": false,
+   "tags": [
+    "retrograde"
+   ],
+   "blurb": "Centaur on a 109\u00b0 backwards orbit \u2013 observed by X05",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 29.12,
+    "e": 0.8188,
+    "i": 109.45,
+    "om": 64.37,
+    "w": 185.32,
+    "ma": 3.1,
+    "q": 5.275
+   },
+   "H": 15.88,
+   "diameterKm": {
+    "value": 3.349,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 8,
+    "arcDays": 7.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "289227",
+   "name": "289227 (2004 XY60)",
+   "group": "NEO Aten",
+   "rubinDiscovered": false,
+   "tags": [
+    "closest-to-Sun"
+   ],
+   "blurb": "Gets within 0.13 au of the Sun (1/3 of Mercury's distance) \u2013 observed by X05",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 0.6402,
+    "e": 0.7966,
+    "i": 23.79,
+    "om": 122.55,
+    "w": 130.91,
+    "ma": 195.55,
+    "q": 0.13
+   },
+   "H": 18.67,
+   "diameterKm": {
+    "value": 0.633,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 0,
+    "arcDays": 7694.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "1999 SF10",
+   "name": "(1999 SF10)",
+   "group": "NEO Apollo",
+   "rubinDiscovered": false,
+   "tags": [
+    "fastest-spin"
+   ],
+   "blurb": "Spins once every ~2.5 minutes \u2013 observed by X05",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 1.277,
+    "e": 0.2525,
+    "i": 1.17,
+    "om": 22.75,
+    "w": 30.68,
+    "ma": 138.03,
+    "q": 0.955
+   },
+   "H": 24.36,
+   "diameterKm": {
+    "value": 0.046,
+    "estimated": true
+   },
+   "rotationHours": 0.0411,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 0,
+    "arcDays": 9632.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "535844",
+   "name": "535844 (2015 BY310)",
+   "group": "NEO Apollo",
+   "rubinDiscovered": false,
+   "tags": [
+    "upcoming-flyby"
+   ],
+   "blurb": "PHA, 9.2 LD on 2027-03-04; spins in 5.6 min",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 1.587,
+    "e": 0.4011,
+    "i": 4.75,
+    "om": 328.21,
+    "w": 229.74,
+    "ma": 213.52,
+    "q": 0.95
+   },
+   "H": 21.89,
+   "diameterKm": {
+    "value": 0.144,
+    "estimated": true
+   },
+   "rotationHours": 0.0926702,
+   "neo": true,
+   "pha": true,
+   "orbitQuality": {
+    "conditionCode": 0,
+    "arcDays": 3836.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "2025 MN88",
+   "name": "(2025 MN88)",
+   "group": "NEO Apollo",
+   "rubinDiscovered": false,
+   "tags": [
+    "upcoming-flyby"
+   ],
+   "blurb": "~20 m rock passing 7.9 LD on 2027-07-11 (returns 2029/2033/2035)",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 1.589,
+    "e": 0.3999,
+    "i": 1.09,
+    "om": 100.67,
+    "w": 221.1,
+    "ma": 150.63,
+    "q": 0.954
+   },
+   "H": 26.26,
+   "diameterKm": {
+    "value": 0.019,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 7,
+    "arcDays": 12.0,
+    "plotSafe": false
+   }
+  },
+  {
+   "id": "2018 BY6",
+   "name": "(2018 BY6)",
+   "group": "NEO Apollo",
+   "rubinDiscovered": false,
+   "tags": [
+    "upcoming-flyby"
+   ],
+   "blurb": "Passes 5.0 LD on 2029-07-15",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 1.21,
+    "e": 0.2803,
+    "i": 6.56,
+    "om": 288.19,
+    "w": 75.94,
+    "ma": 198.66,
+    "q": 0.871
+   },
+   "H": 23.45,
+   "diameterKm": {
+    "value": 0.07,
+    "estimated": true
+   },
+   "rotationHours": null,
+   "neo": true,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 0,
+    "arcDays": 5879.0,
+    "plotSafe": true
+   }
+  },
+  {
+   "id": "25629",
+   "name": "25629 Mukherjee (2000 AH52)",
+   "group": "main belt",
+   "rubinDiscovered": false,
+   "tags": [
+    "slowest-spin"
+   ],
+   "blurb": "One rotation takes ~172 days \u2013 observed by X05",
+   "elements": {
+    "epochJD": 2461200.5,
+    "a": 2.238,
+    "e": 0.0873,
+    "i": 4.91,
+    "om": 268.91,
+    "w": 121.87,
+    "ma": 346.61,
+    "q": 2.042
+   },
+   "H": 15.48,
+   "diameterKm": {
+    "value": 2.569,
+    "estimated": false
+   },
+   "rotationHours": 4141.0,
+   "neo": false,
+   "pha": false,
+   "orbitQuality": {
+    "conditionCode": 0,
+    "arcDays": 10491.0,
+    "plotSafe": true
+   }
+  }
+ ]
+}

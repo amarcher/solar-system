@@ -1,0 +1,22 @@
+group,X05_observed,X05_disc_flag,Rubin_new_principal
+main belt,275988,20714,20712
+outer main belt,8550,819,819
+no SBDB match (linked to older desig),5159,2940,0
+inner main belt,2857,191,191
+Mars-crosser,2550,217,217
+Hilda (3:2 w/ Jupiter),1967,258,258
+TNO,1901,1481,1466
+Jupiter Trojan,741,15,15
+NEO Amor,464,42,42
+NEO Apollo,344,7,7
+Centaur,107,25,25
+NEO Aten,39,1,1
+comet (JFc),32,1,0
+other asteroid,9,1,1
+comet (ETc),7,1,1
+comet (HYP),3,0,0
+comet (COM),2,0,0
+NEO total,851,50,50
+PHA,113,0,0
+retrograde i>90,7,0,0
+TOTAL,300720,26713,23755

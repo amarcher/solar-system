@@ -1,5 +1,6 @@
 import type { ObserverLocation } from './types';
 import type { CelestialFrame } from './celestialCoordinates';
+import { keplerPosition, type KeplerElements } from './keplerOrbit';
 
 // Lazy-loaded astronomy-engine module
 let astroModule: typeof import('astronomy-engine') | null = null;
@@ -46,72 +47,21 @@ function resolveBody(id: string) {
   return name as import('astronomy-engine').Body;
 }
 
-const DEG_TO_RAD = Math.PI / 180;
-const MS_PER_DAY = 86_400_000;
-
 // JPL SBDB elements for 1 Ceres, orbit solution 48, epoch 2025-Nov-21.0 TDB.
-const CERES_ELEMENTS = {
-  epochJd: 2461000.5,
-  eccentricity: 0.07957631994408416,
-  semiMajorAxisAu: 2.765615651508659,
-  inclinationDeg: 10.58788658206854,
-  longitudeAscendingNodeDeg: 80.24963090816965,
-  argumentPerihelionDeg: 73.29975464616518,
-  meanAnomalyDeg: 231.5397330043706,
-  meanMotionDegPerDay: 0.2142971214271186,
+const CERES_EPOCH_JD = 2461000.5;
+const CERES_ECCENTRICITY = 0.07957631994408416;
+const CERES_SEMI_MAJOR_AXIS_AU = 2.765615651508659;
+const CERES_MEAN_ANOMALY_DEG = 231.5397330043706;
+const CERES_MEAN_MOTION_DEG_PER_DAY = 0.2142971214271186;
+const CERES_ELEMENTS: KeplerElements = {
+  e: CERES_ECCENTRICITY,
+  q: CERES_SEMI_MAJOR_AXIS_AU * (1 - CERES_ECCENTRICITY),
+  i: 10.58788658206854,
+  om: 80.24963090816965,
+  w: 73.29975464616518,
+  tpJd: CERES_EPOCH_JD - CERES_MEAN_ANOMALY_DEG / CERES_MEAN_MOTION_DEG_PER_DAY,
+  meanMotionDegPerDay: CERES_MEAN_MOTION_DEG_PER_DAY,
 };
-
-function toJulianDate(time: Date): number {
-  return time.getTime() / MS_PER_DAY + 2440587.5;
-}
-
-function normalizeRadians(angle: number): number {
-  const twoPi = Math.PI * 2;
-  return ((angle % twoPi) + twoPi) % twoPi;
-}
-
-function solveEccentricAnomaly(meanAnomaly: number, eccentricity: number): number {
-  let eccentricAnomaly = eccentricity < 0.8 ? meanAnomaly : Math.PI;
-  for (let i = 0; i < 8; i++) {
-    eccentricAnomaly -= (
-      eccentricAnomaly - eccentricity * Math.sin(eccentricAnomaly) - meanAnomaly
-    ) / (1 - eccentricity * Math.cos(eccentricAnomaly));
-  }
-  return eccentricAnomaly;
-}
-
-function getCeresHeliocentricPosition(time: Date): HelioPosition {
-  const daysSinceEpoch = toJulianDate(time) - CERES_ELEMENTS.epochJd;
-  const meanAnomaly = normalizeRadians((
-    CERES_ELEMENTS.meanAnomalyDeg + CERES_ELEMENTS.meanMotionDegPerDay * daysSinceEpoch
-  ) * DEG_TO_RAD);
-  const eccentricAnomaly = solveEccentricAnomaly(meanAnomaly, CERES_ELEMENTS.eccentricity);
-  const cosE = Math.cos(eccentricAnomaly);
-  const sinE = Math.sin(eccentricAnomaly);
-  const xOrbital = CERES_ELEMENTS.semiMajorAxisAu * (cosE - CERES_ELEMENTS.eccentricity);
-  const yOrbital = CERES_ELEMENTS.semiMajorAxisAu
-    * Math.sqrt(1 - CERES_ELEMENTS.eccentricity ** 2)
-    * sinE;
-
-  const node = CERES_ELEMENTS.longitudeAscendingNodeDeg * DEG_TO_RAD;
-  const perihelion = CERES_ELEMENTS.argumentPerihelionDeg * DEG_TO_RAD;
-  const inclination = CERES_ELEMENTS.inclinationDeg * DEG_TO_RAD;
-  const cosNode = Math.cos(node);
-  const sinNode = Math.sin(node);
-  const cosPerihelion = Math.cos(perihelion);
-  const sinPerihelion = Math.sin(perihelion);
-  const cosInclination = Math.cos(inclination);
-  const sinInclination = Math.sin(inclination);
-
-  return {
-    x: (cosNode * cosPerihelion - sinNode * sinPerihelion * cosInclination) * xOrbital
-      + (-cosNode * sinPerihelion - sinNode * cosPerihelion * cosInclination) * yOrbital,
-    y: (sinNode * cosPerihelion + cosNode * sinPerihelion * cosInclination) * xOrbital
-      + (-sinNode * sinPerihelion + cosNode * cosPerihelion * cosInclination) * yOrbital,
-    z: (sinPerihelion * sinInclination) * xOrbital
-      + (cosPerihelion * sinInclination) * yOrbital,
-  };
-}
 
 // ── Public API (all synchronous — must call preload() first) ─────────
 
@@ -138,7 +88,7 @@ export interface HorizontalPosition {
  */
 export function getHeliocentricPosition(bodyId: string, time: Date): HelioPosition {
   if (bodyId === 'ceres') {
-    return getCeresHeliocentricPosition(time);
+    return keplerPosition(CERES_ELEMENTS, time);
   }
 
   const A = astroModule!;

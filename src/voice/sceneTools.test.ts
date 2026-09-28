@@ -1,11 +1,26 @@
 import { describe, expect, it, vi } from 'vitest';
 import { buildSceneContext, createSceneTools, parseTimeRate, type SceneVoiceState } from './sceneTools';
 function setup() {
-  const state: SceneVoiceState = { nav: { level: 'system' }, mode: 'artistic', tides: false, constellations: false, quality: 'auto', missionActive: false, detailsVisible: true };
+  const state: SceneVoiceState = { nav: { level: 'system' }, mode: 'artistic', tides: false, constellations: false, quality: 'auto', missionActive: false, detailsVisible: true, rubin: { visible: false, selectedId: null } };
   const handlers = { onSetTides: vi.fn(), onSetConstellations: vi.fn(), onSetQuality: vi.fn() };
   return { state, handlers, tools: createSceneTools(() => state, () => handlers) };
 }
 describe('Stella scene tools', () => {
+  it('describes the Rubin layer only in Orrery, including the selected find and its caveats', () => {
+    const { state } = setup();
+    expect(buildSceneContext(state)).not.toContain('Rubin');
+    state.mode = 'orrery';
+    expect(buildSceneContext(state)).toContain('Rubin Observatory finds layer is off');
+    state.rubin = { visible: true, selectedId: '2025-ls2' };
+    const context = buildSceneContext(state);
+    expect(context).toContain('Selected: 2025 LS2');
+    expect(context).toContain('Discovered by Rubin.');
+    expect(context).toContain('squeezes distance');
+    expect(context).toContain('not a live feed');
+    state.rubin = { visible: true, selectedId: '2025-ne552' };
+    expect(buildSceneContext(state)).toContain('short stretch of observations');
+  });
+
   it('uses current state, rejects unsupported tides, and never toggles on malformed booleans', () => {
     const { state, handlers, tools } = setup();
     tools.set_earth_tides({ enabled: 'false' });

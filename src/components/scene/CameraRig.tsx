@@ -20,6 +20,8 @@ interface CameraRigProps {
   planets: Planet[];
   /** When set, camera continuously tracks this mission in orrery mode */
   orreryMissionId?: string;
+  /** In the system view, zoom out (never in) until a sphere of this scene radius fits. */
+  systemFitRadius?: number;
 }
 
 // Artistic orbits span ~40 units; the log-compressed orrery only ~13.
@@ -28,7 +30,7 @@ const SYSTEM_POSITION_ARTISTIC = { x: 0, y: 35, z: 50 };
 const SYSTEM_POSITION_ORRERY = { x: 0, y: 15, z: 21 };
 const SYSTEM_TARGET = { x: 0, y: 0, z: 0 };
 
-export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
+export function CameraRig({ nav, planets, orreryMissionId, systemFitRadius }: CameraRigProps) {
   const space = useFocusedSpace();
   const layoutScratch = useRef({ shift: new Vector3(), target: new Vector3(), end: new Vector3() });
   const controlsRef = useRef<CameraControlsImpl>(null);
@@ -55,6 +57,18 @@ export function CameraRig({ nav, planets, orreryMissionId }: CameraRigProps) {
     : nav.level === 'mission'
     ? `mission:${nav.missionId}`
     : nav.level;
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls || !systemFitRadius || nav.level !== 'system') return;
+    const vFov = (camera instanceof PerspectiveCamera ? camera.fov : 50) * Math.PI / 180;
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * (size.width / size.height));
+    const needed = systemFitRadius / Math.sin(Math.min(vFov, hFov) / 2);
+    if (needed > controls.distance) {
+      controls.smoothTime = flightSmoothTime;
+      controls.dollyTo(needed, true);
+    }
+  }, [systemFitRadius, nav.level, camera, size.width, size.height, flightSmoothTime]);
 
   useEffect(() => {
     const controls = controlsRef.current;

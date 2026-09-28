@@ -1,0 +1,26 @@
+key,tag,why,full_name,group,rubin_new,a,e,i,q,Q,H,D_est_km,rot_h,cc,arc_d,x05_nobs
+2025 LS2,farthest-reliable,"Rubin find that swings out ~1,000 au from the Sun (≈12,000-yr orbit)",       (2025 LS2),TNO,True,523.1,0.9175,12.62,43.178,1002.96,6.44,216.533,,5,350.0,19
+2026 EB130,farthest-candidate,"If confirmed, travels ~4,700 au out; orbit from only 13 days of data",       (2026 EB130),TNO,True,2353.0,0.989,8.74,25.935,4680.93,7.29,146.395,,8,13.0,28
+2025 NE552,largest-new,"Brightest (biggest) Rubin TNO find, maybe ~600 km (albedo guess); dwarf-planet size candidate",       (2025 NE552),TNO,True,214.0,0.8871,18.11,24.147,403.78,4.23,599.135,,9,20.0,13
+2026 BS14,largest-new + tilted,Big (~500–650 km est.) world tilted 54°,       (2026 BS14),TNO,True,44.2,0.1426,53.68,37.894,50.5,4.55,517.041,,7,82.0,61
+2026 FQ35,most-inclined-new,Most tilted Rubin TNO: ~60° to the planets,       (2026 FQ35),TNO,True,125.0,0.633,59.59,45.891,204.21,6.21,240.727,,9,28.0,16
+2026 GN18,sentry,"Rubin-found ~0.7 km NEO on JPL Sentry (1-in-72-million, 2054-2118), 4-day arc",       (2026 GN18),NEO Amor,True,3.002,0.5879,1.06,1.237,4.77,18.08,0.831,,9,4.0,6
+2025 OX529,biggest-new-NEO,"~1 km Amor NEO, 3-day arc",       (2025 OX529),NEO Amor,True,5.042,0.7449,8.43,1.286,8.8,17.68,0.999,,9,3.0,11
+2025 PQ124,well-known-new-NEO,Rubin NEO with precoveries to 2004 (cc 2) – safe to plot,       (2025 PQ124),NEO Amor,True,2.073,0.4417,2.74,1.158,2.99,19.24,0.487,,2,7686.0,10
+2025 OC338,tiniest-new,~8 m rock; orbit passes 0.005 au (2 LD) from Earth's orbit,       (2025 OC338),NEO Apollo,True,1.272,0.4047,1.83,0.757,1.79,27.5,0.011,,7,5.0,18
+2025 OP161,closest-to-Sun-new,"Rubin NEO dipping inside Venus's orbit (q 0.66 au), 28° tilt, 335-d arc",       (2025 OP161),NEO Apollo,True,2.054,0.6788,28.24,0.66,3.45,19.48,0.436,,4,335.0,12
+2025 OD43,earth-like-orbit-new,Rubin NEO with a≈1.04 au – a year almost exactly like Earth's,       (2025 OD43),NEO Apollo,True,1.042,0.2994,4.43,0.73,1.35,24.96,0.035,,6,12.0,15
+2025 MU34,new-NEO,Rubin NEO with 97 X05 detections,       (2025 MU34),NEO Apollo,True,1.148,0.1961,4.57,0.923,1.37,24.41,0.045,,4,86.0,97
+2026 N2,new-comet,Encke-type comet flagged as X05 discovery (precovered to 2021),     P/2026 N2,comet (ETc),True,3.072,0.2123,2.25,2.42,3.72,17.1,1.91,,3,1822.0,5
+2025 MP34,trojan-new,Rubin Jupiter Trojan sharing Jupiter's orbit (cc 1),       (2025 MP34),Jupiter Trojan,True,5.247,0.044,10.75,5.016,5.48,15.43,4.121,,1,2838.0,136
+2025 NE203,centaur-new,Rubin Centaur roaming near Neptune (a≈30 au),       (2025 NE203),Centaur,True,29.98,0.0693,10.26,27.897,32.05,6.88,211.337,,6,383.0,15
+2025 PN7,quasi-satellite,Earth's quasi-moon (not a Rubin discovery; imaged by X05),       (2025 PN7),NEO Apollo,False,1.001,0.1082,1.98,0.893,1.11,26.41,0.018,,0,4651.0,2
+2025 N1,interstellar,3I/ATLAS – interstellar comet imaged by Rubin Jul 2025 (not discovered),     C/2025 N1 (ATLAS),interstellar comet (HYP),False,-0.2638,6.1414,175.12,1.356,,12.5,,,,280.0,9
+434620,retrograde,Orbits backwards (i=172°) – observed by X05,434620 (2005 VD),Centaur,False,6.692,0.2547,172.2,4.988,8.4,14.18,7.328,,0,8585.0,15
+2025 KF49,retrograde,Centaur on a 109° backwards orbit – observed by X05,       (2025 KF49),Centaur,False,29.12,0.8188,109.45,5.275,52.96,15.88,3.349,,8,7.0,70
+289227,closest-to-Sun,Gets within 0.13 au of the Sun (1/3 of Mercury's distance) – observed by X05,289227 (2004 XY60),NEO Aten,False,0.6402,0.7966,23.79,0.13,1.15,18.67,0.633,,0,7694.0,2
+1999 SF10,fastest-spin,Spins once every ~2.5 minutes – observed by X05,       (1999 SF10),NEO Apollo,False,1.277,0.2525,1.17,0.955,1.6,24.36,0.046,0.0411,0,9632.0,14
+535844,upcoming-flyby,"PHA, 9.2 LD on 2027-03-04; spins in 5.6 min",535844 (2015 BY310),NEO Apollo,False,1.587,0.4011,4.75,0.95,2.22,21.89,0.144,0.0926702,0,3836.0,16
+2025 MN88,upcoming-flyby,~20 m rock passing 7.9 LD on 2027-07-11 (returns 2029/2033/2035),       (2025 MN88),NEO Apollo,False,1.589,0.3999,1.09,0.954,2.22,26.26,0.019,,7,12.0,2
+2018 BY6,upcoming-flyby,Passes 5.0 LD on 2029-07-15,       (2018 BY6),NEO Apollo,False,1.21,0.2803,6.56,0.871,1.55,23.45,0.07,,0,5879.0,10
+25629,slowest-spin,One rotation takes ~172 days – observed by X05, 25629 Mukherjee (2000 AH52),main belt,False,2.238,0.0873,4.91,2.042,2.43,15.48,2.569,4141.0,0,10491.0,42

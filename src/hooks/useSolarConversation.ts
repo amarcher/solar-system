@@ -611,7 +611,7 @@ export function useSolarConversation({ scene, onSetTides, onSetConstellations, o
     if (!convRef.current || rawStatus !== 'connected') return;
     try { convRef.current.sendContextualUpdate(sceneContext()); }
     catch (error) { console.error('[voice] scene context failed:', error); }
-  }, [currentNav, currentMode, currentTides, scene.constellations, scene.quality, scene.missionActive, scene.detailsVisible, currentRate, currentObserver, rawStatus, sceneContext]);
+  }, [currentNav, currentMode, currentTides, scene.constellations, scene.quality, scene.missionActive, scene.detailsVisible, scene.rubin.visible, scene.rubin.selectedId, currentRate, currentObserver, rawStatus, sceneContext]);
 
   useEffect(() => {
     if (rawStatus !== 'connected' || currentMode === 'artistic') return;

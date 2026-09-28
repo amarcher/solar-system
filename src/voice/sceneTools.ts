@@ -3,6 +3,7 @@ import type { ViewMode } from '../astronomy/types';
 import type { QualityPreference } from '../performance/qualityPolicy';
 import { textureManifest } from '../data/textureManifest';
 import { tidesVoiceContext, TIDES_OVERLAY_STATE } from '../lessons/tides/model';
+import { aphelionAu, getRubinAsteroidById, RUBIN_KIND_LABELS, rubinAsteroids } from '../data/rubinAsteroids';
 
 export interface SceneVoiceState {
   nav: NavigationState;
@@ -12,6 +13,8 @@ export interface SceneVoiceState {
   quality: QualityPreference;
   missionActive: boolean;
   detailsVisible: boolean;
+  /** Rubin Observatory finds layer (Orrery only). */
+  rubin: { visible: boolean; selectedId: string | null };
 }
 export interface SceneToolHandlers {
   onSetTides: (enabled: boolean) => void;
@@ -58,8 +61,21 @@ export function buildSceneContext(state: SceneVoiceState): string {
   }
   lines.push(state.tides ? tidesVoiceContext(TIDES_OVERLAY_STATE) : 'Earth tides overlay is off. set_earth_tides can focus Earth and switch on the combined Sun-and-Moon water layer in Explore or Orrery outside mission replay. Only on/off is available; no arrows, source selector, phase presets, pause, or recording control.');
   lines.push('The tides illustration does not simulate tidal friction, Earth slowing down, or the Moon receding. Explain those separately if asked; never claim they are visible here.');
+  if (state.mode === 'orrery') lines.push(...rubinContext(state.rubin));
   if (state.missionActive) lines.push('A mission replay is active. It is an illustrative trajectory, not live spacecraft telemetry.');
   return lines.join('\n');
+}
+
+function rubinContext({ visible, selectedId }: SceneVoiceState['rubin']): string[] {
+  if (!visible) return ['Rubin Observatory finds layer is off. The child can turn it on from the menu to see about a dozen and a half hand-picked asteroids, comets, and distant worlds the Vera C. Rubin Observatory discovered or photographed.'];
+  const lines = [`Rubin Observatory finds layer is on: ${rubinAsteroids.length} hand-picked objects shown as small colored dots, each moving on its real orbit (two-body approximation from JPL elements). Picking one draws its orbit and shows a short card. "Discovered by Rubin" means MPC credits Rubin with the discovery; "Seen by Rubin" means Rubin photographed an object found earlier. Rubin found over 11,000 new asteroids in about six weeks of 2025 testing. Its public data currently runs through mid-July 2026, so this is not a live feed.`];
+  const selected = selectedId ? getRubinAsteroidById(selectedId) : undefined;
+  if (selected) {
+    lines.push(`Selected: ${selected.name} (${RUBIN_KIND_LABELS[selected.kind]}), "${selected.headline}". ${selected.rubinDiscovered ? 'Discovered by Rubin.' : 'Seen by Rubin, discovered earlier by others.'} Card text: ${selected.blurb}${selected.sizeLabel ? ` Size: ${selected.sizeLabel}.` : ''}`);
+    if (selected.orbitEstimated) lines.push('This orbit comes from only a short stretch of observations and may change as astronomers learn more.');
+    if (aphelionAu(selected) > 50) lines.push('The orrery squeezes distance logarithmically, so this far-out path looks much smaller than it really is.');
+  }
+  return lines;
 }
 
 export function parseTimeRate(value: unknown): number | null {
