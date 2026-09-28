@@ -19,7 +19,7 @@ import { ModeToggle } from './components/ui/ModeToggle';
 import { TimeControls } from './components/ui/TimeControls';
 import { ObserverPicker } from './components/ui/ObserverPicker';
 import { useDeviceOrientation } from './astronomy/useDeviceOrientation';
-import { trackModeSwitch } from './utils/analytics';
+import { trackModeSwitch, trackRubinFindView, trackRubinToggle, type RubinSource } from './utils/analytics';
 import './App.css';
 import { useTidesLesson } from './lessons/tides/useTidesLesson';
 import { GraphicsQualityProvider } from './performance/GraphicsQualityProvider';
@@ -55,7 +55,11 @@ function App() {
   const [showRubin, setShowRubin] = useState(false);
   const [rubinSelectedId, setRubinSelectedId] = useState<string | null>(null);
   const [rubinView, setRubinView] = useState<'follow' | 'orbit'>('follow');
-  const selectRubin = useCallback((id: string | null) => { setRubinSelectedId(id); setRubinView('follow'); }, []);
+  const selectRubin = useCallback((id: string | null, source?: RubinSource) => {
+    setRubinSelectedId(id);
+    setRubinView('follow');
+    if (id && source) trackRubinFindView(id, source);
+  }, []);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
   const [missionHudDismissed, setMissionHudDismissed] = useState(false);
@@ -183,12 +187,12 @@ function App() {
       else closeTides(false);
     },
     onSetConstellations: setShowConstellations,
-    onSetRubin: (enabled) => { setShowRubin(enabled); if (!enabled) selectRubin(null); },
+    onSetRubin: (enabled) => { setShowRubin(enabled); trackRubinToggle(enabled, 'voice'); if (!enabled) selectRubin(null); },
     onFocusRubin: (id, view) => {
       closeTides(false);
       if (nav.level !== 'system') goToSystem();
       setShowRubin(true);
-      selectRubin(id);
+      selectRubin(id, 'voice');
       setRubinView(view);
     },
     onSetQuality: graphics.setPreference,
@@ -307,7 +311,7 @@ function App() {
         deviceHeadingRef={deviceOrientation.headingRef}
         devicePitchRef={deviceOrientation.pitchRef}
         orreryMission={orreryMissionActive ? getMissionById('artemis-2') : undefined}
-        rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubin } : null}
+        rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: (id) => selectRubin(id, 'scene') } : null}
       />
 
       {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && (
@@ -315,9 +319,9 @@ function App() {
           asteroids={rubinAsteroids}
           selectedId={rubinSelectedId}
           view={rubinView}
-          onSelect={selectRubin}
+          onSelect={(id) => selectRubin(id, 'list')}
           onViewChange={setRubinView}
-          onClose={() => { setShowRubin(false); selectRubin(null); }}
+          onClose={() => { setShowRubin(false); trackRubinToggle(false, 'list'); selectRubin(null); }}
         />
       )}
 
@@ -374,7 +378,7 @@ function App() {
               aria-label="Rubin Observatory finds"
               aria-pressed={showRubin}
               title="Asteroids and far-off worlds seen by the Rubin Observatory"
-              onClick={() => { if (showRubin) selectRubin(null); setShowRubin(!showRubin); setToolbarOpen(false); }}
+              onClick={() => { if (showRubin) selectRubin(null); setShowRubin(!showRubin); trackRubinToggle(!showRubin, 'toolbar'); setToolbarOpen(false); }}
             >
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                 <ellipse cx="12" cy="12" rx="9.5" ry="4.5" transform="rotate(-20 12 12)" opacity={showRubin ? 1 : 0.4} />

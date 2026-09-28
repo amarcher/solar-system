@@ -1,9 +1,10 @@
 import posthog from 'posthog-js';
 
 // ---------- PostHog ----------
-// Replace with your PostHog project API key and host
-const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
-const POSTHOG_HOST = (import.meta.env.VITE_POSTHOG_HOST as string) || 'https://us.i.posthog.com';
+// Env values set through `vercel env add` via stdin can carry a trailing
+// newline; an untrimmed key silently breaks every PostHog capture.
+const POSTHOG_KEY = (import.meta.env.VITE_POSTHOG_KEY as string | undefined)?.trim() || undefined;
+const POSTHOG_HOST = (import.meta.env.VITE_POSTHOG_HOST as string | undefined)?.trim() || 'https://us.i.posthog.com';
 
 let initialized = false;
 
@@ -18,71 +19,83 @@ export function initAnalytics() {
   initialized = true;
 }
 
+type EventProps = Record<string, string | number | boolean | undefined>;
+
+/**
+ * Send to every configured sink independently: GA4 (configured in
+ * index.html) must not depend on PostHog having initialized.
+ */
+function track(event: string, props?: EventProps) {
+  if (initialized) posthog.capture(event, props);
+  gtag('event', event, props ?? {});
+}
+
 // ---------- Navigation Events ----------
 
 export function trackPlanetView(planetId: string, viewMode?: string) {
-  if (!initialized) return;
-  posthog.capture('planet_viewed', { planet_id: planetId, view_mode: viewMode });
-  fbq('track', 'ViewContent', { content_name: planetId, content_type: 'planet' });
-  gtag('event', 'planet_viewed', { planet_id: planetId, view_mode: viewMode });
+  track('planet_viewed', { planet_id: planetId, view_mode: viewMode });
 }
 
 export function trackMoonView(planetId: string, moonId: string, viewMode?: string) {
-  if (!initialized) return;
-  posthog.capture('moon_viewed', { planet_id: planetId, moon_id: moonId, view_mode: viewMode });
-  fbq('track', 'ViewContent', { content_name: moonId, content_type: 'moon' });
-  gtag('event', 'moon_viewed', { planet_id: planetId, moon_id: moonId, view_mode: viewMode });
+  track('moon_viewed', { planet_id: planetId, moon_id: moonId, view_mode: viewMode });
 }
 
 export function trackSunView(viewMode?: string) {
-  if (!initialized) return;
-  posthog.capture('sun_viewed', { view_mode: viewMode });
-  fbq('track', 'ViewContent', { content_name: 'sun', content_type: 'sun' });
-  gtag('event', 'sun_viewed', { view_mode: viewMode });
+  track('sun_viewed', { view_mode: viewMode });
 }
 
 export function trackModeSwitch(mode: string) {
-  if (!initialized) return;
-  posthog.capture('mode_switched', { view_mode: mode });
-  gtag('event', 'mode_switched', { view_mode: mode });
+  track('mode_switched', { view_mode: mode });
 }
 
+// ---------- Rubin finds ----------
+
+export type RubinSource = 'list' | 'scene' | 'voice' | 'toolbar';
+
+export function trackRubinToggle(enabled: boolean, source: RubinSource) {
+  track('rubin_finds_toggled', { enabled, source });
+}
+
+export function trackRubinFindView(findId: string, source: RubinSource) {
+  track('rubin_find_viewed', { find_id: findId, source });
+}
+
+// ---------- Voice guide (Stella) ----------
+
+/** The talk button was pressed (before mic permission or connection). */
 export function trackVoiceAgentActivated() {
-  if (!initialized) return;
-  posthog.capture('voice_agent_activated');
-  fbq('track', 'Lead');
-  gtag('event', 'voice_agent_activated');
+  track('voice_agent_activated');
+}
+
+export function trackVoiceAgentFailed(reason: 'mic_denied' | 'mic_unavailable' | 'connect_failed') {
+  track('voice_agent_failed', { reason });
+}
+
+export function trackVoiceSessionConnected(msToConnect: number) {
+  track('voice_session_connected', { ms_to_connect: Math.round(msToConnect) });
+}
+
+/** Turn counts only: never transcript content. */
+export function trackVoiceSessionEnded(durationS: number, userTurns: number, agentTurns: number) {
+  track('voice_session_ended', { duration_s: Math.round(durationS), user_turns: userTurns, agent_turns: agentTurns });
 }
 
 // Track engagement milestone: user explored N planets in this session
 const planetsExploredThisSession = new Set<string>();
 
 export function trackExplorationMilestone(planetId: string) {
-  if (!initialized) return;
   planetsExploredThisSession.add(planetId);
-  const count = planetsExploredThisSession.size;
-  if (count === 3) {
-    posthog.capture('exploration_milestone', { planets_count: 3 });
-    fbq('track', 'CompleteRegistration');
-    gtag('event', 'exploration_milestone', { planets_count: 3 });
-  }
+  if (planetsExploredThisSession.size === 3) track('exploration_milestone', { planets_count: 3 });
 }
 
 // ---------- GA4 Helpers ----------
 
 declare global {
   interface Window {
-    fbq?: (...args: unknown[]) => void;
     gtag?: (...args: unknown[]) => void;
   }
 }
 
 function gtag(...args: unknown[]) {
   window.gtag?.(...args);
-}
-
-// ---------- Meta Pixel Helpers ----------
-
-function fbq(...args: unknown[]) {
-  window.fbq?.(...args);
 }
