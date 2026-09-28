@@ -53,7 +53,11 @@ describe('texture inventory', () => {
     for (const asset of textureManifest) {
       expect(asset.provenance.notes.length).toBeGreaterThan(20);
     }
-    expect(getBodyTextureAsset('venus')?.provenance.status).toBe('pending');
+    const diffuse = textureManifest.filter((asset) => asset.kind === 'diffuse');
+    for (const asset of diffuse) {
+      expect(asset.provenance.status).toBe('verified');
+      expect(asset.provenance.credit).not.toMatch(/review/i);
+    }
     expect(estimateTextureBytes(8192, 4096)).toBe(178956971);
   });
 
@@ -85,17 +89,29 @@ describe('texture inventory', () => {
     }
   });
 
-  it('distinguishes the verified Moon from unresolved legacy sources and unavailable maps', () => {
+  it('replaces non-commercial legacy maps with liberally licensed, hash-locked sources', () => {
     expect(getBodyTextureAsset('moon')?.provenance).toMatchObject({
       status: 'verified', credit: 'Solar System Scope', licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
     });
-    for (const id of ['io', 'europa', 'ganymede', 'callisto', 'titan', 'enceladus', 'mimas', 'triton', 'charon']) {
-      expect(getBodyTextureAsset(id)?.provenance.status).toBe('pending');
-      expect(getBodyTextureAsset(id)?.provenance.notes).toContain('non-commercial');
+    for (const asset of textureManifest) {
+      expect(asset.provenance.notes).not.toMatch(/Albers/);
     }
-    for (const id of ['phobos', 'deimos', 'rhea', 'dione', 'tethys', 'iapetus', 'hyperion']) {
-      expect(getBodyTextureAsset(id)?.provenance.status).toBe('pending');
+    const manifest = JSON.parse(readFileSync(join(publicRoot, '../docs/assets/public-domain-maps.manifest.json'), 'utf8')) as {
+      bodies: { id: string; outputs: { path: string; sha256: string }[] }[];
+    };
+    expect(manifest.bodies).toHaveLength(18);
+    for (const body of manifest.bodies) {
+      const asset = getBodyTextureAsset(body.id);
+      expect(asset?.provenance.sourceUrl).toMatch(/^https:\/\//);
+      expect(asset?.provenance.licenseUrl).toMatch(/^https:\/\//);
+      expect(asset?.variants.map((variant) => `public${variant.path}`)).toEqual(body.outputs.map((output) => output.path));
+      for (const output of body.outputs) {
+        expect(createHash('sha256').update(readFileSync(join(publicRoot, '..', output.path))).digest('hex')).toBe(output.sha256);
+      }
     }
+  });
+
+  it('labels invented surfaces', () => {
     for (const id of ['proteus', 'nereid', 'styx', 'kerberos']) {
       const asset = getBodyTextureAsset(id);
       expect(asset?.illustration).toBe(true);

@@ -29,59 +29,138 @@ export interface TextureSelection {
   maxWidth?: number;
 }
 
-const legacyProvenance: TextureAsset['provenance'] = {
-  status: 'pending',
-  credit: 'Existing bundled asset; individual provenance review pending',
-  notes: 'README attributes planet and moon textures broadly to Solar System Scope. This is not verified per file; do not assume its license applies to every moon.',
+const CC_BY_4 = 'https://creativecommons.org/licenses/by/4.0/';
+const NASA_TERMS = 'https://www.nasa.gov/nasa-brand-center/images-and-media/';
+const USGS_TERMS = 'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits';
+const STOOKE_PAGE = 'https://sbnarchive.psi.edu/pds3/multi_mission/MULTI_SA_MULTI_6_STOOKEMAPS_V2_0/document/aamapdesc.html';
+const STOOKE_CREDIT = 'Phil Stooke, Stooke Small Bodies Maps V2.0, NASA Planetary Data System';
+const SCHENK_CREDIT = 'NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk)';
+const USGS_GALILEO_CREDIT = 'NASA/JPL/USGS Astrogeology Science Center (Voyager, Galileo)';
+const TONED_DOWN = 'Resized for display. NASA\'s enhanced colors were toned down toward natural color.';
+const GRAY_FILL = 'Areas without imagery are plain gray; no terrain was invented.';
+
+// Byte-identical Solar System Scope downloads (CC BY 4.0), verified 2026-09-21/28.
+const solarSystemScopeFiles = {
+  earth: '2k_earth_daymap', moon: '2k_moon', mercury: '2k_mercury', venus: '2k_venus_surface', mars: '2k_mars',
+  jupiter: '2k_jupiter', saturn: '2k_saturn', uranus: '2k_uranus', neptune: '2k_neptune', sun: '2k_sun',
+} as const;
+
+interface MapSource {
+  credit: string;
+  sourceUrl: string;
+  licenseUrl: string;
+  notes: string;
+  coverage?: string;
+  displayNote: string;
+}
+
+// Rebuilt by scripts/assets/build_public_domain_maps.py; details in docs/assets/public-domain-maps.md.
+const publicDomainMaps: Record<string, MapSource> = {
+  phobos: {
+    credit: STOOKE_CREDIT, sourceUrl: STOOKE_PAGE, licenseUrl: STOOKE_PAGE,
+    notes: 'Public domain, citation requested. Stooke photomosaic from Viking, MGS, Mars Express and MRO images with Cornell control. Replaces a south-up relief drawing.',
+    displayNote: 'Resized for display from a photo mosaic.',
+  },
+  deimos: {
+    credit: STOOKE_CREDIT, sourceUrl: STOOKE_PAGE, licenseUrl: STOOKE_PAGE,
+    notes: 'Public domain, citation requested. Stooke photomosaic from Viking and MRO HiRISE images. Replaces a south-up older version.',
+    displayNote: 'Resized for display from a photo mosaic.',
+  },
+  io: {
+    credit: USGS_GALILEO_CREDIT, sourceUrl: 'https://astrogeology.usgs.gov/search/map/io_galileo_ssi_voyager_color_merged_global_mosaic_1km', licenseUrl: USGS_TERMS,
+    notes: 'USGS color-merged global mosaic, public domain. Longitude rolled 180° to the app convention, then resized.',
+    displayNote: 'Resized for display from a spacecraft photo mosaic.',
+  },
+  europa: {
+    credit: USGS_GALILEO_CREDIT, sourceUrl: 'https://astrogeology.usgs.gov/search/map/Europa/Voyager-Galileo/Europa_Voyager_GalileoSSI_global_mosaic_500m', licenseUrl: USGS_TERMS,
+    notes: 'USGS 500 m grayscale global mosaic, public domain. Uniform cream tint, south-pole no-data filled gray.',
+    displayNote: `Resized for display. The mosaic is black-and-white; the app adds a gentle overall tint. ${GRAY_FILL}`,
+  },
+  ganymede: {
+    credit: USGS_GALILEO_CREDIT, sourceUrl: 'https://astrogeology.usgs.gov/search/map/ganymede_voyager_galileo_ssi_color_global_mosaic_1_4km', licenseUrl: USGS_TERMS,
+    notes: 'USGS 1.4 km color global mosaic, public domain. Polar no-data filled gray.',
+    displayNote: `Resized for display. ${GRAY_FILL}`,
+  },
+  callisto: {
+    credit: USGS_GALILEO_CREDIT, sourceUrl: 'https://astrogeology.usgs.gov/search/map/callisto_galileo_voyager_global_mosaic_1km', licenseUrl: USGS_TERMS,
+    notes: 'USGS 1 km grayscale global mosaic, public domain. Uniform warm tint, southern no-data filled gray. Replaces an upscaled derivative of Björn Jónsson\'s map.',
+    displayNote: `Resized for display. The mosaic is black-and-white; the app adds a gentle overall tint. ${GRAY_FILL}`,
+  },
+  titan: {
+    credit: 'NASA/JPL-Caltech/Univ. Arizona', sourceUrl: 'https://photojournal.jpl.nasa.gov/catalog/PIA22770', licenseUrl: NASA_TERMS,
+    notes: 'PIA22770 Cassini near-infrared (938 nm) surface mosaic. Uniform warm tint added; the orange haze is not shown.',
+    coverage: 'This shows Titan\'s ground, seen in infrared through its thick orange haze.',
+    displayNote: 'Resized for display. The infrared mosaic is black-and-white; the app adds a warm tint.',
+  },
+  enceladus: { credit: SCHENK_CREDIT, sourceUrl: 'https://photojournal.jpl.nasa.gov/catalog/PIA18435', licenseUrl: NASA_TERMS, notes: 'PIA18435 Cassini/Voyager enhanced-color global map (2014); saturation reduced to 30%.', displayNote: TONED_DOWN },
+  mimas: { credit: SCHENK_CREDIT, sourceUrl: 'https://photojournal.jpl.nasa.gov/catalog/PIA18437', licenseUrl: NASA_TERMS, notes: 'PIA18437 Cassini/Voyager enhanced-color global map (2014); saturation reduced to 30%.', displayNote: TONED_DOWN },
+  rhea: { credit: SCHENK_CREDIT, sourceUrl: 'https://photojournal.jpl.nasa.gov/catalog/PIA18438', licenseUrl: NASA_TERMS, notes: 'PIA18438 Cassini/Voyager enhanced-color global map (2014); saturation reduced to 30%.', displayNote: TONED_DOWN },
+  dione: { credit: SCHENK_CREDIT, sourceUrl: 'https://photojournal.jpl.nasa.gov/catalog/PIA18434', licenseUrl: NASA_TERMS, notes: 'PIA18434 Cassini/Voyager enhanced-color global map (2014); saturation reduced to 30%.', displayNote: TONED_DOWN },
+  tethys: { credit: SCHENK_CREDIT, sourceUrl: 'https://photojournal.jpl.nasa.gov/catalog/PIA18439', licenseUrl: NASA_TERMS, notes: 'PIA18439 Cassini/Voyager enhanced-color global map (2014); saturation reduced to 30%.', displayNote: TONED_DOWN },
+  iapetus: { credit: SCHENK_CREDIT, sourceUrl: 'https://photojournal.jpl.nasa.gov/catalog/PIA18436', licenseUrl: NASA_TERMS, notes: 'PIA18436 Cassini/Voyager enhanced-color global map (2014); saturation reduced to 30%.', displayNote: TONED_DOWN },
+  triton: {
+    credit: 'NASA/JPL-Caltech/Lunar & Planetary Institute (Paul Schenk)', sourceUrl: 'https://science.nasa.gov/photojournal/map-of-triton', licenseUrl: NASA_TERMS,
+    notes: 'PIA18668 Voyager 2 enhanced-color global mosaic (also USGS 600 m). Saturation reduced to 50%; unimaged north (~39%) filled gray.',
+    coverage: 'Voyager 2 photographed only part of Triton. Plain gray areas have no imagery in this map.',
+    displayNote: `Resized for display; colors toned down. ${GRAY_FILL}`,
+  },
+  charon: {
+    credit: 'NASA/JHUAPL/SwRI/Lunar and Planetary Institute (New Horizons Team), via USGS Astrogeology', sourceUrl: 'https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m', licenseUrl: NASA_TERMS,
+    notes: 'USGS New Horizons 300 m grayscale global mosaic; unseen south (~34%) filled gray.',
+    coverage: 'New Horizons saw only one side of Charon up close. Plain gray areas have no imagery in this map.',
+    displayNote: `Resized for display. ${GRAY_FILL}`,
+  },
+  pluto: {
+    credit: 'NASA/Johns Hopkins University Applied Physics Laboratory/Southwest Research Institute', sourceUrl: 'https://photojournal.jpl.nasa.gov/catalog/PIA11707', licenseUrl: NASA_TERMS,
+    notes: 'PIA11707 New Horizons color map; unseen south (~30%) filled gray. Replaces a pre-New Horizons stand-in derived from a Ganymede map.',
+    coverage: 'New Horizons saw only one side of Pluto up close. Plain gray areas have no imagery in this map.',
+    displayNote: `Resized for display. ${GRAY_FILL}`,
+  },
+  ceres: {
+    credit: 'NASA/JPL-Caltech/UCLA/MPS/DLR/IDA, via USGS Astrogeology', sourceUrl: 'https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_global_mosaic_400m', licenseUrl: USGS_TERMS,
+    notes: 'USGS Dawn Framing Camera 400 m grayscale global mosaic; "please cite authors". Replaces Solar System Scope\'s fictional Ceres.',
+    displayNote: 'Resized for display from a spacecraft photo mosaic.',
+  },
 };
 
-const albersMoonIds = new Set(['io', 'europa', 'ganymede', 'callisto', 'titan', 'enceladus', 'mimas', 'triton', 'charon']);
-const unresolvedMoonIds = new Set(['phobos', 'deimos', 'rhea', 'dione', 'tethys', 'iapetus', 'hyperion']);
-
-function diffuseProvenance(bodyId: string): TextureAsset['provenance'] {
-  if (bodyId === 'earth') return {
-    status: 'verified', credit: 'Solar System Scope',
-    sourceUrl: 'https://www.solarsystemscope.com/textures/',
-    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
-    notes: 'Bundled Earth JPEG is byte-identical to https://www.solarsystemscope.com/textures/download/2k_earth_daymap.jpg, verified 2026-09-21. SHA-256: 767ee1dc6eb3802699bfccf6f264880f8acd0b80de3191cd24984fe279b07b7c. No image changes.',
+function solarSystemScopeAsset(bodyId: keyof typeof solarSystemScopeFiles): TextureAsset {
+  const file = solarSystemScopeFiles[bodyId];
+  return {
+    id: `${bodyId}-diffuse`, bodyId, kind: 'diffuse',
+    variants: [{ path: `/textures/2k/${bodyId}_diffuse.jpg`, width: 2048, height: 1024 }],
+    provenance: {
+      status: 'verified', credit: 'Solar System Scope', licenseUrl: CC_BY_4,
+      sourceUrl: `https://www.solarsystemscope.com/textures/download/${file}.jpg`,
+      notes: `Byte-identical to Solar System Scope ${file}.jpg. Publisher notes colors are slightly saturated and unmapped gaps are filled with fictional terrain.`,
+    },
   };
-  if (bodyId === 'moon') return {
-    status: 'verified', credit: 'Solar System Scope',
-    sourceUrl: 'https://www.solarsystemscope.com/textures/',
-    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
-    notes: 'Bundled Moon JPEG is byte-identical to the publisher\'s 2K Moon file, verified 2026-09-21. No image changes. See docs/assets/legacy-moon-provenance.md.',
-  };
-  if (albersMoonIds.has(bodyId)) return {
-    status: 'pending', credit: 'Original image credit under review',
-    notes: `Import commit f1bcaf9 attributes this map to Steve Albers. Exact file provenance and permission remain unresolved; the current Albers catalog permits personal non-commercial use only.${bodyId === 'callisto' ? ' Strong visual match to Björn Jónsson\'s published map; transformation chain remains unresolved.' : ''} See docs/assets/legacy-moon-provenance.md.`,
-  };
-  if (unresolvedMoonIds.has(bodyId)) return {
-    status: 'pending', credit: 'Original image credit under review',
-    notes: 'Import commit 82ba471 lists Albers, USGS, and Celestia collectively, without per-file sources or terms. See docs/assets/legacy-moon-provenance.md; do not assume a license.',
-  };
-  return legacyProvenance;
 }
 
 const uranianMoonIds = ['miranda', 'ariel', 'titania', 'oberon', 'umbriel'] as const;
 
-// Explicit inventory prevents unsupported moons from issuing speculative requests.
-const diffuseBodies = [
-  'callisto', 'ceres', 'charon', 'deimos', 'dione', 'earth', 'enceladus',
-  'europa', 'ganymede', 'hyperion', 'iapetus', 'io', 'jupiter', 'mars',
-  'mercury', 'mimas', 'moon', 'neptune', 'phobos', 'pluto', 'rhea', 'saturn',
-  'sun', 'tethys', 'titan', 'triton', 'uranus', 'venus',
-] as const;
-
 export const textureManifest: readonly TextureAsset[] = [
-  ...diffuseBodies.map((bodyId): TextureAsset => ({
+  ...(Object.keys(solarSystemScopeFiles) as (keyof typeof solarSystemScopeFiles)[]).map(solarSystemScopeAsset),
+  ...Object.entries(publicDomainMaps).map(([bodyId, map]): TextureAsset => ({
     id: `${bodyId}-diffuse`, bodyId, kind: 'diffuse',
-    variants: [{
-      path: `/textures/2k/${bodyId}_diffuse.jpg`,
-      width: bodyId === 'uranus' ? 1024 : bodyId === 'pluto' ? 2000 : 2048,
-      height: bodyId === 'uranus' ? 512 : bodyId === 'pluto' ? 1000 : 1024,
-    }],
-    provenance: diffuseProvenance(bodyId),
+    variants: [
+      { path: `/textures/1k/${bodyId}_diffuse.jpg`, width: 1024, height: 512 },
+      { path: `/textures/2k/${bodyId}_diffuse.jpg`, width: 2048, height: 1024 },
+    ],
+    provenance: { status: 'verified', credit: map.credit, sourceUrl: map.sourceUrl, licenseUrl: map.licenseUrl, notes: map.notes },
+    coverage: map.coverage,
+    displayNote: map.displayNote,
   })),
+  {
+    id: 'hyperion-diffuse', bodyId: 'hyperion', kind: 'diffuse',
+    variants: [{ path: '/textures/2k/hyperion_diffuse.jpg', width: 2048, height: 1024 }],
+    provenance: {
+      status: 'verified', credit: 'ItzImcool (CelestiaContent), CC BY 4.0',
+      sourceUrl: 'https://github.com/CelestiaProject/CelestiaContent/blob/master/textures/medres/hyperion.jpg',
+      licenseUrl: CC_BY_4,
+      notes: 'Byte-identical to CelestiaContent textures/medres/hyperion.jpg (SPDX CC-BY-4.0, ItzImcool). Retouched reprojection of Cassini images made for an irregular shape model; features distort on a sphere.',
+    },
+    displayNote: 'A fan-made map built from Cassini pictures, used unchanged.',
+  },
   ...uranianMoonIds.map((bodyId): TextureAsset => ({
     id: `${bodyId}-diffuse`, bodyId, kind: 'diffuse',
     variants: [
