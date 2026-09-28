@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, Line, LineBasicMaterial, LineLoop, Vector3, type Group, type Mesh, type Points } from 'three';
+import { AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, Color, Line, LineLoop, ShaderMaterial, MathUtils, Vector3, type Group, type Mesh, type Points, type PointsMaterial } from 'three';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import { keplerPath, keplerPosition } from '../../astronomy/keplerOrbit';
 import { scaleAUVector } from '../../astronomy/realisticScale';
 import { useFocusedSpace } from '../../sceneLayout/useFocusedSpace';
 import { applyFocusSpace } from '../../sceneLayout/focusedSpace';
-import { setSmallBodyPosition } from '../../utils/planetPositions';
+import { getSmallBodyPosition, setSmallBodyPosition } from '../../utils/planetPositions';
 import { RUBIN_KIND_COLORS, rubinVisualRadius, type RubinAsteroid } from '../../data/rubinAsteroids';
 import { createRockGeometry, irregularityForDiameter, seedFromString } from '../../utils/asteroidRock';
 
@@ -28,8 +28,30 @@ function toScene(p: { x: number; y: number; z: number }, target: Vector3): Vecto
 const MAX_SPIN = (Math.PI * 2) / 1.5;
 /** Spin period drawn when none has been measured, hours. */
 const DEFAULT_SPIN_HOURS = 6;
-/** Beyond this many radii from the camera, the rock is subpixel: show the pinpoint. */
-const PINPOINT_DISTANCE_RADII = 60;
+/**
+ * The pinpoint fades in between these camera distances (in rock radii): gone
+ * while the rock itself is visible, full strength once the rock is subpixel.
+ */
+const PINPOINT_FADE_START_RADII = 50;
+const PINPOINT_FADE_END_RADII = 150;
+const PINPOINT_OPACITY = 0.55;
+
+let dotTexture: CanvasTexture | null = null;
+/** Soft round dot so points don't render as GPU squares. */
+function getDotTexture(): CanvasTexture {
+  if (dotTexture) return dotTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 32;
+  const ctx = canvas.getContext('2d')!;
+  const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.55, 'rgba(255,255,255,0.85)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 32, 32);
+  dotTexture = new CanvasTexture(canvas);
+  return dotTexture;
+}
 
 let comaTexture: CanvasTexture | null = null;
 function getComaTexture(): CanvasTexture {
@@ -62,6 +84,8 @@ function AsteroidMarker({ asteroid, selected, showLabel, onSelect }: {
   const { timeRef, rate } = useAstronomy();
   const space = useFocusedSpace();
   const color = RUBIN_KIND_COLORS[asteroid.kind];
+  // A softened tint of the category color: findable, not fluorescent.
+  const pinpointColor = useMemo(() => new Color(color).lerp(new Color('#c8ccd4'), 0.45), [color]);
   const radius = rubinVisualRadius(asteroid.diameterKm);
   const seed = seedFromString(asteroid.id);
 
@@ -98,7 +122,12 @@ function AsteroidMarker({ asteroid, selected, showLabel, onSelect }: {
       rock.current.rotateOnAxis(spinAxis, spin * Math.min(delta, 0.1));
     }
     const distance = camera.position.distanceTo(position);
-    if (pinpoint.current) pinpoint.current.visible = distance > radius * PINPOINT_DISTANCE_RADII;
+    if (pinpoint.current) {
+      // The selected object is highlighted by its orbit and label instead.
+      const t = selected ? 0 : MathUtils.smoothstep(distance / radius, PINPOINT_FADE_START_RADII, PINPOINT_FADE_END_RADII);
+      (pinpoint.current.material as PointsMaterial).opacity = t * PINPOINT_OPACITY;
+      pinpoint.current.visible = t > 0.01;
+    }
     // Keep the tap target roughly finger-sized on screen at any zoom.
     if (hit.current) hit.current.scale.setScalar(Math.max(radius * 1.4, distance * 0.025));
   }, -3);
@@ -122,7 +151,7 @@ function AsteroidMarker({ asteroid, selected, showLabel, onSelect }: {
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[new Float32Array(3), 3]} />
         </bufferGeometry>
-        <pointsMaterial color={color} size={selected ? 9 : 6} sizeAttenuation={false} toneMapped={false} />
+        <pointsMaterial color={pinpointColor} map={getDotTexture()} size={5} sizeAttenuation={false} transparent depthWrite={false} toneMapped={false} />
       </points>
       <mesh ref={hit} onClick={select} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = ''; }}>
         <sphereGeometry args={[1, 8, 8]} />
@@ -145,6 +174,20 @@ function AsteroidMarker({ asteroid, selected, showLabel, onSelect }: {
   );
 }
 
+// The path runs through the body itself. Hide any stretch of line that lands
+// on top of the rock on screen (same idea as HeliocentricOrbit), so it
+// doesn't slice across the surface in close-ups.
+const PATH_VERTEX = `varying vec3 worldPosition;
+void main() { vec4 world = modelMatrix * vec4(position, 1.0); worldPosition = world.xyz; gl_Position = projectionMatrix * viewMatrix * world; }`;
+const PATH_FRAGMENT = `uniform vec3 color; uniform float opacity; uniform vec3 focus; uniform float clearance; varying vec3 worldPosition;
+void main() {
+  vec3 ray = normalize(worldPosition - cameraPosition);
+  vec3 toFocus = focus - cameraPosition;
+  float missBy = length(toFocus - ray * max(dot(toFocus, ray), 0.0));
+  float gap = smoothstep(clearance, clearance * 1.6, missBy);
+  gl_FragColor = vec4(color, opacity * gap);
+}`;
+
 function AsteroidPath({ asteroid }: { asteroid: RubinAsteroid }) {
   const group = useRef<Group>(null);
   const space = useFocusedSpace();
@@ -161,12 +204,17 @@ function AsteroidPath({ asteroid }: { asteroid: RubinAsteroid }) {
     });
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new BufferAttribute(points, 3));
-    const material = new LineBasicMaterial({
-      color: RUBIN_KIND_COLORS[asteroid.kind],
+    const material = new ShaderMaterial({
+      uniforms: {
+        color: { value: new Color(RUBIN_KIND_COLORS[asteroid.kind]) },
+        opacity: { value: 0.55 },
+        focus: { value: new Vector3() },
+        clearance: { value: rubinVisualRadius(asteroid.diameterKm) * 1.25 },
+      },
+      vertexShader: PATH_VERTEX,
+      fragmentShader: PATH_FRAGMENT,
       transparent: true,
-      opacity: 0.55,
       depthWrite: false,
-      toneMapped: false,
     });
     // Interstellar paths are open; everything else closes on itself.
     return asteroid.elements.e < 1 ? new LineLoop(geometry, material) : new Line(geometry, material);
@@ -174,14 +222,16 @@ function AsteroidPath({ asteroid }: { asteroid: RubinAsteroid }) {
 
   useEffect(() => () => {
     line.geometry.dispose();
-    (line.material as LineBasicMaterial).dispose();
+    (line.material as ShaderMaterial).dispose();
   }, [line]);
 
   useFrame(() => {
     if (!group.current) return;
     group.current.position.copy(space.offset);
     group.current.scale.setScalar(space.scale);
-  }, -3);
+    const body = getSmallBodyPosition(asteroid.id);
+    if (body) (line.material as ShaderMaterial).uniforms.focus.value.copy(body);
+  }, -2);
 
   return (
     <group ref={group}>
