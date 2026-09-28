@@ -10,6 +10,7 @@ import { useAstronomy } from '../../astronomy/useAstronomy';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
+import { useLabelBelow } from './useLabelBelow';
 import { weldSeamNormals } from '../../utils/weldSeamNormals';
 import { LUNAR_ORRERY_RADIUS, LUNAR_PATH_SEGMENTS, lunarOrreryPosition, nextLunarPathSample, sampleLunarOrreryPath, type LunarPathSample } from '../../astronomy/lunarOrrery';
 
@@ -140,6 +141,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
     () => moon.shape === 'irregular' ? createIrregularGeometry(visualRadius, moon.id) : null,
     [moon.shape, moon.id, visualRadius],
   );
+  const labelRef = useLabelBelow(visualRadius, moonMeshRef, !!irregularGeo);
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
@@ -248,20 +250,21 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
         </mesh>
 
         {showLabel && (
-          <Html
-            position={[0, -(visualRadius + 0.15), 0]}
-            center
-            style={{ pointerEvents: 'none' }}
-          >
-            <button
-              type="button"
-              className="scene-label scene-label--moon"
-              aria-label={`Explore ${moon.name}`}
-              onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+          <group ref={labelRef}>
+            <Html
+              center
+              style={{ pointerEvents: 'none' }}
             >
-              {moon.name}
-            </button>
-          </Html>
+              <button
+                type="button"
+                className="scene-label scene-label--moon scene-label--below"
+                aria-label={`Explore ${moon.name}`}
+                onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+              >
+                {moon.name}
+              </button>
+            </Html>
+          </group>
         )}
       </group>
     </>
