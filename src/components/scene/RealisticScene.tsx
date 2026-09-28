@@ -7,6 +7,8 @@ import { SunMesh } from './Sun';
 import { RealisticPlanet } from './RealisticPlanet';
 import { CelestialLayers } from './CelestialLayers';
 import { RealisticMissionTrajectory } from './RealisticMissionTrajectory';
+import { RubinAsteroids } from './RubinAsteroids';
+import type { RubinAsteroid } from '../../data/rubinAsteroids';
 import { useAstronomy } from '../../astronomy/useAstronomy';
 import * as AstronomyService from '../../astronomy/AstronomyService';
 import { scaleAUVector } from '../../astronomy/realisticScale';
@@ -27,6 +29,7 @@ interface RealisticSceneProps {
   showConstellations: boolean;
   activeMission?: Mission;
   paused?: boolean;
+  rubin?: { asteroids: RubinAsteroid[]; selectedId: string | null; onSelect: (id: string) => void } | null;
 }
 
 /**
@@ -141,6 +144,7 @@ export function RealisticScene({
   showConstellations,
   activeMission,
   paused = false,
+  rubin = null,
 }: RealisticSceneProps) {
   const isZoomedIn = nav.level === 'planet' || nav.level === 'moon' || nav.level === 'sun';
   // Keep the real solar-system geometry visible around a focused planet or
@@ -196,6 +200,15 @@ export function RealisticScene({
 
       {activeMission && (
         <RealisticMissionTrajectory mission={activeMission} />
+      )}
+
+      {rubin && !hidesSystemContext && (
+        <RubinAsteroids
+          asteroids={rubin.asteroids}
+          selectedId={rubin.selectedId}
+          showLabels={showLabels}
+          onSelect={rubin.onSelect}
+        />
       )}
     </>
   );

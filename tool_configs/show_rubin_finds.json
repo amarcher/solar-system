@@ -1,0 +1,19 @@
+{
+    "name": "show_rubin_finds",
+    "description": "Show or hide the Rubin Observatory finds layer in Orrery: hand-picked asteroids, comets, and distant worlds the Vera C. Rubin Observatory discovered or photographed, each on its real orbit. Orrery only; if in Explore or Sky, call switch_view_mode to orrery first.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "enabled": {
+                "type": "boolean",
+                "description": "True to show the Rubin finds; false to hide them."
+            }
+        },
+        "required": [
+            "enabled"
+        ]
+    }
+}

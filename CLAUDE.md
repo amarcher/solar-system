@@ -71,6 +71,7 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 - `src/data/planets.ts` — 10 planets (Mercury–Neptune + Pluto + Ceres) with scientific data + 3D scene values
 - `src/data/moons.ts` — ~27 curated notable moons with `getMoonsByPlanet()` and `getMoonById()`. Moon rotation: most are tidally locked (no `rotationPeriod` needed — defaults to `orbitalPeriod * 24`). Exceptions: `chaoticRotation: true` (Hyperion, Nix, Hydra) or explicit `rotationPeriod` in hours (Nereid).
 - `src/data/sun.ts` — Sun data with 6 peelable layers (corona → core)
+- `src/data/rubinAsteroids.ts` — hand-picked Rubin Observatory finds (names, kid blurbs, discovered-vs-seen). Orbits in `rubinAsteroidOrbits.json`, refreshed from JPL by `node scripts/rubin/fetch-orbits.mjs`
 - `src/data/videoManifest.ts` — keyed by string ID (not atomic number like periodic table)
 
 ### Types
@@ -79,6 +80,7 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 ### Astronomy Engine (`src/astronomy/`)
 - `AstronomyContext.tsx` — React context: `ViewMode`, simulation time, observer location
 - `AstronomyService.ts` — lazy wrapper around `astronomy-engine` (heliocentric, geocentric, horizontal positions, sidereal time, moon phase)
+- `keplerOrbit.ts` — two-body propagator (elliptic + hyperbolic) for bodies astronomy-engine lacks: Ceres, Rubin finds
 - `realisticScale.ts` — log-compressed AU-to-scene-unit mapping for orrery mode
 - `useObserver.ts` — observer lat/lng state with geolocation + localStorage persistence
 - `types.ts` — `ViewMode`, `AstronomyTime`, `ObserverLocation`
@@ -98,6 +100,7 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 - `StarField.tsx` — 3000 instanced points with color variation (artistic mode)
 - `RealisticMissionTrajectory.tsx` — Artemis mission replay: interpolated ephemeris, scaled trajectory near Earth, Moon-direction alignment
 - `RealisticMoonOrbit.tsx` — realistic moon orbits using astronomy-engine geocentric positions
+- `RubinAsteroids.tsx` — orrery markers for the Rubin finds layer + selected orbit path
 - `AsteroidBelt.tsx` — 600 instanced dodecahedrons between Mars and Jupiter orbits
 
 ### Detail Overlays (`src/components/detail/`)
@@ -112,6 +115,7 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 ### UI (`src/components/ui/`)
 - `ModeToggle.tsx/css` — bottom-center pill toggle: Explore / Orrery / Sky
 - `TimeControls.tsx/css` — date display, date picker, "Now" button, speed presets (orrery + sky)
+- `RubinPanel.tsx/css` — Rubin finds list/detail card (orrery, toolbar toggle)
 - `ObserverPicker.tsx/css` — lat/lng input + geolocation button (sky mode only)
 - `VoiceAgent.tsx/css` — floating orb (space-themed orange gradient)
 

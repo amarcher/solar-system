@@ -26,6 +26,8 @@ import { GraphicsQualityProvider } from './performance/GraphicsQualityProvider';
 import { GraphicsSettings } from './components/ui/GraphicsSettings';
 import { benchmarkEnabled, BENCHMARK_DATE } from './performance/benchmark';
 import { DEFAULT_OBSERVER } from './astronomy/types';
+import { rubinAsteroids } from './data/rubinAsteroids';
+import { RubinPanel } from './components/ui/RubinPanel';
 
 function viewTransition(update: () => void, types: string[]) {
   if (!document.startViewTransition) {
@@ -50,6 +52,10 @@ function App() {
   const { close: closeTides, state: tidesState } = tides;
   const [showLabels, setShowLabels] = useState(true);
   const [showConstellations, setShowConstellations] = useState(false);
+  const [showRubin, setShowRubin] = useState(false);
+  const [rubinSelectedId, setRubinSelectedId] = useState<string | null>(null);
+  const [rubinView, setRubinView] = useState<'follow' | 'orbit'>('follow');
+  const selectRubin = useCallback((id: string | null) => { setRubinSelectedId(id); setRubinView('follow'); }, []);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
   const [missionHudDismissed, setMissionHudDismissed] = useState(false);
@@ -171,12 +177,20 @@ function App() {
 
   const voice = useSolarConversation({
     currentRate: rate,
-    scene: { detailsVisible: !hideDetails && !tides.state, constellations: showConstellations, quality: graphics.preference, missionActive: orreryMissionActive || nav.level === 'mission' },
+    scene: { detailsVisible: !hideDetails && !tides.state, constellations: showConstellations, quality: graphics.preference, missionActive: orreryMissionActive || nav.level === 'mission', rubin: { visible: showRubin, selectedId: rubinSelectedId } },
     onSetTides: (enabled) => {
       if (enabled) { goToPlanet('earth'); tides.open(); }
       else closeTides(false);
     },
     onSetConstellations: setShowConstellations,
+    onSetRubin: (enabled) => { setShowRubin(enabled); if (!enabled) selectRubin(null); },
+    onFocusRubin: (id, view) => {
+      closeTides(false);
+      if (nav.level !== 'system') goToSystem();
+      setShowRubin(true);
+      selectRubin(id);
+      setRubinView(view);
+    },
     onSetQuality: graphics.setPreference,
     currentNav: nav,
     currentTides: tides.state,
@@ -293,7 +307,19 @@ function App() {
         deviceHeadingRef={deviceOrientation.headingRef}
         devicePitchRef={deviceOrientation.pitchRef}
         orreryMission={orreryMissionActive ? getMissionById('artemis-2') : undefined}
+        rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubin } : null}
       />
+
+      {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && (
+        <RubinPanel
+          asteroids={rubinAsteroids}
+          selectedId={rubinSelectedId}
+          view={rubinView}
+          onSelect={selectRubin}
+          onViewChange={setRubinView}
+          onClose={() => { setShowRubin(false); selectRubin(null); }}
+        />
+      )}
 
       <div className={`app__toolbar${toolbarOpen ? ' app__toolbar--open' : ''}`}>
         {/* Hamburger toggle — visible only on compact screens via CSS */}
@@ -338,6 +364,23 @@ function App() {
                   <circle cx="16" cy="19" r="1.7" />
                   <circle cx="5" cy="18" r="1.7" />
                 </g>
+              </svg>
+            </button>
+          )}
+          {mode === 'orrery' && (
+            <button
+              className="app__toolbar-btn"
+              type="button"
+              aria-label="Rubin Observatory finds"
+              aria-pressed={showRubin}
+              title="Asteroids and far-off worlds seen by the Rubin Observatory"
+              onClick={() => { if (showRubin) selectRubin(null); setShowRubin(!showRubin); setToolbarOpen(false); }}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <ellipse cx="12" cy="12" rx="9.5" ry="4.5" transform="rotate(-20 12 12)" opacity={showRubin ? 1 : 0.4} />
+                <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none" />
+                <circle cx="20" cy="8.6" r="1.6" fill="currentColor" stroke="none" />
+                <circle cx="5" cy="16" r="1.1" fill="currentColor" stroke="none" />
               </svg>
             </button>
           )}

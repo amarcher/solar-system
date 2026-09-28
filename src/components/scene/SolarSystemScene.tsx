@@ -10,6 +10,7 @@ import { PlanetOrbit } from './PlanetOrbit';
 import { AsteroidBelt } from './AsteroidBelt';
 import { CameraRig } from './CameraRig';
 import { RealisticScene } from './RealisticScene';
+import { rubinSceneExtent, rubinVisualRadius, type RubinAsteroid } from '../../data/rubinAsteroids';
 import { SkyScene } from './SkyScene';
 import { TerrestrialRig } from './TerrestrialRig';
 import { useAstronomy } from '../../astronomy/useAstronomy';
@@ -75,10 +76,16 @@ interface SolarSystemSceneProps {
   deviceHeadingRef?: React.RefObject<number | null>;
   devicePitchRef?: React.RefObject<number | null>;
   orreryMission?: Mission;
+  /** Rubin Observatory finds shown in the orrery; null hides the layer. */
+  rubin?: { asteroids: RubinAsteroid[]; selectedId: string | null; view: 'follow' | 'orbit'; onSelect: (id: string) => void } | null;
   tides?: TidesState | null;
 }
 
-export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, tides = null }: SolarSystemSceneProps) {
+export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, rubin = null, tides = null }: SolarSystemSceneProps) {
+  const rubinSelection = rubin?.asteroids.find((a) => a.id === rubin.selectedId);
+  const rubinFocus = rubinSelection && rubin
+    ? { id: rubinSelection.id, view: rubin.view, fitRadius: rubinSceneExtent(rubinSelection) * 1.1, bodyRadius: rubinVisualRadius(rubinSelection.diameterKm) }
+    : null;
   const { mode } = useAstronomy();
   const [benchmarkReport, setBenchmarkReport] = useState('Preparing benchmark…');
   const [benchmarkRun, setBenchmarkRun] = useState(0);
@@ -183,6 +190,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             showLabels={showLabels}
             showConstellations={showConstellations}
             activeMission={orreryMission}
+            rubin={rubin}
             paused={reducedMotion}
           />
         ) : (
@@ -207,7 +215,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             pitchRef={devicePitchRef}
           />
         ) : (
-          <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} />
+          <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} rubinFocus={rubinFocus} />
         )}
 
         {!reducedMotion && settings.bloom && (

@@ -32,3 +32,19 @@ export function setMoonPosition(id: string, x: number, y: number, z: number) {
 export function getMoonPosition(id: string): Vector3 | undefined {
   return moonPositions.get(id);
 }
+
+const smallBodyPositions = new Map<string, Vector3>();
+
+/** Live world positions of small bodies (Rubin finds) for camera tracking. */
+export function setSmallBodyPosition(id: string, position: Vector3) {
+  let v = smallBodyPositions.get(id);
+  if (!v) {
+    v = new Vector3();
+    smallBodyPositions.set(id, v);
+  }
+  v.copy(position);
+}
+
+export function getSmallBodyPosition(id: string): Vector3 | undefined {
+  return smallBodyPositions.get(id);
+}
