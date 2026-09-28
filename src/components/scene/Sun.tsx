@@ -2,7 +2,10 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import type { Mesh, ShaderMaterial } from 'three';
+import { useLabelBelow } from './useLabelBelow';
 import './SceneLabels.css';
+
+const SUN_RADIUS = 2.0;
 
 /* ── Sun surface shader ─────────────────────────────────────────────── */
 
@@ -121,6 +124,9 @@ export function SunMesh({ onClick, showLabel = true, paused = false }: SunMeshPr
     uTime: { value: 0 },
   }), []);
 
+  // Clear the surface plus a little of the bloom glow.
+  const labelRef = useLabelBelow(SUN_RADIUS * 1.08);
+
   useFrame((_, delta) => {
     if (paused) return;
     if (matRef.current) matRef.current.uniforms.uTime.value += delta;
@@ -135,7 +141,7 @@ export function SunMesh({ onClick, showLabel = true, paused = false }: SunMeshPr
     >
       {/* Sun surface — Bloom post-processing creates the natural glow */}
       <mesh ref={meshRef}>
-        <sphereGeometry args={[2.0, 64, 64]} />
+        <sphereGeometry args={[SUN_RADIUS, 64, 64]} />
         <shaderMaterial
           ref={matRef}
           vertexShader={vertexShader}
@@ -145,20 +151,18 @@ export function SunMesh({ onClick, showLabel = true, paused = false }: SunMeshPr
       </mesh>
 
       {showLabel && (
-        <Html
-          position={[0, -2.5, 0]}
-          center
-          style={{ pointerEvents: 'none' }}
-        >
-          <button
-            type="button"
-            className="scene-label scene-label--sun"
-            aria-label="Explore the Sun"
-            onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-          >
-            Sun
-          </button>
-        </Html>
+        <group ref={labelRef}>
+          <Html center style={{ pointerEvents: 'none' }}>
+            <button
+              type="button"
+              className="scene-label scene-label--sun scene-label--below"
+              aria-label="Explore the Sun"
+              onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+            >
+              Sun
+            </button>
+          </Html>
+        </group>
       )}
     </group>
   );

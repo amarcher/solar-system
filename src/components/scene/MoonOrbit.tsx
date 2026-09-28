@@ -151,7 +151,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false, sel
     () => moon.shape === 'irregular' ? createIrregularGeometry(visualRadius, moon.id) : null,
     [moon.shape, moon.id, visualRadius],
   );
-  const labelRef = useLabelBelow(visualRadius, moonMeshRef, !!irregularGeo);
+  const labelRef = useLabelBelow(visualRadius, { irregularMesh: irregularGeo ? moonMeshRef : undefined });
 
   // Orbit speed inversely proportional to orbital period
   const orbitSpeed = moon.orbitalPeriod > 0 ? 0.5 / moon.orbitalPeriod : 0.3;

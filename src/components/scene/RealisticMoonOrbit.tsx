@@ -141,7 +141,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
     () => moon.shape === 'irregular' ? createIrregularGeometry(visualRadius, moon.id) : null,
     [moon.shape, moon.id, visualRadius],
   );
-  const labelRef = useLabelBelow(visualRadius, moonMeshRef, !!irregularGeo);
+  const labelRef = useLabelBelow(visualRadius, { irregularMesh: irregularGeo ? moonMeshRef : undefined });
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
