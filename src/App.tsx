@@ -29,6 +29,7 @@ import { DEFAULT_OBSERVER } from './astronomy/types';
 import { rubinAsteroids } from './data/rubinAsteroids';
 import { RubinPanel } from './components/ui/RubinPanel';
 import { StellaCallout } from './components/ui/StellaCallout';
+import { useStellaStatus } from './voice/useStellaStatus';
 
 function viewTransition(update: () => void, types: string[]) {
   if (!document.startViewTransition) {
@@ -66,6 +67,8 @@ function App() {
   const [missionHudDismissed, setMissionHudDismissed] = useState(false);
   const [toolbarOpen, setToolbarOpen] = useState(false);
   const [stellaBeckon, setStellaBeckon] = useState<'button' | 'menu' | null>(null);
+  const stella = useStellaStatus();
+  const [stellaRestingNotice, setStellaRestingNotice] = useState(false);
   const [orreryMissionActive, setOrreryMissionActive] = useState(false);
   const deviceOrientation = useDeviceOrientation();
   const isMobile = useSyncExternalStore(subscribeToMobile, getIsMobile);
@@ -227,6 +230,7 @@ function App() {
     onSwitchMode: (nextMode) => { if (nextMode === 'sky') closeTides(false); setMode(nextMode); },
     onSetDate: setDate,
     onSetRate: setRate,
+    onUnavailable: stella.markUnavailable,
   });
 
   useEffect(() => {
@@ -394,10 +398,16 @@ function App() {
             <button
               className={`app__toolbar-btn${voice.status !== 'off' ? ' app__toolbar-btn--voice-on' : ''}${stellaBeckon === 'button' ? ' app__toolbar-btn--beckon' : ''}`}
               data-stella-entry
-              onClick={() => { voice.toggle(); setToolbarOpen(false); }}
+              onClick={() => {
+                // Out of credit or switched off: explain instead of opening the mic.
+                if (!stella.available && voice.status === 'off') setStellaRestingNotice(true);
+                else voice.toggle();
+                setToolbarOpen(false);
+              }}
               type="button"
-              aria-label={voice.status === 'off' ? 'Talk to Stella' : 'Stop Stella'}
-              title={voice.status === 'off' ? 'Talk to Stella' : 'Stop Stella'}
+              aria-label={!stella.available && voice.status === 'off' ? 'Stella is resting right now' : voice.status === 'off' ? 'Talk to Stella' : 'Stop Stella'}
+              title={!stella.available && voice.status === 'off' ? 'Stella is resting right now' : voice.status === 'off' ? 'Talk to Stella' : 'Stop Stella'}
+              data-resting={!stella.available || undefined}
             >
               <svg viewBox="0 0 24 24" width="18" height="18" fill={voice.status !== 'off' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
                 <path d="M12 1C12 1 14 8 16 10C18 12 23 12 23 12C23 12 18 12 16 14C14 16 12 23 12 23C12 23 10 16 8 14C6 12 1 12 1 12C1 12 6 12 8 10C10 8 12 1 12 1Z" />
@@ -492,20 +502,21 @@ function App() {
       </div>
 
       <StellaCallout
-        available={!!voice.agentId}
+        available={!!voice.agentId && stella.available}
         suppressed={cinemaMode || voice.status !== 'off'}
         toolbarOpen={toolbarOpen}
         onVisibleChange={setStellaBeckon}
       />
 
-      {voice.micError && (
+      {(voice.micError || stellaRestingNotice) && (
         <button
           className="app__voice-error"
-          onClick={voice.clearMicError}
+          onClick={() => { voice.clearMicError(); setStellaRestingNotice(false); }}
           type="button"
-          aria-label="Dismiss microphone error"
+          aria-label="Dismiss message"
         >
-          {voice.micError === 'timeout' ? 'Microphone not responding. Try quitting audio apps, then restart your browser.' :
+          {stellaRestingNotice || voice.micError === 'unavailable' ? 'Stella is resting right now. Try again later. You can keep exploring!' :
+           voice.micError === 'timeout' ? 'Microphone not responding. Try quitting audio apps, then restart your browser.' :
            voice.micError === 'not-allowed' ? 'Microphone access denied. Please allow mic access in browser settings.' :
            voice.micError === 'no-input' ? 'No audio input detected. Check your mic in System Settings.' :
            "Couldn't access your microphone. Check that one is connected."}
