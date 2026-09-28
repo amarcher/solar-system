@@ -105,6 +105,8 @@ Orrery mode uses true `astronomy-engine` heliocentric ephemeris vectors, then ma
 
 **Nix and Hydra textures** — [Askaniy](https://www.deviantart.com/askaniy), from NASA/JHUAPL/SwRI New Horizons images · [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Gray-calibrated variants, resized and re-encoded. Partial, low-resolution coverage. [Sources and hashes](docs/assets/small-moons.md).
 
+**Proteus, Nereid, Styx, and Kerberos textures** — Procedurally generated artist's illustrations; no observed surface maps exist. Labeled as imagined in the app. [How they are made](docs/assets/illustrated-moons.md).
+
 
 **Milky Way starfield backdrop** — Solar System Scope · CC BY 4.0. The bundled 8K source was verified byte-for-byte against the publisher. Automatic/Smoother use 2K; More detail uses a 4K derivative. See `docs/assets/sky-quality.md` for the conversion and source hash.
 

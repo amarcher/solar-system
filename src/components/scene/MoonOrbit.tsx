@@ -9,6 +9,7 @@ import type { Moon } from '../../types/celestialBody';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
+import { weldSeamNormals } from '../../utils/weldSeamNormals';
 
 // Fallback colors for moons without textures, based on real surface appearance
 const MOON_COLORS: Record<string, string> = {
@@ -101,6 +102,7 @@ function createIrregularGeometry(radius: number, moonId: string): SphereGeometry
 
   pos.needsUpdate = true;
   geo.computeVertexNormals();
+  weldSeamNormals(geo);
   return geo;
 }
 

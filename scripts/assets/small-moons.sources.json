@@ -11,6 +11,7 @@
       "terms": "Public domain; the archive asks for the citation above.",
       "dimensions": [3600, 1800],
       "tiers": [["1k", 1024], ["2k", 2048]],
+      "seamBlendPx": 60,
       "sha256": "ce06bc8736a29f57724aa572b3606ffb9c0bf5beabb373acc61aeded3808ee96"
     },
     {

@@ -97,8 +97,13 @@ describe('texture inventory', () => {
       expect(getBodyTextureAsset(id)?.provenance.status).toBe('pending');
     }
     for (const id of ['proteus', 'nereid', 'styx', 'kerberos']) {
-      expect(getBodyTexture(id, { detail: true })).toBeNull();
+      const asset = getBodyTextureAsset(id);
+      expect(asset?.illustration).toBe(true);
+      expect(asset?.coverage).toMatch(/^Artist's illustration\./);
+      expect(getBodyTexture(id)?.width).toBe(1024);
+      expect(getBodyTexture(id, { detail: true })?.width).toBe(2048);
     }
+    expect(textureManifest.filter((asset) => asset.illustration)).toHaveLength(4);
   });
 
   it('credits and hash-locks the verified small-moon maps', () => {

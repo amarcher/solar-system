@@ -20,6 +20,8 @@ export interface TextureAsset {
   coverage?: string;
   /** How the map was made, shown with the credit. */
   displayNote?: string;
+  /** Imagined surface with no observational basis; never describe it as seen. */
+  illustration?: boolean;
 }
 
 export interface TextureSelection {
@@ -127,6 +129,22 @@ export const textureManifest: readonly TextureAsset[] = [
     },
     coverage: 'New Horizons saw one side of this tiny moon from far away. Smooth, blurry areas were barely seen.',
     displayNote: 'Resized for display from the creator\'s map; no terrain was added.',
+  })),
+  ...(['proteus', 'nereid', 'styx', 'kerberos'] as const).map((bodyId): TextureAsset => ({
+    id: `${bodyId}-diffuse`, bodyId, kind: 'diffuse',
+    variants: [
+      { path: `/textures/1k/${bodyId}_diffuse.jpg`, width: 1024, height: 512 },
+      { path: `/textures/2k/${bodyId}_diffuse.jpg`, width: 2048, height: 1024, detailOnly: true },
+    ],
+    provenance: {
+      status: 'verified', credit: 'Artist\'s illustration generated for Space Explorer',
+      notes: 'Procedural noise and craters from scripts/assets/build_illustrated_moons.py; only mean brightness follows measurements. Not a map. See docs/assets/illustrated-moons.md.',
+    },
+    coverage: bodyId === 'proteus'
+      ? 'Artist\'s illustration. Voyager 2 took only blurry pictures of Proteus, so these craters are imagined.'
+      : `Artist's illustration. No spacecraft has seen ${bodyId[0].toUpperCase()}${bodyId.slice(1)} up close, so this surface is imagined.`,
+    displayNote: 'Made up to show what a small, cratered moon might look like. Its brightness matches measurements.',
+    illustration: true,
   })),
   {
     id: 'earth-clouds', bodyId: 'earth', kind: 'clouds',

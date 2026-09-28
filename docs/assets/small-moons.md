@@ -24,7 +24,7 @@ Both Askaniy pages state a Creative Commons Attribution 3.0 license. The app cre
 
 ## Candidates considered and rejected
 
-- **Proteus:** no public-domain or clearly licensed map was found. A Celestia add-on by Astra-Planetshine has informal “free to use” terms and very low resolution. Stooke's Proteus relief maps are published in papers, not in this PDS set.
+- **Proteus:** no public-domain or clearly licensed map was found. (Proteus, Nereid, Styx and Kerberos now use labeled illustrations instead; see [illustrated-moons.md](illustrated-moons.md).) A Celestia add-on by Astra-Planetshine has informal “free to use” terms and very low resolution. Stooke's Proteus relief maps are published in papers, not in this PDS set.
 - **Nereid, Styx, Kerberos:** these moons were never resolved well enough to map. Maps listed on community wikis are marked fictitious. They stay untextured, and the app says the surface is an illustration.
 - Fan-wiki maps for Nix, Hydra and Amalthea (planet-texture-maps.fandom.com) are labeled fictitious and were not used.
 
@@ -46,6 +46,6 @@ python3 scripts/assets/build_small_moons.py --check
 python3 scripts/assets/build_small_moons.py --download
 ```
 
-Steps: verify source bytes and dimensions, then decode to RGB. For Amalthea, the single gray channel is copied to all three channels. Downsample with Lanczos; `thumbnail` never upscales. Encode as JPEG, quality 92, 4:4:4, optimized, with no inherited metadata. There is no masking, filling, sharpening, contrast change or colorization.
+Steps: verify source bytes and dimensions, then decode to RGB. For Amalthea, the single gray channel is copied to all three channels. Its left and right edges do not match, so a 60-pixel band at each edge is cross-faded with its mirror across the wrap (`seamBlendPx`). The weight is 45% at the edge and falls to 0 at the inner end. This reduced the mean edge mismatch from 2.7 to 0.5 gray levels on the 2K output. Stooke's drawing also lightens toward ±180° longitude, and that pale band is retained. Downsample with Lanczos; `thumbnail` never upscales. Encode as JPEG, quality 92, 4:4:4, optimized, with no inherited metadata. Apart from Amalthea's edge cross-fade, there is no masking, filling, sharpening, contrast change or colorization.
 
 Longitude origin and east/west handedness were not independently georeferenced for any of these maps. Use them for visual globes only. All three render on the app's irregular moon geometry, which is procedural and not the real shape model.

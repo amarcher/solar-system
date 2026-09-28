@@ -10,6 +10,7 @@ import { useAstronomy } from '../../astronomy/useAstronomy';
 import { usePlanetTexture } from '../../utils/textures';
 import { setMoonPosition } from '../../utils/planetPositions';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
+import { weldSeamNormals } from '../../utils/weldSeamNormals';
 import { LUNAR_ORRERY_RADIUS, LUNAR_PATH_SEGMENTS, lunarOrreryPosition, nextLunarPathSample, sampleLunarOrreryPath, type LunarPathSample } from '../../astronomy/lunarOrrery';
 
 const TWO_PI = Math.PI * 2;
@@ -84,6 +85,7 @@ function createIrregularGeometry(radius: number, moonId: string): SphereGeometry
   }
   pos.needsUpdate = true;
   geo.computeVertexNormals();
+  weldSeamNormals(geo);
   return geo;
 }
 

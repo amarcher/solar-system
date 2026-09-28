@@ -16,15 +16,15 @@
           "path": "public/textures/1k/amalthea_diffuse.jpg",
           "width": 1024,
           "height": 512,
-          "bytes": 66501,
-          "sha256": "4ffdf5b67a7d5cd8fab220829cb8344ac2b746a6c5823b6f2089daa9feca07aa"
+          "bytes": 66433,
+          "sha256": "f4a444de24c820b55ae71c2b1cf500a49ef3c9d992dbf1b478e64b202cfa1000"
         },
         {
           "path": "public/textures/2k/amalthea_diffuse.jpg",
           "width": 2048,
           "height": 1024,
-          "bytes": 196533,
-          "sha256": "6f0b8ac8bcca0b47a410d2c4e77b3a0ed7d357b42e734553fbf9a2744af37c9a"
+          "bytes": 196240,
+          "sha256": "3c7df9b6d591c40d448e8aa805d439763a37a53d1759bcbb982c492f20c75a76"
         }
       ]
     },
@@ -66,7 +66,7 @@
     "path": "docs/assets/small-moons-contact-sheet.jpg",
     "width": 1200,
     "height": 1110,
-    "bytes": 151482,
-    "sha256": "4051e7e07d8353dd95a799cb28137acb5cd23d9144366f2cca684a860d37605a"
+    "bytes": 151428,
+    "sha256": "5747e88a3bf4ba906f4f03e621422b608bc3e8321e83f84a1a45d0f62e3273c6"
   }
 }

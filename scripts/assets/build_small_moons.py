@@ -53,6 +53,23 @@ def check():
     print(f'Verified {len(records) - 1} moon textures and the review contact sheet.')
 
 
+def blend_wrap(image, band):
+    """Cross-fade a narrow band at each edge so the left and right edges meet."""
+    width = image.width
+    left = image.crop((0, 0, band, image.height))
+    right = image.crop((width - band, 0, width, image.height))
+    mirrored_right = right.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+    mirrored_left = left.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+    # Weight 0.5 at the edge column, falling to 0 at the inner edge of the band.
+    ramp = Image.linear_gradient('L').rotate(90, expand=True).resize((band, image.height))
+    left_mask = ramp.transpose(Image.Transpose.FLIP_LEFT_RIGHT).point(lambda value: value // 2)
+    right_mask = left_mask.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+    result = image.copy()
+    result.paste(Image.composite(mirrored_right, left, left_mask), (0, 0))
+    result.paste(Image.composite(mirrored_left, right, right_mask), (width - band, 0))
+    return result
+
+
 def load_source(body, download):
     path = SOURCE_DIR / body['filename']
     if not path.exists():
@@ -90,9 +107,10 @@ def build(download):
     draw.text((20, 48), 'Left: source map. Right: app overview map. Resized only; no terrain invented.', fill='white', font_size=16)
     for row, body in enumerate(catalog['bodies']):
         source = load_source(body, download)
+        prepared = blend_wrap(source, body['seamBlendPx']) if 'seamBlendPx' in body else source
         outputs = []
         for tier, maximum_width in body['tiers']:
-            derivative = source.copy()
+            derivative = prepared.copy()
             # thumbnail never upscales.
             derivative.thumbnail((maximum_width, maximum_width // 2), Image.Resampling.LANCZOS)
             destination = ROOT / f'public/textures/{tier}/{body["id"]}_diffuse.jpg'
