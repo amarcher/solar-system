@@ -115,6 +115,7 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 ### UI (`src/components/ui/`)
 - `ModeToggle.tsx/css` — bottom-center pill toggle: Explore / Orrery / Sky
 - `TimeControls.tsx/css` — date display, date picker, "Now" button, speed presets (orrery + sky)
+- `StellaCallout.tsx/css` — one-time dismissible pointer to the Stella button (or the collapsed menu); never starts the mic itself
 - `RubinPanel.tsx/css` — Rubin finds list/detail card (orrery, toolbar toggle)
 - `ObserverPicker.tsx/css` — lat/lng input + geolocation button (sky mode only)
 - `VoiceAgent.tsx/css` — floating orb (space-themed orange gradient)

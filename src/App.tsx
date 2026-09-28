@@ -28,6 +28,7 @@ import { benchmarkEnabled, BENCHMARK_DATE } from './performance/benchmark';
 import { DEFAULT_OBSERVER } from './astronomy/types';
 import { rubinAsteroids } from './data/rubinAsteroids';
 import { RubinPanel } from './components/ui/RubinPanel';
+import { StellaCallout } from './components/ui/StellaCallout';
 
 function viewTransition(update: () => void, types: string[]) {
   if (!document.startViewTransition) {
@@ -64,6 +65,7 @@ function App() {
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
   const [missionHudDismissed, setMissionHudDismissed] = useState(false);
   const [toolbarOpen, setToolbarOpen] = useState(false);
+  const [stellaBeckon, setStellaBeckon] = useState<'button' | 'menu' | null>(null);
   const [orreryMissionActive, setOrreryMissionActive] = useState(false);
   const deviceOrientation = useDeviceOrientation();
   const isMobile = useSyncExternalStore(subscribeToMobile, getIsMobile);
@@ -328,7 +330,7 @@ function App() {
       <div className={`app__toolbar${toolbarOpen ? ' app__toolbar--open' : ''}`}>
         {/* Hamburger toggle — visible only on compact screens via CSS */}
         <button
-          className="app__toolbar-toggle"
+          className={`app__toolbar-toggle${stellaBeckon === 'menu' ? ' app__toolbar-toggle--beckon' : ''}`}
           onClick={() => setToolbarOpen(v => !v)}
           type="button"
           aria-label={toolbarOpen ? 'Close menu' : 'Open menu'}
@@ -390,7 +392,8 @@ function App() {
           )}
           {voice.agentId && (
             <button
-              className={`app__toolbar-btn${voice.status !== 'off' ? ' app__toolbar-btn--voice-on' : ''}`}
+              className={`app__toolbar-btn${voice.status !== 'off' ? ' app__toolbar-btn--voice-on' : ''}${stellaBeckon === 'button' ? ' app__toolbar-btn--beckon' : ''}`}
+              data-stella-entry
               onClick={() => { voice.toggle(); setToolbarOpen(false); }}
               type="button"
               aria-label={voice.status === 'off' ? 'Talk to Stella' : 'Stop Stella'}
@@ -487,6 +490,13 @@ function App() {
           </button>
         </div>
       </div>
+
+      <StellaCallout
+        available={!!voice.agentId}
+        suppressed={cinemaMode || voice.status !== 'off'}
+        toolbarOpen={toolbarOpen}
+        onVisibleChange={setStellaBeckon}
+      />
 
       {voice.micError && (
         <button
