@@ -64,6 +64,11 @@ export function trackRubinFindView(findId: string, source: RubinSource) {
 
 // ---------- Voice guide (Stella) ----------
 
+/** The one-time pointer to Stella: shown, closed with ×, or followed by starting Stella. */
+export function trackStellaCallout(action: 'shown' | 'dismissed' | 'used') {
+  track('stella_callout', { action });
+}
+
 /** The talk button was pressed (before mic permission or connection). */
 export function trackVoiceAgentActivated() {
   track('voice_agent_activated');
