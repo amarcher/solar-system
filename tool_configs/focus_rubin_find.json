@@ -1,0 +1,24 @@
+{
+    "name": "focus_rubin_find",
+    "description": "Fly the camera to one Rubin Observatory find and open its card. Accepts a designation (\"2025 MN45\"), a name (\"3I/ATLAS\"), or a nickname or description (\"the speedy spinner\", \"Earth's quasi-moon\", \"Rubin's comet\", \"the long-distance traveler\"). Orrery only. Returns the card text to talk about; if nothing matches, it returns the list of available finds.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "Designation, name, or nickname of the find the child asked about."
+            },
+            "view": {
+                "type": "string",
+                "enum": ["close", "orbit"],
+                "description": "close (default) flies up to the rock; orbit shows its whole path around the Sun."
+            }
+        },
+        "required": [
+            "name"
+        ]
+    }
+}

@@ -17,6 +17,8 @@ export interface SceneVoiceState {
   rubin: { visible: boolean; selectedId: string | null };
 }
 export interface SceneToolHandlers {
+  onSetRubin: (enabled: boolean) => void;
+  onFocusRubin: (id: string, view: 'follow' | 'orbit') => void;
   onSetTides: (enabled: boolean) => void;
   onSetConstellations: (enabled: boolean) => void;
   onSetQuality: (preference: QualityPreference) => void;
@@ -40,6 +42,25 @@ export function createSceneTools(read: () => SceneVoiceState, handlers: () => Sc
       if (state.mode === 'artistic') return 'Constellation lines are available in Orrery and Sky. Ask to switch modes first.';
       if (state.constellations !== enabled) handlers().onSetConstellations(enabled);
       return `Western constellation guide lines ${enabled ? 'on' : 'off'}. These are imagined patterns, not physical connections.`;
+    },
+    show_rubin_finds: ({ enabled }: { enabled?: unknown }) => {
+      if (typeof enabled !== 'boolean') return 'Please provide enabled as true or false.';
+      const state = read();
+      if (state.mode !== 'orrery') return 'Rubin Observatory finds live in Orrery. Switch to Orrery first with switch_view_mode, then try again.';
+      if (state.rubin.visible !== enabled) handlers().onSetRubin(enabled);
+      return enabled
+        ? `Showing ${rubinAsteroids.length} Rubin Observatory finds as small dots on their real orbits. Invite the child to pick one, or use focus_rubin_find.`
+        : 'Rubin Observatory finds hidden.';
+    },
+    focus_rubin_find: ({ name, view }: { name?: unknown; view?: unknown }) => {
+      const state = read();
+      if (state.mode !== 'orrery') return 'Rubin Observatory finds live in Orrery. Switch to Orrery first with switch_view_mode, then try again.';
+      if (state.missionActive) return 'Close the mission replay before visiting a Rubin find.';
+      const match = findRubinAsteroid(String(name ?? ''));
+      if (!match) return `No Rubin find matches "${String(name ?? '')}". Options: ${rubinAsteroids.map(a => `${a.name} (${a.headline})`).join('; ')}.`;
+      const framing = view === 'orbit' ? 'orbit' : 'follow';
+      handlers().onFocusRubin(match.id, framing);
+      return `${framing === 'orbit' ? 'Showing the whole orbit of' : 'Flying to'} ${match.name}, "${match.headline}". ${match.rubinDiscovered ? 'Discovered by Rubin.' : 'Seen by Rubin; discovered earlier by others.'} ${match.blurb} Size: ${match.sizeText} The rock shape is an artist's guess.`;
     },
     set_display_quality: ({ preference }: { preference?: unknown }) => {
       if (preference !== 'auto' && preference !== 'smooth' && preference !== 'detailed') return 'Choose auto, smooth, or detailed.';
@@ -66,8 +87,27 @@ export function buildSceneContext(state: SceneVoiceState): string {
   return lines.join('\n');
 }
 
+/** Match a spoken name, designation, nickname or headline ("the speedy spinner", "atlas", "quasi moon"). */
+export function findRubinAsteroid(query: string) {
+  const normalize = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const q = normalize(query);
+  if (!q) return undefined;
+  const compact = q.replace(/ /g, '');
+  const exact = rubinAsteroids.find(a => [a.name, a.designation].some(n => normalize(n).replace(/ /g, '').includes(compact)));
+  if (exact) return exact;
+  const words = q.split(' ').filter(w => w.length >= 3 && !['the', 'and', 'one', 'that'].includes(w));
+  let best: (typeof rubinAsteroids)[number] | undefined;
+  let bestScore = 0;
+  for (const a of rubinAsteroids) {
+    const text = normalize(`${a.name} ${a.headline} ${RUBIN_KIND_LABELS[a.kind]}`);
+    const score = words.reduce((sum, w) => sum + (text.includes(w) ? 1 : 0), 0);
+    if (score > bestScore) { best = a; bestScore = score; }
+  }
+  return best;
+}
+
 function rubinContext({ visible, selectedId }: SceneVoiceState['rubin']): string[] {
-  if (!visible) return ['Rubin Observatory finds layer is off. The child can turn it on from the menu to see about a dozen and a half hand-picked asteroids, comets, and distant worlds the Vera C. Rubin Observatory discovered or photographed.'];
+  if (!visible) return ['Rubin Observatory finds layer is off. show_rubin_finds can turn it on (Orrery only) to show hand-picked asteroids, comets, and distant worlds the Vera C. Rubin Observatory discovered or photographed; focus_rubin_find flies to one by name or nickname.'];
   const lines = [`Rubin Observatory finds layer is on: ${rubinAsteroids.length} hand-picked objects shown as small colored dots, each moving on its real orbit (two-body approximation from JPL elements). Picking one draws its orbit and shows a short card. "Discovered by Rubin" means MPC credits Rubin with the discovery; "Seen by Rubin" means Rubin photographed an object found earlier. Rubin found over 11,000 new asteroids in about six weeks of 2025 testing. Its public data currently runs through mid-July 2026, so this is not a live feed.`];
   const selected = selectedId ? getRubinAsteroidById(selectedId) : undefined;
   if (selected) {

@@ -1,11 +1,32 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildSceneContext, createSceneTools, parseTimeRate, type SceneVoiceState } from './sceneTools';
+import { buildSceneContext, createSceneTools, findRubinAsteroid, parseTimeRate, type SceneVoiceState } from './sceneTools';
 function setup() {
   const state: SceneVoiceState = { nav: { level: 'system' }, mode: 'artistic', tides: false, constellations: false, quality: 'auto', missionActive: false, detailsVisible: true, rubin: { visible: false, selectedId: null } };
-  const handlers = { onSetTides: vi.fn(), onSetConstellations: vi.fn(), onSetQuality: vi.fn() };
+  const handlers = { onSetRubin: vi.fn(), onFocusRubin: vi.fn(), onSetTides: vi.fn(), onSetConstellations: vi.fn(), onSetQuality: vi.fn() };
   return { state, handlers, tools: createSceneTools(() => state, () => handlers) };
 }
 describe('Stella scene tools', () => {
+  it('matches Rubin finds by designation, nickname, or headline words', () => {
+    expect(findRubinAsteroid('2025 mn45')?.id).toBe('2025-mn45');
+    expect(findRubinAsteroid('the speedy spinner')?.id).toBe('2025-mn45');
+    expect(findRubinAsteroid("Earth's quasi moon")?.id).toBe('2025-pn7');
+    expect(findRubinAsteroid('3I ATLAS')?.id).toBe('c-2025-n1');
+    expect(findRubinAsteroid('interstellar visitor')?.id).toBe('c-2025-n1');
+    expect(findRubinAsteroid('the comet Rubin found')?.kind).toBe('comet');
+    expect(findRubinAsteroid('xyzzy')).toBeUndefined();
+  });
+  it('gates Rubin tools to Orrery and routes focus with the chosen framing', () => {
+    const { state, handlers, tools } = setup();
+    expect(tools.show_rubin_finds({ enabled: true })).toContain('Switch to Orrery');
+    expect(handlers.onSetRubin).not.toHaveBeenCalled();
+    state.mode = 'orrery';
+    tools.show_rubin_finds({ enabled: true });
+    expect(handlers.onSetRubin).toHaveBeenCalledWith(true);
+    expect(tools.focus_rubin_find({ name: 'long-distance traveler', view: 'orbit' })).toContain('whole orbit of 2025 LS2');
+    expect(handlers.onFocusRubin).toHaveBeenLastCalledWith('2025-ls2', 'orbit');
+    expect(tools.focus_rubin_find({ name: 'nothing like this' })).toContain('No Rubin find matches');
+  });
+
   it('describes the Rubin layer only in Orrery, including the selected find and its caveats', () => {
     const { state } = setup();
     expect(buildSceneContext(state)).not.toContain('Rubin');

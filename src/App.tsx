@@ -183,6 +183,14 @@ function App() {
       else closeTides(false);
     },
     onSetConstellations: setShowConstellations,
+    onSetRubin: (enabled) => { setShowRubin(enabled); if (!enabled) selectRubin(null); },
+    onFocusRubin: (id, view) => {
+      closeTides(false);
+      if (nav.level !== 'system') goToSystem();
+      setShowRubin(true);
+      selectRubin(id);
+      setRubinView(view);
+    },
     onSetQuality: graphics.setPreference,
     currentNav: nav,
     currentTides: tides.state,
