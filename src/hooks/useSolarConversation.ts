@@ -14,7 +14,7 @@ import type { ViewMode, ObserverLocation } from '../astronomy/types';
 import { planets } from '../data/planets';
 import { getMoonsByPlanet, getMoonById } from '../data/moons';
 import { missions, getMissionById } from '../data/missions';
-import { trackVoiceAgentActivated } from '../utils/analytics';
+import { trackVoiceAgentActivated, trackVoiceAgentFailed, trackVoiceSessionConnected, trackVoiceSessionEnded } from '../utils/analytics';
 import { categoryLabels } from '../utils/colors';
 import { tidesVoiceContext, type TidesState } from '../lessons/tides/model';
 import { sun } from '../data/sun';
@@ -482,6 +482,7 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
     setRawStatus('connecting');
 
     trackVoiceAgentActivated();
+    const session = { requestedAt: performance.now(), connectedAt: 0, userTurns: 0, agentTurns: 0 };
 
     // Pre-flight getUserMedia inside the user gesture to trigger the mic
     // permission prompt early (so the SDK's later acquisition uses cached
@@ -493,6 +494,7 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
       const error = err as DOMException;
       if (error.name === 'NotAllowedError') setMicError('not-allowed');
       else setMicError('device');
+      trackVoiceAgentFailed(error.name === 'NotAllowedError' ? 'mic_denied' : 'mic_unavailable');
       setSessionStarted(false);
       setRawStatus('disconnected');
       return;
@@ -514,12 +516,18 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
         }),
         onConnect: () => {
           setRawStatus('connected');
+          session.connectedAt = performance.now();
+          trackVoiceSessionConnected(session.connectedAt - session.requestedAt);
           // NOTE: We can't send queued nav context here — onConnect fires
           // INSIDE the awaited Conversation.startSession() call, so
           // convRef.current hasn't been assigned yet. The send happens
           // immediately after the await resolves below.
         },
         onDisconnect: () => {
+          if (session.connectedAt) {
+            trackVoiceSessionEnded((performance.now() - session.connectedAt) / 1000, session.userTurns, session.agentTurns);
+            session.connectedAt = 0;
+          }
           setRawStatus('disconnected');
           setIsSpeaking(false);
           setSessionStarted(false);
@@ -528,8 +536,10 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
         onError: (err: unknown) => {
           console.error('[voice] session error:', err);
         },
-        onMessage: () => {
-          // Messages handled by SDK
+        onMessage: (m: { source?: string }) => {
+          // Count turns for analytics; transcript content never leaves the SDK.
+          if (m.source === 'user') session.userTurns++;
+          else if (m.source === 'ai') session.agentTurns++;
         },
         onStatusChange: (s: { status: string }) => {
           if (s.status === 'connected' || s.status === 'connecting' || s.status === 'disconnected') {
@@ -587,6 +597,7 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
       }
     } catch (err) {
       console.error('[voice] startSession failed:', err);
+      trackVoiceAgentFailed('connect_failed');
       setSessionStarted(false);
       setRawStatus('disconnected');
       setMicError('device');
