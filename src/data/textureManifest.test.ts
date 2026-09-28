@@ -96,8 +96,27 @@ describe('texture inventory', () => {
     for (const id of ['phobos', 'deimos', 'rhea', 'dione', 'tethys', 'iapetus', 'hyperion']) {
       expect(getBodyTextureAsset(id)?.provenance.status).toBe('pending');
     }
-    for (const id of ['amalthea', 'proteus', 'nereid', 'styx', 'nix', 'kerberos', 'hydra']) {
+    for (const id of ['proteus', 'nereid', 'styx', 'kerberos']) {
       expect(getBodyTexture(id, { detail: true })).toBeNull();
     }
+  });
+
+  it('credits and hash-locks the verified small-moon maps', () => {
+    const manifest = JSON.parse(readFileSync(join(publicRoot, '../docs/assets/small-moons.manifest.json'), 'utf8')) as {
+      bodies: { id: string; outputs: { path: string; width: number; sha256: string }[] }[];
+    };
+    for (const body of manifest.bodies) {
+      const asset = getBodyTextureAsset(body.id);
+      expect(asset?.provenance.status).toBe('verified');
+      expect(asset?.coverage).toBeTruthy();
+      expect(asset?.displayNote).toBeTruthy();
+      expect(asset?.variants.map((variant) => `public${variant.path}`)).toEqual(body.outputs.map((output) => output.path));
+      for (const output of body.outputs) {
+        expect(createHash('sha256').update(readFileSync(join(publicRoot, '..', output.path))).digest('hex')).toBe(output.sha256);
+      }
+    }
+    expect(getBodyTexture('amalthea')?.width).toBe(1024);
+    expect(getBodyTexture('amalthea', { detail: true })?.width).toBe(2048);
+    expect(getBodyTexture('hydra', { detail: true })?.width).toBe(1024);
   });
 });

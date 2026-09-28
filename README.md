@@ -101,6 +101,10 @@ Orrery mode uses true `astronomy-engine` heliocentric ephemeris vectors, then ma
 
 **Miranda, Ariel, Titania, Oberon, and Umbriel textures** — Voyager imagery: **USGS/Tammy Becker & JPL/Caltech**, via [NASA 3D Resources](https://science.nasa.gov/3d-resources/), used under [NASA's media usage guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/). Resized for display; areas without imagery shown in plain gray. These are partial southern-hemisphere mosaics, not complete global observations. [Sources, coverage, transformations, and hashes](docs/assets/uranian-moons.md).
 
+**Amalthea texture** — Shaded-relief map drawn from Voyager images by Phil Stooke: *Stooke, P., Stooke Small Bodies Maps V2.0, MULTI-SA-MULTI-6-STOOKEMAPS-V2.0, NASA Planetary Data System, 2012* (public domain). Resized for display.
+
+**Nix and Hydra textures** — [Askaniy](https://www.deviantart.com/askaniy), from NASA/JHUAPL/SwRI New Horizons images · [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Gray-calibrated variants, resized and re-encoded. Partial, low-resolution coverage. [Sources and hashes](docs/assets/small-moons.md).
+
 
 **Milky Way starfield backdrop** — Solar System Scope · CC BY 4.0. The bundled 8K source was verified byte-for-byte against the publisher. Automatic/Smoother use 2K; More detail uses a 4K derivative. See `docs/assets/sky-quality.md` for the conversion and source hash.
 

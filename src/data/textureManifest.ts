@@ -18,6 +18,8 @@ export interface TextureAsset {
     notes: string;
   };
   coverage?: string;
+  /** How the map was made, shown with the credit. */
+  displayNote?: string;
 }
 
 export interface TextureSelection {
@@ -91,6 +93,40 @@ export const textureManifest: readonly TextureAsset[] = [
       notes: 'Voyager southern mosaic; resized for display and source no-data shown in plain gray. No synthesized terrain or upscaling. Longitude convention is unverified. Source identity, hashes and processing: docs/assets/uranian-moons.md.',
     },
     coverage: 'Voyager photographed part of this moon. Plain gray areas have no imagery in this map.',
+    displayNote: 'Resized for display. Areas without imagery are plain gray; no terrain was invented.',
+  })),
+  {
+    id: 'amalthea-diffuse', bodyId: 'amalthea', kind: 'diffuse',
+    variants: [
+      { path: '/textures/1k/amalthea_diffuse.jpg', width: 1024, height: 512 },
+      { path: '/textures/2k/amalthea_diffuse.jpg', width: 2048, height: 1024, detailOnly: true },
+    ],
+    provenance: {
+      status: 'verified', credit: 'Phil Stooke, Stooke Small Bodies Maps V2.0, NASA Planetary Data System',
+      sourceUrl: 'https://sbnarchive.psi.edu/pds3/multi_mission/MULTI_SA_MULTI_6_STOOKEMAPS_V2_0/document/aamapdesc.html',
+      notes: 'Public-domain PDS archive product; citation requested. Grayscale shaded-relief drawing from Voyager images, not a photomosaic. Resized only. Source hash and processing: docs/assets/small-moons.md.',
+    },
+    coverage: 'This is a hand-drawn relief map made from Voyager pictures, not a photo. Amalthea\'s real surface is reddish.',
+    displayNote: 'Resized for display. The drawing is gray; the app adds a slight reddish tint.',
+  },
+  ...(['nix', 'hydra'] as const).map((bodyId): TextureAsset => ({
+    id: `${bodyId}-diffuse`, bodyId, kind: 'diffuse',
+    variants: bodyId === 'nix'
+      ? [
+          { path: '/textures/1k/nix_diffuse.jpg', width: 1024, height: 512 },
+          { path: '/textures/2k/nix_diffuse.jpg', width: 2048, height: 1024, detailOnly: true },
+        ]
+      : [{ path: '/textures/1k/hydra_diffuse.jpg', width: 1024, height: 512 }],
+    provenance: {
+      status: 'verified', credit: 'Askaniy (CC BY 3.0), from NASA/JHUAPL/SwRI New Horizons images',
+      sourceUrl: bodyId === 'nix'
+        ? 'https://www.deviantart.com/askaniy/art/Nix-Color-Texture-Maps-926588947'
+        : 'https://www.deviantart.com/askaniy/art/Hydra-Color-Texture-Maps-926623163',
+      licenseUrl: 'https://creativecommons.org/licenses/by/3.0/',
+      notes: 'Creator\'s gray-calibrated true-color variant: New Horizons LORRI/MVIC images projected onto the Porter et al. shape model. Resized and re-encoded only. Source hash and processing: docs/assets/small-moons.md.',
+    },
+    coverage: 'New Horizons saw one side of this tiny moon from far away. Smooth, blurry areas were barely seen.',
+    displayNote: 'Resized for display from the creator\'s map; no terrain was added.',
   })),
   {
     id: 'earth-clouds', bodyId: 'earth', kind: 'clouds',
