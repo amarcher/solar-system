@@ -103,3 +103,31 @@ Non-Rubin ideas raised in the same session, using features that already exist (f
 - **Hyperbolic objects** need time of perihelion rather than mean anomaly; the propagator must handle e > 1.
 - **Pipeline (weekly is enough while data is paused):** column-projected DuckDB read of the B612 export (~8 s, ~100 MB) → JPL SBDB elements → JPL close-approach and Sentry calls → Fink for photometry. About 2–3 minutes, ~500 MB, no auth. Output: `public/data/rubin_recent.json`. A draft schema is in [rubin_recent.sample.json](rubin-data-spike-2026-09-28/rubin_recent.sample.json).
 - **Browser calls are not viable:** JPL and ALeRCE send no CORS headers, MPC needs GET-with-body, and Lasair needs a token. Fink allows CORS but has no orbits.
+
+## How amateurs and kids can help
+
+Research pass 2026-09-28. Rubin's images and catalogs are proprietary for two years; the public gets alert packets (cutouts and measurements), not full frames. Most Rubin finds are too faint for amateur telescopes. The real contributions are citizen-science classification, school campaigns, bright-target follow-up, and careful data mining.
+
+| Who | What | Where | Realistic impact |
+| --- | --- | --- | --- |
+| Kid + parent (8+) | Spot tails or fuzzy comas on known asteroids in Rubin image sequences | [Rubin Comet Catchers](https://www.zooniverse.org/projects/orionnau/rubin-comet-catchers) (Zooniverse K-12 curated) | Proven path: its predecessor made discoveries. Launched June 2025 on DP1; a 17 Sep 2026 update says LSST images are being prepared, so data may be thin right now |
+| Kid + parent | Hunt sungrazing comets in SOHO images | [Sungrazer Project](https://sungrazer.nrl.navy.mil) | Real discoveries (not Rubin) |
+| Class or club (12+) | Blink survey images in Astrometrica, report moving dots | [IASC](https://iasc.cosmosearch.org/), free; campaigns 6–30 Oct 2026 | Preliminary asteroid finds; some numbered and named by students |
+| Teachers | Seven browser investigations with guides, NGSS-aligned | [Rubin educator investigations](https://rubinobservatory.org/education/educators/investigations) | Learning |
+| Smart-telescope owner | Asteroid occultations, NEO lightcurves at close approach, comet monitoring | [Unistellar / SETI citizen science](https://science.unistellar.com) | Co-authored results; 2025: 165 observers, 53 asteroids, binary (1626) Sadeya |
+| Hobbyist who codes | Explore Rubin detections of known asteroids, lightcurves, phase curves | [Fink Solar System](https://fink-broker.readthedocs.io/en/latest/services/search/solar_system/) | Exploration; Lasair states it does not handle solar-system objects |
+| Advanced amateur (20–40 cm) | Earn an MPC observatory code; measure positions of NEO Confirmation Page objects | [MPC observatory codes](https://docs.minorplanetcenter.net/mpc-ops-docs/observatory-and-program-codes/observatory-codes/) | Genuine follow-up, brighter targets only |
+| Programmer | Link unmatched detections into orbits; precovery | HelioLinC/heliolinx; [Asteroid Institute ADAM/THOR](https://b612.ai/opensource/thor/) | Possible but a high bar |
+
+**Stories worth telling**
+
+- **Active Asteroids** (Zooniverse): ~8,300 volunteers, ~430,000 images, 20 discoveries, 9 volunteers co-authored the paper ([Chandler et al. 2024](https://arxiv.org/abs/2403.09768)). Comet Catchers is its Rubin successor.
+- **Hanjie Tan** started on the Sungrazer Project at 13 and found SOHO's 5,000th comet in March 2024, with 200+ comets total ([NASA](https://science.nasa.gov/science-research/heliophysics/esa-nasa-solar-observatory-discovers-its-5000th-comet/)).
+- **IASC students**: 1,500 preliminary asteroid finds, 39 numbered and named by the students ([Miller et al. 2024, PASP](https://ui.adsabs.harvard.edu/abs/2024PASP..136b4502M/abstract)).
+- **A careful cautionary tale**: in June 2026 an independent researcher ran heliolinx on public Rubin alerts and reported a possible interstellar object; the heliolinx author showed it was almost certainly not real, and it was withdrawn ([rubin.community](https://www.rubin.community/t/potential-interstellar-visitor-found-in-april-may-2026-lsst-data/12113)). Good lesson: extraordinary claims need several nights of data.
+
+**Caveats**
+
+- Reachable for amateurs: NEOs near close approach, bright comets, occultations by larger asteroids. Not reachable: TNOs, most main-belt discoveries, faint NEOs. Rubin re-observes about 68% of its own candidates ([arXiv 2408.12517](https://arxiv.org/abs/2408.12517)).
+- Zooniverse: under-16s need parent or guardian approval for an account.
+- Unverified: current Comet Catchers data status; smart-telescope magnitude limits.
