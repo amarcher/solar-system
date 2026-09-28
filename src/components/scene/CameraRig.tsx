@@ -7,7 +7,7 @@ import { clearOrbitOccluder } from '../../utils/orbitClearance';
 import { moonVisualRadius, moonFocusDistance } from '../../utils/moonFraming';
 import { CameraControls } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
-import { getPlanetPosition, getMoonPosition } from '../../utils/planetPositions';
+import { getPlanetPosition, getMoonPosition, getSmallBodyPosition } from '../../utils/planetPositions';
 import { getMissionPosition } from '../../utils/missionPositions';
 import { getMoonById } from '../../data/moons';
 import { useAstronomy } from '../../astronomy/useAstronomy';
@@ -20,9 +20,16 @@ interface CameraRigProps {
   planets: Planet[];
   /** When set, camera continuously tracks this mission in orrery mode */
   orreryMissionId?: string;
-  /** In the system view, zoom out (never in) until a sphere of this scene radius fits. */
-  systemFitRadius?: number;
+  /**
+   * A selected Rubin find in the system view. 'follow' flies to it and keeps
+   * it centered so zoom and rotate work around it; 'orbit' frames its whole
+   * path around the Sun (fitRadius, scene units).
+   */
+  rubinFocus?: { id: string; view: 'follow' | 'orbit'; fitRadius: number } | null;
 }
+
+/** Camera distance when following a Rubin find: close enough to see the dot, far enough to keep its neighborhood. */
+const RUBIN_FOLLOW_DISTANCE = 5;
 
 // Artistic orbits span ~40 units; the log-compressed orrery only ~13.
 // Each mode gets a default framing that fills the viewport with the system.
@@ -30,7 +37,7 @@ const SYSTEM_POSITION_ARTISTIC = { x: 0, y: 35, z: 50 };
 const SYSTEM_POSITION_ORRERY = { x: 0, y: 15, z: 21 };
 const SYSTEM_TARGET = { x: 0, y: 0, z: 0 };
 
-export function CameraRig({ nav, planets, orreryMissionId, systemFitRadius }: CameraRigProps) {
+export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: CameraRigProps) {
   const space = useFocusedSpace();
   const layoutScratch = useRef({ shift: new Vector3(), target: new Vector3(), end: new Vector3() });
   const controlsRef = useRef<CameraControlsImpl>(null);
@@ -58,18 +65,11 @@ export function CameraRig({ nav, planets, orreryMissionId, systemFitRadius }: Ca
     ? `mission:${nav.missionId}`
     : nav.level;
 
-  useEffect(() => {
-    const controls = controlsRef.current;
-    if (!controls || !systemFitRadius || nav.level !== 'system') return;
-    const vFov = (camera instanceof PerspectiveCamera ? camera.fov : 50) * Math.PI / 180;
-    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * (size.width / size.height));
-    const needed = systemFitRadius / Math.sin(Math.min(vFov, hFov) / 2);
-    if (needed > controls.distance) {
-      controls.smoothTime = flightSmoothTime;
-      controls.dollyTo(needed, true);
-    }
-  }, [systemFitRadius, nav.level, camera, size.width, size.height, flightSmoothTime]);
-
+  const rubinFocusId = nav.level === 'system' ? rubinFocus?.id ?? null : null;
+  const rubinView = rubinFocus?.view ?? 'follow';
+  const rubinFitRadius = rubinFocus?.fitRadius ?? 0;
+  const trackingRubinId = useRef<string | null>(null);
+  const wasTrackingRubin = useRef(false);
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
@@ -125,6 +125,38 @@ export function CameraRig({ nav, planets, orreryMissionId, systemFitRadius }: Ca
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navKey, mode, size.width, size.height]);
+
+  // Declared after the nav effect so returning to the system view re-applies
+  // the Rubin framing instead of the default whole-system shot.
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls || nav.level !== 'system') return;
+    if (rubinFocusId && rubinView === 'follow') {
+      trackingRubinId.current = rubinFocusId;
+      wasTrackingRubin.current = true;
+      flyInDone.current = false;
+      flyInTime.current = 0;
+      settled.current = false;
+      return;
+    }
+    trackingRubinId.current = null;
+    controls.smoothTime = flightSmoothTime;
+    if (rubinFocusId) {
+      // Whole orbit: center on the Sun and pull back until the path fits.
+      const vFov = (camera instanceof PerspectiveCamera ? camera.fov : 50) * Math.PI / 180;
+      const hFov = 2 * Math.atan(Math.tan(vFov / 2) * (size.width / size.height));
+      controls.moveTo(SYSTEM_TARGET.x, SYSTEM_TARGET.y, SYSTEM_TARGET.z, true);
+      controls.dollyTo(Math.max(controls.distance, rubinFitRadius / Math.sin(Math.min(vFov, hFov) / 2)), true);
+      wasTrackingRubin.current = true;
+    } else if (wasTrackingRubin.current) {
+      // Deselected: hand the view back to the Sun without resetting the angle.
+      controls.moveTo(SYSTEM_TARGET.x, SYSTEM_TARGET.y, SYSTEM_TARGET.z, true);
+      controls.dollyTo(Math.max(controls.distance, 26), true);
+      wasTrackingRubin.current = false;
+    }
+    settled.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rubinFocusId, rubinView, rubinFitRadius, nav.level]);
 
   useFrame((_, delta) => {
     const controls = controlsRef.current;
@@ -224,6 +256,19 @@ export function CameraRig({ nav, planets, orreryMissionId, systemFitRadius }: Ca
           controls.moveTo(pos.x, pos.y, pos.z, !settled.current && !reducedMotion);
         }
       }
+    } else if (trackingRubinId.current && nav.level === 'system') {
+      const pos = getSmallBodyPosition(trackingRubinId.current);
+      if (pos) {
+        if (!flyInDone.current) {
+          controls.smoothTime = flightSmoothTime;
+          controls.moveTo(pos.x, pos.y, pos.z, !reducedMotion);
+          controls.dollyTo(RUBIN_FOLLOW_DISTANCE, !reducedMotion);
+          flyInDone.current = true;
+          flyInTime.current = 0;
+        } else {
+          controls.moveTo(pos.x, pos.y, pos.z, !settled.current && !reducedMotion);
+        }
+      }
     }
   }, -1.5);
 
@@ -284,6 +329,8 @@ export function CameraRig({ nav, planets, orreryMissionId, systemFitRadius }: Ca
   } else if (nav.level === 'mission') {
     minDist = 0.02;
     maxDist = 8;
+  } else if (rubinFocusId && rubinView === 'follow') {
+    minDist = 0.4;
   }
 
   return (

@@ -54,6 +54,8 @@ function App() {
   const [showConstellations, setShowConstellations] = useState(false);
   const [showRubin, setShowRubin] = useState(false);
   const [rubinSelectedId, setRubinSelectedId] = useState<string | null>(null);
+  const [rubinView, setRubinView] = useState<'follow' | 'orbit'>('follow');
+  const selectRubin = useCallback((id: string | null) => { setRubinSelectedId(id); setRubinView('follow'); }, []);
   const [cinemaMode, setCinemaMode] = useState(false);
   const [sunLayerOverride, setSunLayerOverride] = useState<number | null>(null);
   const [missionHudDismissed, setMissionHudDismissed] = useState(false);
@@ -297,15 +299,17 @@ function App() {
         deviceHeadingRef={deviceOrientation.headingRef}
         devicePitchRef={deviceOrientation.pitchRef}
         orreryMission={orreryMissionActive ? getMissionById('artemis-2') : undefined}
-        rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, onSelect: setRubinSelectedId } : null}
+        rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubin } : null}
       />
 
       {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && (
         <RubinPanel
           asteroids={rubinAsteroids}
           selectedId={rubinSelectedId}
-          onSelect={setRubinSelectedId}
-          onClose={() => setShowRubin(false)}
+          view={rubinView}
+          onSelect={selectRubin}
+          onViewChange={setRubinView}
+          onClose={() => { setShowRubin(false); selectRubin(null); }}
         />
       )}
 
@@ -362,7 +366,7 @@ function App() {
               aria-label="Rubin Observatory finds"
               aria-pressed={showRubin}
               title="Asteroids and far-off worlds seen by the Rubin Observatory"
-              onClick={() => { setShowRubin(value => !value); setToolbarOpen(false); }}
+              onClick={() => { if (showRubin) selectRubin(null); setShowRubin(!showRubin); setToolbarOpen(false); }}
             >
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                 <ellipse cx="12" cy="12" rx="9.5" ry="4.5" transform="rotate(-20 12 12)" opacity={showRubin ? 1 : 0.4} />

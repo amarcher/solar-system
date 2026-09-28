@@ -7,6 +7,7 @@ import { keplerPath, keplerPosition } from '../../astronomy/keplerOrbit';
 import { scaleAUVector } from '../../astronomy/realisticScale';
 import { useFocusedSpace } from '../../sceneLayout/useFocusedSpace';
 import { applyFocusSpace } from '../../sceneLayout/focusedSpace';
+import { setSmallBodyPosition } from '../../utils/planetPositions';
 import { RUBIN_KIND_COLORS, type RubinAsteroid } from '../../data/rubinAsteroids';
 
 /** Minimum recompute interval in ms of simulation time. */
@@ -41,7 +42,7 @@ function AsteroidMarker({ asteroid, selected, showLabel, onSelect }: {
       lastComputed.current = now;
       toScene(keplerPosition(asteroid.elements, now), raw.current);
     }
-    applyFocusSpace(space, raw.current, group.current.position);
+    setSmallBodyPosition(asteroid.id, applyFocusSpace(space, raw.current, group.current.position));
   }, -3);
 
   const select = (e: ThreeEvent<MouseEvent>) => {
@@ -52,7 +53,7 @@ function AsteroidMarker({ asteroid, selected, showLabel, onSelect }: {
   return (
     <group ref={group}>
       <mesh>
-        <sphereGeometry args={[selected ? 0.1 : 0.06, 12, 12]} />
+        <sphereGeometry args={[selected ? 0.07 : 0.05, 16, 16]} />
         <meshBasicMaterial color={color} toneMapped={false} />
       </mesh>
       {/* Generous invisible hit area: the visible dot is far too small for a finger. */}

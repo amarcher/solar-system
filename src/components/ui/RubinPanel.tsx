@@ -5,11 +5,13 @@ import './RubinPanel.css';
 interface RubinPanelProps {
   asteroids: RubinAsteroid[];
   selectedId: string | null;
+  view: 'follow' | 'orbit';
   onSelect: (id: string | null) => void;
+  onViewChange: (view: 'follow' | 'orbit') => void;
   onClose: () => void;
 }
 
-export function RubinPanel({ asteroids, selectedId, onSelect, onClose }: RubinPanelProps) {
+export function RubinPanel({ asteroids, selectedId, view, onSelect, onViewChange, onClose }: RubinPanelProps) {
   const selected = asteroids.find((a) => a.id === selectedId);
   const body = useRef<HTMLDivElement>(null);
 
@@ -46,6 +48,13 @@ export function RubinPanel({ asteroids, selectedId, onSelect, onClose }: RubinPa
               {selected.rubinDiscovered ? 'Discovered by Rubin' : 'Seen by Rubin'}
             </p>
             <p className="rubin-panel__blurb">{selected.blurb}</p>
+            <button
+              type="button"
+              className="rubin-panel__view"
+              onClick={() => onViewChange(view === 'follow' ? 'orbit' : 'follow')}
+            >
+              {view === 'follow' ? 'See its whole orbit' : `Zoom in on ${selected.name}`}
+            </button>
             {selected.sizeLabel && <p className="rubin-panel__meta">{selected.sizeLabel}</p>}
             {aphelionAu(selected) > 50 && (
               <p className="rubin-panel__meta">
