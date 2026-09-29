@@ -38,6 +38,12 @@ const RUBIN_FOLLOW_RADII = 14;
 const SYSTEM_POSITION_ARTISTIC = { x: 0, y: 35, z: 50 };
 const SYSTEM_POSITION_ORRERY = { x: 0, y: 15, z: 21 };
 const SYSTEM_TARGET = { x: 0, y: 0, z: 0 };
+const TWO_PI = Math.PI * 2;
+
+/** Wrap accumulated orbit rotations so the next flight takes the short way round instead of unwinding every turn. */
+function normalizeAzimuth(controls: CameraControlsImpl) {
+  controls.azimuthAngle = ((controls.azimuthAngle % TWO_PI) + TWO_PI) % TWO_PI;
+}
 
 export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: CameraRigProps) {
   const space = useFocusedSpace();
@@ -92,8 +98,7 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: 
       trackingMoonId.current = null;
       trackingMissionId.current = null;
       // Normalize azimuth to prevent unwinding accumulated orbit rotations
-      const TWO_PI = Math.PI * 2;
-      controls.azimuthAngle = ((controls.azimuthAngle % TWO_PI) + TWO_PI) % TWO_PI;
+      normalizeAzimuth(controls);
       controls.smoothTime = flightSmoothTime;
       const systemPos = mode === 'orrery' ? SYSTEM_POSITION_ORRERY : SYSTEM_POSITION_ARTISTIC;
       controls.setLookAt(
@@ -107,8 +112,7 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: 
       trackingPlanetId.current = null;
       trackingMoonId.current = null;
       trackingMissionId.current = null;
-      const TWO_PI = Math.PI * 2;
-      controls.azimuthAngle = ((controls.azimuthAngle % TWO_PI) + TWO_PI) % TWO_PI;
+      normalizeAzimuth(controls);
       controls.smoothTime = flightSmoothTime;
       controls.setLookAt(0, 2, 6, 0, 0, 0, true);
       settled.current = true;
@@ -145,6 +149,9 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: 
     }
     trackingRubinId.current = null;
     controls.smoothTime = flightSmoothTime;
+    // Same as the planet flights: without this, closing or switching views
+    // unwinds every orbit the user spun, circling several times before settling.
+    normalizeAzimuth(controls);
     if (rubinFocusId) {
       // Whole orbit: center on the Sun and pull back until the path fits.
       const vFov = (camera instanceof PerspectiveCamera ? camera.fov : 50) * Math.PI / 180;
@@ -276,6 +283,7 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: 
           const fov = camera instanceof PerspectiveCamera ? camera.fov : 50;
           const view = chooseFollowView(pos, sun, rubinBodyRadius * RUBIN_FOLLOW_RADII, bodies,
             halfDiagonalFov(fov, size.width / size.height), rubinScratch.view);
+          normalizeAzimuth(controls);
           controls.setLookAt(view.x, view.y, view.z, pos.x, pos.y, pos.z, !reducedMotion);
           flyInDone.current = true;
           flyInTime.current = 0;

@@ -154,6 +154,17 @@ function App() {
     voice.notifyNavClosed();
   }, [goToSystem]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // A Rubin find tapped in the scene from a planet, moon or mission view:
+  // close that view first, as the voice tool does, so the find can be framed.
+  const selectRubinFromScene = useCallback((id: string) => {
+    if (nav.level !== 'system') {
+      closeTides(false);
+      viewTransition(() => goToSystem(), ['detail-close']);
+      voice.notifyNavClosed();
+    }
+    selectRubin(id, 'scene');
+  }, [nav.level, goToSystem, closeTides, selectRubin]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleBack = useCallback(() => {
     if (tidesState) { closeTides(); return; }
     viewTransition(() => goBack(), ['detail-close']);
@@ -318,7 +329,7 @@ function App() {
         deviceHeadingRef={deviceOrientation.headingRef}
         devicePitchRef={deviceOrientation.pitchRef}
         orreryMission={orreryMissionActive ? getMissionById('artemis-2') : undefined}
-        rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: (id) => selectRubin(id, 'scene') } : null}
+        rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubinFromScene } : null}
       />
 
       {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && (
