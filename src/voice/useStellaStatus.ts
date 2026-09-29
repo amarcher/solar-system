@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Whether to offer Stella right now. Asks /api/stella-status once per visit
@@ -23,5 +23,16 @@ export function useStellaStatus() {
   /** A live session was refused (e.g. out of credit): stop offering Stella for this visit. */
   const markUnavailable = useCallback(() => setAvailable(false), []);
 
-  return { available, markUnavailable };
+  /**
+   * A session failed the way out-of-credit refusals look. Ask the server to
+   * confirm with ElevenLabs and alert Slack if so; once per visit is plenty.
+   */
+  const reported = useRef(false);
+  const reportRefusal = useCallback(() => {
+    if (reported.current) return;
+    reported.current = true;
+    fetch('/api/stella-alert', { method: 'POST', keepalive: true }).catch(() => { /* best effort */ });
+  }, []);
+
+  return { available, markUnavailable, reportRefusal };
 }

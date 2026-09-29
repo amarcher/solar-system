@@ -231,6 +231,7 @@ function App() {
     onSetDate: setDate,
     onSetRate: setRate,
     onUnavailable: stella.markUnavailable,
+    onSessionRefused: stella.reportRefusal,
   });
 
   useEffect(() => {
