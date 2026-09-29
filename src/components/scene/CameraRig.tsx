@@ -4,6 +4,8 @@ import { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { clearOrbitOccluder } from '../../utils/orbitClearance';
+import { chooseFollowView, halfDiagonalFov } from '../../utils/followClearance';
+import { planetDisplayExtent } from '../../utils/planetExtent';
 import { moonVisualRadius, moonFocusDistance } from '../../utils/moonFraming';
 import { CameraControls } from '@react-three/drei';
 import type { NavigationState, Planet } from '../../types/celestialBody';
@@ -70,7 +72,7 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: 
   const rubinFitRadius = rubinFocus?.fitRadius ?? 0;
   const rubinBodyRadius = rubinFocus?.bodyRadius ?? 0.05;
   const trackingRubinId = useRef<string | null>(null);
-  const rubinScratch = useRef({ view: new Vector3(), up: new Vector3(0, 1, 0), origin: new Vector3() }).current;
+  const rubinScratch = useRef({ view: new Vector3(), origin: new Vector3() }).current;
   const wasTrackingRubin = useRef(false);
   useEffect(() => {
     const controls = controlsRef.current;
@@ -263,14 +265,17 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: 
       if (pos) {
         if (!flyInDone.current) {
           controls.smoothTime = flightSmoothTime;
-          // Arrive on the sunlit side, about 70° off the Sun line and a little
-          // above, so low sunlight rakes across the craters instead of showing
-          // the night side or flattening them head-on.
+          // Arrive on the sunlit side so low sunlight rakes across the craters,
+          // but never with a planet filling the background (e.g. Uranus behind
+          // 2025 PN7 on some dates): try a few nearby angles and keep one clear.
           const sun = getPlanetPosition('sun') ?? rubinScratch.origin;
-          const view = rubinScratch.view.subVectors(sun, pos).normalize()
-            .applyAxisAngle(rubinScratch.up, 1.2);
-          view.y += 0.45;
-          view.normalize().multiplyScalar(rubinBodyRadius * RUBIN_FOLLOW_RADII).add(pos);
+          const bodies = planets.flatMap((planet) => {
+            const position = getPlanetPosition(planet.id);
+            return position ? [{ position, radius: planetDisplayExtent(planet) * 1.3 }] : [];
+          });
+          const fov = camera instanceof PerspectiveCamera ? camera.fov : 50;
+          const view = chooseFollowView(pos, sun, rubinBodyRadius * RUBIN_FOLLOW_RADII, bodies,
+            halfDiagonalFov(fov, size.width / size.height), rubinScratch.view);
           controls.setLookAt(view.x, view.y, view.z, pos.x, pos.y, pos.z, !reducedMotion);
           flyInDone.current = true;
           flyInTime.current = 0;
