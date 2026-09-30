@@ -21,18 +21,22 @@ export interface TourStep {
   text: string;
   /** What Stella says, when designations need spelling out for text-to-speech. */
   speech?: string;
+  /** ElevenLabs voice-setting overrides for this line (see scripts/tour/generate-audio.mjs). */
+  delivery?: { speed?: number; stability?: number; style?: number };
 }
 
 export const TOUR_STEPS: TourStep[] = [
   {
     id: 'hello',
     target: { findId: null },
-    text: "Hi, I'm Stella! Let's go asteroid hunting. A giant new telescope, the Rubin Observatory, photographs each patch of sky twice, about half an hour apart. Stars stay put. Anything that moved is something new!",
+    text: "Hi, I'm Stella! Let's go asteroid hunting. A giant new telescope, the Rubin Observatory, takes a picture of each patch of sky, then another about half an hour later. The stars stay put. Anything that moved is something new!",
+    // The opening sets the tone: calm and unhurried, not breathless.
+    delivery: { speed: 0.9, stability: 0.8, style: 0 },
   },
   {
     id: 'count',
     target: { findId: null },
-    text: 'In just six weeks of testing, Rubin found more than 11,000 new asteroids. Every dot here is one of its finds. Let\'s visit a few!',
+    text: "In just six weeks of testing, Rubin found more than 11,000 new asteroids. Here are some of the most surprising things it has seen. Let's visit a few!",
   },
   {
     id: 'spinner',
@@ -61,7 +65,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'invite',
     target: { findId: null },
-    text: 'Those are just a few of Rubin\'s finds. Tap any of them to explore, or ask me anything, out loud!',
+    text: "Those are just a few of Rubin's finds. Tap any of them to explore on your own. Got a question? Tap Talk to Stella, then allow the microphone, and we can chat!",
   },
 ];
 

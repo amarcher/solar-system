@@ -1,30 +1,33 @@
+/*
+ * Compact and out of the way: top-right on desktop, under the clock on
+ * phones, so the scene and the Rubin finds panel stay visible during the tour.
+ */
 .stella-tour {
   position: fixed;
   z-index: 160;
-  left: 50%;
-  bottom: 84px;
-  transform: translateX(-50%);
-  width: min(440px, calc(100vw - 24px));
+  top: 20px;
+  right: 20px;
+  width: min(340px, calc(100vw - 40px));
   box-sizing: border-box;
-  padding: 10px 10px 14px 16px;
-  background: rgba(13, 21, 37, 0.96);
-  border: 1px solid rgba(255, 181, 71, 0.45);
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  padding: 4px 4px 12px 14px;
+  background: rgba(13, 21, 37, 0.88);
+  border: 1px solid rgba(255, 181, 71, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   color: #f3f5fa;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  animation: stella-tour-in 0.35s ease-out;
+  animation: stella-tour-in 0.3s ease-out;
 }
 
 @keyframes stella-tour-in {
-  from { opacity: 0; transform: translate(-50%, 12px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
 }
 
 .stella-tour__header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .stella-tour__star {
@@ -33,80 +36,72 @@
 }
 
 .stella-tour__name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #ffb547;
 }
 
-.stella-tour__dots {
+.stella-tour__count {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+.stella-tour__controls {
   display: flex;
-  gap: 5px;
-  margin-left: 4px;
-}
-
-.stella-tour__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.stella-tour__dot--on {
-  background: #ffb547;
-}
-
-.stella-tour__close {
   margin-left: auto;
+}
+
+.stella-tour__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 44px;
   height: 44px;
-  margin-top: -6px;
-  margin-bottom: -6px;
+  padding: 0;
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 24px;
-  line-height: 1;
+  color: #f3f5fa;
   cursor: pointer;
   touch-action: manipulation;
 }
 
-.stella-tour__close:hover,
-.stella-tour__close:active,
-.stella-tour__close:focus-visible {
-  color: #fff;
+.stella-tour__icon-btn:hover,
+.stella-tour__icon-btn:active {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.stella-tour__title {
-  margin: 6px 6px 0 0;
-  font-size: 18px;
-  font-weight: 700;
+.stella-tour__icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+  background: transparent;
+}
+
+.stella-tour__close {
+  margin-left: auto;
+  font-size: 22px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stella-tour__controls + .stella-tour__close {
+  margin-left: 0;
 }
 
 .stella-tour__text {
-  margin: 6px 6px 0 0;
-  font-size: 16px;
-  line-height: 1.45;
-}
-
-.stella-tour__caption {
-  min-height: 2.9em;
-}
-
-.stella-tour__note {
-  margin: 8px 6px 0 0;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  margin: 0 10px 0 0;
+  font-size: 15px;
+  line-height: 1.4;
 }
 
 .stella-tour__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .stella-tour__btn {
@@ -114,13 +109,13 @@
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  padding: 0 16px;
+  padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 22px;
   background: transparent;
   color: #f3f5fa;
   font: inherit;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
@@ -143,64 +138,29 @@
 }
 
 .stella-tour__btn:focus-visible,
-.stella-tour__close:focus-visible {
-  outline: 2px solid #ffb547;
-  outline-offset: 2px;
-}
-
-.stella-tour__controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.stella-tour__icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 50%;
-  background: transparent;
-  color: #f3f5fa;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.stella-tour__icon-btn:hover,
-.stella-tour__icon-btn:active {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.stella-tour__icon-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-  background: transparent;
-}
-
 .stella-tour__icon-btn:focus-visible {
   outline: 2px solid #ffb547;
   outline-offset: 2px;
 }
 
-.stella-tour__btn--next {
-  margin-left: auto;
-  border-color: rgba(255, 181, 71, 0.6);
-  color: #ffb547;
-}
-
-@media (max-width: 899px) {
+/* Too narrow to sit beside the centered time controls: drop below them. */
+@media (max-width: 1099px) {
   .stella-tour {
-    bottom: 72px;
+    top: 112px;
   }
 }
 
-@media (max-height: 500px) {
+/* Phones: a strip under the time controls; the finds panel owns the bottom. */
+@media (max-width: 899px) {
   .stella-tour {
-    bottom: 12px;
-    width: min(400px, calc(100vw - 24px));
+    top: 96px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+
+  .stella-tour__text {
+    font-size: 14px;
   }
 }
 

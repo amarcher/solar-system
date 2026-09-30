@@ -30,6 +30,7 @@ import { rubinAsteroids } from './data/rubinAsteroids';
 import { RubinPanel } from './components/ui/RubinPanel';
 import { StellaCallout } from './components/ui/StellaCallout';
 import { useStellaStatus } from './voice/useStellaStatus';
+import { useReducedMotion } from './hooks/useReducedMotion';
 import { StellaTour } from './components/ui/StellaTour';
 import { useStellaTour } from './tour/useStellaTour';
 import type { TourTarget } from './tour/tourScript';
@@ -91,26 +92,26 @@ function App() {
     setRubinView(target.view ?? 'follow');
   }, [closeTides, goToSystem, selectRubin]);
   const tour = useStellaTour();
-  const tourActive = tour.phase === 'playing' || tour.phase === 'paused' || tour.phase === 'done';
   const { start: beginTour } = tour;
 
-  // "Their real spots, right now" is only true in the Orrery at the present
-  // moment and in real time; the visitor's own speed comes back afterwards.
-  const rateBeforeTourRef = useRef<number | null>(null);
+  // The tour opens on today's sky at the Orrery's lively default, 1 day per
+  // second, unless the visitor asked for reduced motion.
+  const reducedMotion = useReducedMotion();
   const startTour = useCallback(() => {
     setToolbarOpen(false);
     setCinemaMode(false);
     setMode('orrery');
     setDate(new Date());
-    rateBeforeTourRef.current ??= rate;
-    setRate(1);
+    if (!reducedMotion) setRate(86400);
     beginTour(applyTourTarget);
-  }, [setMode, setDate, setRate, rate, beginTour, applyTourTarget]);
+  }, [setMode, setDate, setRate, reducedMotion, beginTour, applyTourTarget]);
+
+  // Opening a planet or leaving the Orrery means the visitor has taken over.
+  const { stop: stopTour } = tour;
+  const tourRunning = tour.phase !== 'idle' && tour.phase !== 'ready';
   useEffect(() => {
-    if (tour.phase !== 'idle' || rateBeforeTourRef.current === null) return;
-    setRate(rateBeforeTourRef.current);
-    rateBeforeTourRef.current = null;
-  }, [tour.phase, setRate]);
+    if (tourRunning && (nav.level !== 'system' || mode !== 'orrery')) stopTour();
+  }, [tourRunning, nav.level, mode, stopTour]);
 
   // Share links: /rubin[/find] opens the finds layer on a find; /tour starts
   // the tour (or shows its start card if the browser blocks sound until a tap).
@@ -126,7 +127,7 @@ function App() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hideDetails = cinemaMode || isMobile || tourActive;
+  const hideDetails = cinemaMode || isMobile;
 
   // Reset the mission HUD dismissed state whenever the user (re-)enters
   // mission view, so the info card shows fresh on each visit.
@@ -386,7 +387,7 @@ function App() {
         rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubinFromScene } : null}
       />
 
-      {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && tour.phase === 'idle' && (
+      {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && (
         <RubinPanel
           asteroids={rubinAsteroids}
           selectedId={rubinSelectedId}
@@ -621,7 +622,7 @@ function App() {
         </a>
       )}
 
-      {nav.level !== 'system' && !tourActive && (hideDetails || nav.level === 'mission' || !!tides.state) && (
+      {nav.level !== 'system' && (hideDetails || nav.level === 'mission' || !!tides.state) && (
         <div className="app__cinema-nav">
           <button
             className="app__cinema-nav-btn"

@@ -42,18 +42,35 @@ export function StellaTour({ phase, step, stepIndex, total, canTalk, onStart, on
   return (
     <section className="stella-tour" aria-label="Tour of the Rubin finds with Stella">
       <header className="stella-tour__header">
-        <svg className="stella-tour__star" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <svg className="stella-tour__star" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
           <path d={STAR_PATH} />
         </svg>
         <span className="stella-tour__name">Stella</span>
         {phase !== 'ready' && (
-          <span className="stella-tour__dots" aria-label={`Part ${stepIndex + 1} of ${total}`}>
-            {Array.from({ length: total }, (_, i) => (
-              <span key={i} className={`stella-tour__dot${i <= stepIndex ? ' stella-tour__dot--on' : ''}`} />
-            ))}
-          </span>
+          <>
+            <span className="stella-tour__count" aria-label={`Part ${stepIndex + 1} of ${total}`}>
+              {stepIndex + 1}/{total}
+            </span>
+            <span className="stella-tour__controls">
+              <button type="button" className="stella-tour__icon-btn" onClick={onBack} disabled={stepIndex === 0} aria-label="Previous">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+              {phase === 'paused' ? (
+                <button type="button" className="stella-tour__icon-btn" onClick={onResume} aria-label="Play">
+                  <PlayIcon size={16} />
+                </button>
+              ) : (
+                <button type="button" className="stella-tour__icon-btn" onClick={onPause} disabled={phase === 'done'} aria-label="Pause">
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" /></svg>
+                </button>
+              )}
+              <button type="button" className="stella-tour__icon-btn" onClick={onNext} disabled={last} aria-label="Next">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+            </span>
+          </>
         )}
-        <button type="button" className="stella-tour__close" onClick={onStop}
+        <button type="button" className="stella-tour__icon-btn stella-tour__close" onClick={onStop}
           aria-label={phase === 'done' || phase === 'ready' ? 'Close' : 'Stop the tour'}>
           <span aria-hidden="true">×</span>
         </button>
@@ -61,25 +78,20 @@ export function StellaTour({ phase, step, stepIndex, total, canTalk, onStart, on
 
       {phase === 'ready' ? (
         <>
-          <p className="stella-tour__title">Tour Rubin's new asteroids with Stella</p>
           <p className="stella-tour__text">
-            A giant new telescope is finding thousands of space rocks. Stella will fly you to a few of the coolest. Turn your sound on!
+            Tour the asteroids a giant new telescope just found. Turn your sound on!
           </p>
           <div className="stella-tour__actions">
             <button type="button" className="stella-tour__btn stella-tour__btn--primary" onClick={onStart}>
               <PlayIcon />
               Start the tour
             </button>
-            <button type="button" className="stella-tour__btn" onClick={onStop}>No thanks</button>
           </div>
         </>
       ) : (
         <>
-          <p className="stella-tour__text stella-tour__caption" aria-live="polite">{step.text}</p>
-          {step.target.findId && (
-            <p className="stella-tour__note">Artist's impression: nobody knows their real shapes yet.</p>
-          )}
-          {last ? (
+          <p className="stella-tour__text" aria-live="polite">{step.text}</p>
+          {last && (
             <div className="stella-tour__actions">
               {canTalk && (
                 <button type="button" className="stella-tour__btn stella-tour__btn--primary" onClick={onTalk}>
@@ -87,33 +99,8 @@ export function StellaTour({ phase, step, stepIndex, total, canTalk, onStart, on
                   Talk to Stella
                 </button>
               )}
-              <button type="button" className="stella-tour__btn" onClick={onStop}>Explore the finds</button>
-              <button type="button" className="stella-tour__icon-btn" onClick={onBack} aria-label="Previous">
-                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </button>
+              <button type="button" className="stella-tour__btn" onClick={onStop}>Explore on my own</button>
             </div>
-          ) : (
-            <div className="stella-tour__controls">
-              <button type="button" className="stella-tour__icon-btn" onClick={onBack} disabled={stepIndex === 0} aria-label="Previous">
-                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </button>
-              {phase === 'paused' ? (
-                <button type="button" className="stella-tour__icon-btn" onClick={onResume} aria-label="Play">
-                  <PlayIcon size={18} />
-                </button>
-              ) : (
-                <button type="button" className="stella-tour__icon-btn" onClick={onPause} aria-label="Pause">
-                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" /></svg>
-                </button>
-              )}
-              <button type="button" className="stella-tour__btn stella-tour__btn--next" onClick={onNext}>
-                Next
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </button>
-            </div>
-          )}
-          {canTalk && last && (
-            <p className="stella-tour__note">Talking uses your microphone. Ask a grown-up first!</p>
           )}
         </>
       )}

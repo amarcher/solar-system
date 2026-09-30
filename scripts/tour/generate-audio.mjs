@@ -25,7 +25,7 @@ for (const step of steps) {
     body: JSON.stringify({
       text: step.speech ?? step.text,
       model_id: 'eleven_multilingual_v2',
-      voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.3, speed: 1.0 },
+      voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.3, speed: 1.0, ...step.delivery },
     }),
   });
   if (!res.ok) throw new Error(`${step.id}: ${res.status} ${await res.text()}`);
