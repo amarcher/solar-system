@@ -25,6 +25,26 @@
 .stella-callout__title { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
 .stella-callout__text { margin: 0; font-size: 14px; line-height: 1.45; color: #c9d6ea; }
 .stella-callout__star { fill: #ffc766; vertical-align: -1px; }
+.stella-callout__tour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: 6px 0 8px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 22px;
+  background: #ffb547;
+  color: #1a1204;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.stella-callout__tour:hover,
+.stella-callout__tour:active { background: #ffc670; }
+.stella-callout__tour:focus-visible { outline: 2px solid #ffc766; outline-offset: 2px; }
 
 .stella-callout__close {
   appearance: none;
