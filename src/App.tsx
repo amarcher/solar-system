@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useNavigation } from './hooks/useNavigation';
@@ -30,6 +30,13 @@ import { rubinAsteroids } from './data/rubinAsteroids';
 import { RubinPanel } from './components/ui/RubinPanel';
 import { StellaCallout } from './components/ui/StellaCallout';
 import { useStellaStatus } from './voice/useStellaStatus';
+import { StellaTour } from './components/ui/StellaTour';
+import { useStellaTour } from './tour/useStellaTour';
+import type { TourTarget } from './tour/tourScript';
+import { pathToLandingIntent } from './utils/routes';
+
+// Read before useNavigation normalizes the URL to /.
+const landingIntent = pathToLandingIntent(window.location.pathname);
 
 function viewTransition(update: () => void, types: string[]) {
   if (!document.startViewTransition) {
@@ -72,7 +79,61 @@ function App() {
   const [orreryMissionActive, setOrreryMissionActive] = useState(false);
   const deviceOrientation = useDeviceOrientation();
   const isMobile = useSyncExternalStore(subscribeToMobile, getIsMobile);
-  const hideDetails = cinemaMode || isMobile;
+
+  // Stella's narrated tour drives the scene with the same moves a visitor makes.
+  const tourSceneRef = useRef({ navLevel: nav.level, rubinSelectedId });
+  useEffect(() => { tourSceneRef.current = { navLevel: nav.level, rubinSelectedId }; });
+  const applyTourTarget = useCallback((target: TourTarget) => {
+    closeTides(false);
+    if (target.kind === 'planet') {
+      goToPlanet(target.planetId);
+      return;
+    }
+    if (tourSceneRef.current.navLevel !== 'system') goToSystem();
+    if (target.kind === 'rubin') {
+      setShowRubin(true);
+      if (tourSceneRef.current.rubinSelectedId !== target.findId) selectRubin(target.findId, 'tour');
+    } else {
+      setShowRubin(false);
+      selectRubin(null);
+    }
+  }, [closeTides, goToPlanet, goToSystem, selectRubin]);
+  const tour = useStellaTour();
+  const tourPlaying = tour.phase === 'playing';
+  const { start: beginTour, offer: offerTour } = tour;
+
+  // "Their real spots, right now" is only true in the Orrery at the present
+  // moment and in real time; the visitor's own speed comes back afterwards.
+  const rateBeforeTourRef = useRef<number | null>(null);
+  const startTour = useCallback(() => {
+    setToolbarOpen(false);
+    setCinemaMode(false);
+    setMode('orrery');
+    setDate(new Date());
+    rateBeforeTourRef.current ??= rate;
+    setRate(1);
+    beginTour(applyTourTarget);
+  }, [setMode, setDate, setRate, rate, beginTour, applyTourTarget]);
+  useEffect(() => {
+    if (tour.phase === 'playing' || rateBeforeTourRef.current === null) return;
+    setRate(rateBeforeTourRef.current);
+    rateBeforeTourRef.current = null;
+  }, [tour.phase, setRate]);
+
+  // Share links: /rubin[/find] opens the finds layer on a find; /tour offers the tour.
+  useEffect(() => {
+    if (!landingIntent) return;
+    if (landingIntent.kind === 'tour') {
+      offerTour();
+    } else {
+      setMode('orrery');
+      setShowRubin(true);
+      trackRubinToggle(true, 'link');
+      if (landingIntent.findId) selectRubin(landingIntent.findId, 'link');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hideDetails = cinemaMode || isMobile || tourPlaying;
 
   // Reset the mission HUD dismissed state whenever the user (re-)enters
   // mission view, so the info card shows fresh on each visit.
@@ -332,7 +393,7 @@ function App() {
         rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubinFromScene } : null}
       />
 
-      {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && (
+      {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && tour.phase !== 'playing' && tour.phase !== 'done' && (
         <RubinPanel
           asteroids={rubinAsteroids}
           selectedId={rubinSelectedId}
@@ -515,9 +576,24 @@ function App() {
 
       <StellaCallout
         available={!!voice.agentId && stella.available}
-        suppressed={cinemaMode || voice.status !== 'off'}
+        suppressed={cinemaMode || voice.status !== 'off' || tour.phase !== 'idle'}
         toolbarOpen={toolbarOpen}
         onVisibleChange={setStellaBeckon}
+        onTour={startTour}
+      />
+
+      <StellaTour
+        phase={tour.phase}
+        step={tour.step}
+        stepIndex={tour.stepIndex}
+        total={tour.total}
+        canTalk={!!voice.agentId && stella.available}
+        onStart={startTour}
+        onStop={tour.stop}
+        onTalk={() => {
+          tour.talk();
+          if (voice.status === 'off') voice.toggle();
+        }}
       />
 
       {(voice.micError || stellaRestingNotice) && (
@@ -548,7 +624,7 @@ function App() {
         </a>
       )}
 
-      {nav.level !== 'system' && (hideDetails || nav.level === 'mission' || !!tides.state) && (
+      {nav.level !== 'system' && !tourPlaying && (hideDetails || nav.level === 'mission' || !!tides.state) && (
         <div className="app__cinema-nav">
           <button
             className="app__cinema-nav-btn"

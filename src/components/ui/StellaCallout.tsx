@@ -3,8 +3,11 @@ import { trackStellaCallout } from '../../utils/analytics';
 import './StellaCallout.css';
 
 const STORAGE_KEY = 'stella-callout-seen-v1';
-/** Let the scene make its first impression before pointing anything out. */
-const SHOW_DELAY_MS = 6000;
+/**
+ * Let the scene make its first impression before pointing anything out, but
+ * not so long that it misses visitors who leave within half a minute.
+ */
+const SHOW_DELAY_MS = 4000;
 const GAP_PX = 12;
 
 type Target = 'button' | 'menu';
@@ -59,16 +62,19 @@ function measure(): Placement | null {
 }
 
 /**
- * One-time, dismissible pointer to Stella. Never starts the microphone itself:
- * the visitor still chooses to click the star.
+ * One-time, dismissible pointer to Stella. Leads with her narrated tour, which
+ * needs no microphone. Never starts the microphone itself: the visitor still
+ * chooses to click the star.
  */
-export function StellaCallout({ available, suppressed, toolbarOpen, onVisibleChange }: {
+export function StellaCallout({ available, suppressed, toolbarOpen, onVisibleChange, onTour }: {
   /** A voice agent is configured. */
   available: boolean;
   /** Hide for now: Stella is active, or the UI is hidden (cinema mode). */
   suppressed: boolean;
   toolbarOpen: boolean;
   onVisibleChange: (target: Target | null) => void;
+  /** Start the narrated tour. Called from the click, so audio can play on iOS. */
+  onTour: () => void;
 }) {
   const [armed, setArmed] = useState(false);
   const [placement, setPlacement] = useState<Placement | null>(null);
@@ -110,6 +116,13 @@ export function StellaCallout({ available, suppressed, toolbarOpen, onVisibleCha
     trackStellaCallout('dismissed');
   }, []);
 
+  const takeTour = () => {
+    markSeen();
+    setArmed(false);
+    trackStellaCallout('tour');
+    onTour();
+  };
+
   // Clicking the star while the tip is up counts as following it.
   useEffect(() => {
     if (!visible) return;
@@ -133,9 +146,13 @@ export function StellaCallout({ available, suppressed, toolbarOpen, onVisibleCha
       role="status"
     >
       <div className="stella-callout__body">
-        <p className="stella-callout__title">Got a space question?</p>
+        <p className="stella-callout__title">New here? Let Stella show you around</p>
+        <button type="button" className="stella-callout__tour" onClick={takeTour}>
+          <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor" /></svg>
+          Take the 1-minute tour
+        </button>
         <p className="stella-callout__text">
-          {shown.target === 'menu' ? 'Open the menu and tap the ' : `${touch ? 'Tap' : 'Click'} the `}
+          Got a question? {shown.target === 'menu' ? 'Open the menu and tap the ' : `${touch ? 'Tap' : 'Click'} the `}
           <svg viewBox="0 0 24 24" width="13" height="13" aria-label="star" className="stella-callout__star">
             <path d="M12 1C12 1 14 8 16 10C18 12 23 12 23 12C23 12 18 12 16 14C14 16 12 23 12 23C12 23 10 16 8 14C6 12 1 12 1 12C1 12 6 12 8 10C10 8 12 1 12 1Z" />
           </svg>

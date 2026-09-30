@@ -52,7 +52,7 @@ export function trackModeSwitch(mode: string) {
 
 // ---------- Rubin finds ----------
 
-export type RubinSource = 'list' | 'scene' | 'voice' | 'toolbar';
+export type RubinSource = 'list' | 'scene' | 'voice' | 'toolbar' | 'link' | 'tour';
 
 export function trackRubinToggle(enabled: boolean, source: RubinSource) {
   track('rubin_finds_toggled', { enabled, source });
@@ -65,8 +65,13 @@ export function trackRubinFindView(findId: string, source: RubinSource) {
 // ---------- Voice guide (Stella) ----------
 
 /** The one-time pointer to Stella: shown, closed with ×, or followed by starting Stella. */
-export function trackStellaCallout(action: 'shown' | 'dismissed' | 'used') {
+export function trackStellaCallout(action: 'shown' | 'dismissed' | 'used' | 'tour') {
   track('stella_callout', { action });
+}
+
+/** Stella's narrated tour. `step` is the step id reached; `audio` is false when it ran on captions alone. */
+export function trackStellaTour(action: 'started' | 'completed' | 'stopped' | 'talk', step: string, audio: boolean) {
+  track('stella_tour', { action, step, audio });
 }
 
 /** The talk button was pressed (before mic permission or connection). */
