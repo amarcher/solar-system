@@ -28,7 +28,22 @@ interface CameraRigProps {
    * path around the Sun (fitRadius, scene units).
    */
   rubinFocus?: { id: string; view: 'follow' | 'orbit'; fitRadius: number; bodyRadius: number } | null;
+  /** A slow, drifting whole-system shot for narration (Stella's tour); the visitor can take over by dragging. */
+  cinematicShot?: CinematicShot | null;
 }
+
+/**
+ * scan: low across the planets toward the stars, sweeping like a survey
+ * telescope. reveal: rise to a high, wide view and circle the whole system.
+ */
+export type CinematicShot = 'scan' | 'reveal';
+
+const CINEMATIC_SHOTS: Record<CinematicShot, { position: [number, number, number]; target: [number, number, number]; drift: number }> = {
+  scan: { position: [4, 2.4, 17], target: [-1.5, 0.4, 0], drift: 0.06 },
+  reveal: { position: [0, 24, 19], target: [0, 0, 0], drift: 0.045 },
+};
+/** Long, eased flights between shots read as camera moves, not jumps. */
+const CINEMATIC_SMOOTH_TIME = 2.2;
 
 /** Follow distance in rock radii: the rock fills a good part of the view, orbit lines still visible. */
 const RUBIN_FOLLOW_RADII = 14;
@@ -45,7 +60,7 @@ function normalizeAzimuth(controls: CameraControlsImpl) {
   controls.azimuthAngle = ((controls.azimuthAngle % TWO_PI) + TWO_PI) % TWO_PI;
 }
 
-export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: CameraRigProps) {
+export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null, cinematicShot = null }: CameraRigProps) {
   const space = useFocusedSpace();
   const layoutScratch = useRef({ shift: new Vector3(), target: new Vector3(), end: new Vector3() });
   const controlsRef = useRef<CameraControlsImpl>(null);
@@ -169,9 +184,30 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rubinFocusId, rubinView, rubinFitRadius, nav.level]);
 
+  // Declared after the Rubin effect so a shot wins over its deselect framing.
+  const activeShot = nav.level === 'system' && !rubinFocusId ? cinematicShot : null;
+  const shotDrift = useRef(0);
+  useEffect(() => {
+    const controls = controlsRef.current;
+    shotDrift.current = 0;
+    if (!controls || !activeShot) return;
+    const shot = CINEMATIC_SHOTS[activeShot];
+    normalizeAzimuth(controls);
+    controls.smoothTime = reducedMotion ? 0.05 : CINEMATIC_SMOOTH_TIME;
+    controls.setLookAt(...shot.position, ...shot.target, true);
+    if (reducedMotion) return;
+    // Rotating the endpoint (with transition) layers the drift onto the flight.
+    shotDrift.current = shot.drift;
+    // Once the visitor grabs the camera, the drift stops fighting them.
+    const stopDrift = () => { shotDrift.current = 0; };
+    controls.addEventListener('controlstart', stopDrift);
+    return () => controls.removeEventListener('controlstart', stopDrift);
+  }, [activeShot, reducedMotion]);
+
   useFrame((_, delta) => {
     const controls = controlsRef.current;
     if (!controls) return;
+    if (shotDrift.current) void controls.rotate(delta * shotDrift.current, 0, true);
     const focusedRaw = (nav.level === 'planet' || nav.level === 'moon') ? space.raw.get(nav.planetId) : undefined;
     if (focusedRaw && !orreryMissionId) {
       const s = layoutScratch.current;

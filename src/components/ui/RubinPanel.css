@@ -66,6 +66,27 @@
 
 .rubin-panel__intro { margin: 4px 0 10px; color: #b4c4dc; line-height: 1.5; }
 
+.rubin-panel__tour {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: 0 0 10px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 22px;
+  background: #ffb547;
+  color: #1a1204;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.rubin-panel__tour:hover,
+.rubin-panel__tour:active { background: #ffc670; }
+.rubin-panel__tour:focus-visible { outline: 2px solid #ffc766; outline-offset: 2px; }
+
 .rubin-panel__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 
 .rubin-panel__item {

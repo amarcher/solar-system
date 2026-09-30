@@ -2,6 +2,7 @@ import type { NavigationState } from '../types/celestialBody';
 import { planets } from '../data/planets';
 import { getMoonById } from '../data/moons';
 import { getMissionById } from '../data/missions';
+import { getRubinAsteroidById } from '../data/rubinAsteroids';
 
 /**
  * URL ↔ NavigationState mapping.
@@ -16,6 +17,12 @@ import { getMissionById } from '../data/missions';
  * Aliases (marketing-friendly short URLs that normalize to the canonical
  * path on first load via history.replaceState):
  *   /artemis → /missions/artemis-2
+ *
+ * Landing links (share links for social posts; see pathToLandingIntent).
+ * They land on the system view, so the URL normalizes to /:
+ *   /rubin           → Orrery with Rubin finds on, following 2025 MN45
+ *   /rubin/:findId   → the same, following that find
+ *   /tour            → offer Stella's narrated tour
  *
  * Unknown or invalid paths (e.g. /planets/nonexistent) fall back to the
  * system view. Vercel's catch-all rewrite in vercel.json serves index.html
@@ -99,4 +106,27 @@ export function navToTitle(nav: NavigationState): string {
       return mission ? `${mission.name} Live Tracker — ${base}` : base;
     }
   }
+}
+
+export type LandingIntent =
+  | { kind: 'rubin'; findId: string | null }
+  | { kind: 'tour' };
+
+/** The Rubin find a bare /rubin link shows: the one the social posts lead with. */
+export const DEFAULT_RUBIN_LINK_FIND = '2025-mn45';
+
+/**
+ * Scene setup a landing link asks for, beyond its nav state. Unknown find
+ * ids still open the layer, just without following anything.
+ */
+export function pathToLandingIntent(pathname: string): LandingIntent | null {
+  const path = pathname.replace(/\/+$/, '').toLowerCase();
+  if (path === '/tour') return { kind: 'tour' };
+  if (path === '/rubin') return { kind: 'rubin', findId: DEFAULT_RUBIN_LINK_FIND };
+  const rubinMatch = path.match(/^\/rubin\/([^/]+)$/);
+  if (rubinMatch) {
+    const id = decodeURIComponent(rubinMatch[1]);
+    return { kind: 'rubin', findId: getRubinAsteroidById(id) ? id : null };
+  }
+  return null;
 }

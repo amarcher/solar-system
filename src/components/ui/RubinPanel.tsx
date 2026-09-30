@@ -9,9 +9,11 @@ interface RubinPanelProps {
   onSelect: (id: string | null) => void;
   onViewChange: (view: 'follow' | 'orbit') => void;
   onClose: () => void;
+  /** Start Stella's narrated tour of these finds. Omitted when the tour can't play. */
+  onTour?: () => void;
 }
 
-export function RubinPanel({ asteroids, selectedId, view, onSelect, onViewChange, onClose }: RubinPanelProps) {
+export function RubinPanel({ asteroids, selectedId, view, onSelect, onViewChange, onClose, onTour }: RubinPanelProps) {
   const selected = asteroids.find((a) => a.id === selectedId);
   const body = useRef<HTMLDivElement>(null);
 
@@ -77,6 +79,12 @@ export function RubinPanel({ asteroids, selectedId, view, onSelect, onViewChange
               Rubin's giant camera found more than 11,000 new asteroids in its first weeks of testing.
               Here are some of the most surprising things it has seen. Tap one to see its path.
             </p>
+            {onTour && (
+              <button type="button" className="rubin-panel__tour" onClick={onTour}>
+                <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor" /></svg>
+                Take the tour with Stella
+              </button>
+            )}
             <ul className="rubin-panel__list">
               {asteroids.map((a) => (
                 <li key={a.id}>
