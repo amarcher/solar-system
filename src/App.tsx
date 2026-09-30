@@ -386,7 +386,7 @@ function App() {
         rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubinFromScene } : null}
       />
 
-      {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && (tour.phase === 'idle' || tour.phase === 'ready') && (
+      {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && tour.phase === 'idle' && (
         <RubinPanel
           asteroids={rubinAsteroids}
           selectedId={rubinSelectedId}
