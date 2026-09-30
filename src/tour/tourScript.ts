@@ -8,10 +8,14 @@
  * docs/rubin-asteroids-research-2026-09-28.md (snapshot pairs about 33 minutes
  * apart; 11,000+ new asteroids from about 6 weeks of 2025 testing).
  */
+import type { CinematicShot } from '../components/scene/CameraRig';
+
 export interface TourTarget {
   /** The find to fly to, or null for the whole solar system with the finds layer on. */
   findId: string | null;
   view?: 'follow' | 'orbit';
+  /** Camera move for whole-system lines, so the view isn't static while Stella talks. */
+  shot?: CinematicShot;
 }
 
 export interface TourStep {
@@ -28,14 +32,14 @@ export interface TourStep {
 export const TOUR_STEPS: TourStep[] = [
   {
     id: 'hello',
-    target: { findId: null },
+    target: { findId: null, shot: 'scan' },
     text: "Hi, I'm Stella! Let's go asteroid hunting. A giant new telescope, the Rubin Observatory, takes a picture of each patch of sky, then another about half an hour later. The stars stay put. Anything that moved is something new!",
     // The opening sets the tone: calm and unhurried, not breathless.
     delivery: { speed: 0.9, stability: 0.8, style: 0 },
   },
   {
     id: 'count',
-    target: { findId: null },
+    target: { findId: null, shot: 'reveal' },
     text: "In just six weeks of testing, Rubin found more than 11,000 new asteroids. Here are some of the most surprising things it has seen. Let's visit a few!",
   },
   {
@@ -64,7 +68,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'invite',
-    target: { findId: null },
+    target: { findId: null, shot: 'reveal' },
     text: "Those are just a few of Rubin's finds. Tap any of them to explore on your own. Got a question? Tap Talk to Stella, then allow the microphone, and we can chat!",
   },
 ];

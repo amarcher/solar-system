@@ -8,7 +8,7 @@ import { CelestialBackdrop } from './CelestialBackdrop';
 import { SunMesh } from './Sun';
 import { PlanetOrbit } from './PlanetOrbit';
 import { AsteroidBelt } from './AsteroidBelt';
-import { CameraRig } from './CameraRig';
+import { CameraRig, type CinematicShot } from './CameraRig';
 import { RealisticScene } from './RealisticScene';
 import { rubinSceneExtent, rubinVisualRadius, type RubinAsteroid } from '../../data/rubinAsteroids';
 import { SkyScene } from './SkyScene';
@@ -79,9 +79,10 @@ interface SolarSystemSceneProps {
   /** Rubin Observatory finds shown in the orrery; null hides the layer. */
   rubin?: { asteroids: RubinAsteroid[]; selectedId: string | null; view: 'follow' | 'orbit'; onSelect: (id: string) => void } | null;
   tides?: TidesState | null;
+  cinematicShot?: CinematicShot | null;
 }
 
-export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, rubin = null, tides = null }: SolarSystemSceneProps) {
+export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, rubin = null, tides = null, cinematicShot = null }: SolarSystemSceneProps) {
   const rubinSelection = rubin?.asteroids.find((a) => a.id === rubin.selectedId);
   const rubinFocus = rubinSelection && rubin
     ? { id: rubinSelection.id, view: rubin.view, fitRadius: rubinSceneExtent(rubinSelection) * 1.1, bodyRadius: rubinVisualRadius(rubinSelection.diameterKm) }
@@ -215,7 +216,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             pitchRef={devicePitchRef}
           />
         ) : (
-          <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} rubinFocus={rubinFocus} />
+          <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} rubinFocus={rubinFocus} cinematicShot={cinematicShot} />
         )}
 
         {!reducedMotion && settings.bloom && (

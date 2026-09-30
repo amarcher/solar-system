@@ -34,6 +34,7 @@ import { useReducedMotion } from './hooks/useReducedMotion';
 import { StellaTour } from './components/ui/StellaTour';
 import { useStellaTour } from './tour/useStellaTour';
 import type { TourTarget } from './tour/tourScript';
+import type { CinematicShot } from './components/scene/CameraRig';
 import { pathToLandingIntent } from './utils/routes';
 
 // Read before useNavigation normalizes the URL to /.
@@ -84,7 +85,9 @@ function App() {
   // Stella's narrated tour drives the scene with the same moves a visitor makes.
   const tourSceneRef = useRef({ navLevel: nav.level, rubinSelectedId });
   useEffect(() => { tourSceneRef.current = { navLevel: nav.level, rubinSelectedId }; });
+  const [tourShot, setTourShot] = useState<CinematicShot | null>(null);
   const applyTourTarget = useCallback((target: TourTarget) => {
+    setTourShot(target.shot ?? null);
     closeTides(false);
     if (tourSceneRef.current.navLevel !== 'system') goToSystem();
     setShowRubin(true);
@@ -384,6 +387,7 @@ function App() {
         deviceHeadingRef={deviceOrientation.headingRef}
         devicePitchRef={deviceOrientation.pitchRef}
         orreryMission={orreryMissionActive ? getMissionById('artemis-2') : undefined}
+        cinematicShot={tour.phase === 'idle' ? null : tourShot}
         rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubinFromScene } : null}
       />
 
@@ -395,6 +399,7 @@ function App() {
           onSelect={(id) => selectRubin(id, 'list')}
           onViewChange={setRubinView}
           onClose={() => { setShowRubin(false); trackRubinToggle(false, 'list'); selectRubin(null); }}
+          onTour={tour.phase === 'idle' ? startTour : undefined}
         />
       )}
 
