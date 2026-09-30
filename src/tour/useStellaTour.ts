@@ -28,6 +28,14 @@ export function createTourPlayer({ onPhase, onStep, createAudio = () => new Audi
   let audioOk = true;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let moveScene: (target: TourTarget) => void = () => {};
+  // Count a start once Stella is actually heard (or captions take over), not
+  // when a /tour link's autoplay attempt is blocked before anyone taps.
+  let startCounted = false;
+  const countStart = () => {
+    if (startCounted) return;
+    startCounted = true;
+    trackStellaTour('started', stepId(), audioOk);
+  };
 
   const setPhase = (next: TourPhase) => { phase = next; onPhase(next); };
   const stepId = () => TOUR_STEPS[stepIndex].id;
@@ -55,6 +63,7 @@ export function createTourPlayer({ onPhase, onStep, createAudio = () => new Audi
     const captionsOnly = () => {
       audioOk = false;
       if (audio) { audio.onended = null; audio.onerror = null; }
+      countStart();
       timer = setTimeout(advance, fallbackDurationMs(step.text));
     };
     if (!audio || !audioOk) { captionsOnly(); return; }
@@ -64,7 +73,7 @@ export function createTourPlayer({ onPhase, onStep, createAudio = () => new Audi
     const src = tourAudioSrc(step);
     if (!audio.src.endsWith(src)) audio.src = src;
     else audio.currentTime = 0;
-    audio.play().catch((err: unknown) => {
+    audio.play().then(countStart, (err: unknown) => {
       if (stepIndex !== index || phase !== 'playing') return;
       if (err instanceof DOMException && err.name === 'AbortError') return;
       if (err instanceof DOMException && err.name === 'NotAllowedError') {
@@ -97,8 +106,8 @@ export function createTourPlayer({ onPhase, onStep, createAudio = () => new Audi
       moveScene = scene;
       audio ??= createAudio();
       audioOk = true;
+      startCounted = false;
       setPhase('playing');
-      trackStellaTour('started', TOUR_STEPS[0].id, true);
       showStep(0);
     },
     pause() {
