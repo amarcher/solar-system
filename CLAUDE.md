@@ -61,7 +61,7 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 
 - **View Transitions API** for detail open/close clip-path animations
 - **Focus-trapped `role="dialog"`** modals for all detail views (Escape closes, Tab cycles)
-- **Voice agent** as persistent floating orb — contextual updates on every navigation change
+- **Voice agent (Stella)** as a toolbar button in `App.tsx` (with a one-time `StellaCallout` pointer) — contextual updates on every navigation change
 - **CSS `color-mix(in srgb, ...)`** for translucent category colors (no `hsl(from ...)`)
 - **BEM-like class naming**: `.component__element--modifier`
 
@@ -110,7 +110,7 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 
 ### Voice Agent
 - `src/hooks/useSolarConversation.ts` — ElevenLabs voice session, contextual updates, 7 client tools
-- `src/components/ui/VoiceAgent.tsx/css` — floating orb (space-themed orange gradient)
+- Stella toolbar button in `src/App.tsx`; `src/components/ui/StellaCallout.tsx/css` — one-time dismissible pointer to it; `src/voice/useStellaStatus.ts` — reads `/api/stella-status` (out-of-credit "resting" state)
 
 ### UI (`src/components/ui/`)
 - `ModeToggle.tsx/css` — bottom-center pill toggle: Explore / Orrery / Sky
@@ -118,7 +118,6 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 - `StellaCallout.tsx/css` — one-time dismissible pointer to the Stella button (or the collapsed menu); never starts the mic itself
 - `RubinPanel.tsx/css` — Rubin finds list/detail card (orrery, toolbar toggle)
 - `ObserverPicker.tsx/css` — lat/lng input + geolocation button (sky mode only)
-- `VoiceAgent.tsx/css` — floating orb (space-themed orange gradient)
 
 ### Data
 - `src/data/stars.ts` — lazy loader for Yale Bright Star Catalog JSON (`public/data/bright_stars.json`)
