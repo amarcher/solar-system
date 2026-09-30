@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { TOUR_STEPS, fallbackDurationMs, tourAudioSrc, type TourTarget } from './tourScript';
 import { trackStellaTour } from '../utils/analytics';
 
-/** idle: nothing on screen. ready: a start card (a link can't autoplay audio). playing / done: the caption card. */
-export type TourPhase = 'idle' | 'ready' | 'playing' | 'done';
+/**
+ * idle: nothing on screen. ready: a start card, shown when the browser won't
+ * play sound until the visitor taps. playing / paused / done: the caption card.
+ */
+export type TourPhase = 'idle' | 'ready' | 'playing' | 'paused' | 'done';
 
 /** Breath between lines so the camera can arrive before Stella talks about it. */
 const STEP_GAP_MS = 900;
@@ -15,9 +18,8 @@ interface PlayerHooks {
 }
 
 /**
- * Plays the tour line by line on one audio element, advancing when each line
- * ends. Once audio fails (blocked, missing file, no network) the rest of the
- * tour runs on caption timing, so it always finishes.
+ * Plays the tour line by line on one audio element, moving on when each line
+ * ends. If the audio files can't load, lines advance on caption timing instead.
  */
 export function createTourPlayer({ onPhase, onStep, createAudio = () => new Audio() }: PlayerHooks) {
   let phase: TourPhase = 'idle';
@@ -25,7 +27,7 @@ export function createTourPlayer({ onPhase, onStep, createAudio = () => new Audi
   let audio: HTMLAudioElement | null = null;
   let audioOk = true;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let onTarget: (target: TourTarget) => void = () => {};
+  let moveScene: (target: TourTarget) => void = () => {};
 
   const setPhase = (next: TourPhase) => { phase = next; onPhase(next); };
   const stepId = () => TOUR_STEPS[stepIndex].id;
@@ -35,59 +37,96 @@ export function createTourPlayer({ onPhase, onStep, createAudio = () => new Audi
     if (audio) { audio.onended = null; audio.onerror = null; audio.pause(); }
   };
 
-  const playStep = (index: number) => {
+  const advance = () => {
     clearTimeout(timer);
-    stepIndex = index;
-    const step = TOUR_STEPS[index];
-    onStep(index);
-    onTarget(step.target);
+    if (stepIndex + 1 < TOUR_STEPS.length) {
+      timer = setTimeout(() => showStep(stepIndex + 1), STEP_GAP_MS);
+    } else {
+      setPhase('done');
+      trackStellaTour('completed', stepId(), audioOk);
+    }
+  };
 
-    const next = () => {
-      clearTimeout(timer);
-      if (index + 1 < TOUR_STEPS.length) {
-        timer = setTimeout(() => playStep(index + 1), STEP_GAP_MS);
-      } else {
-        setPhase('done');
-        trackStellaTour('completed', step.id, audioOk);
-      }
-    };
+  /** Speak (or time) the current line from the start. */
+  const speak = () => {
+    clearTimeout(timer);
+    const step = TOUR_STEPS[stepIndex];
+    const index = stepIndex;
     const captionsOnly = () => {
       audioOk = false;
       if (audio) { audio.onended = null; audio.onerror = null; }
-      timer = setTimeout(next, fallbackDurationMs(step.text));
+      timer = setTimeout(advance, fallbackDurationMs(step.text));
     };
-
     if (!audio || !audioOk) { captionsOnly(); return; }
-    audio.onended = next;
+
+    audio.onended = advance;
     audio.onerror = captionsOnly;
-    audio.src = tourAudioSrc(step);
+    const src = tourAudioSrc(step);
+    if (!audio.src.endsWith(src)) audio.src = src;
+    else audio.currentTime = 0;
     audio.play().catch((err: unknown) => {
-      // A newer line replaced this one mid-load; that line handles itself.
+      if (stepIndex !== index || phase !== 'playing') return;
       if (err instanceof DOMException && err.name === 'AbortError') return;
-      if (stepIndex === index && phase === 'playing') captionsOnly();
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        // No sound without a tap: ask for one rather than play a silent tour.
+        silence();
+        setPhase('ready');
+        return;
+      }
+      captionsOnly();
     });
+  };
+
+  const showStep = (index: number) => {
+    silence();
+    stepIndex = index;
+    onStep(index);
+    moveScene(TOUR_STEPS[index].target);
+    if (phase === 'playing') speak();
   };
 
   return {
     /**
-     * Must run inside a tap or click: iOS only unlocks an audio element during
-     * a user gesture. `moveScene` points the scene at each line's subject.
+     * Start from the top. Call it inside a tap to be sure of sound: browsers
+     * only allow audio after a user gesture. Without one, the tour tries
+     * anyway and falls back to a start card if sound is blocked.
+     * `scene` points the scene at each line's subject.
      */
-    start(moveScene: (target: TourTarget) => void) {
+    start(scene: (target: TourTarget) => void) {
       silence();
-      onTarget = moveScene;
+      moveScene = scene;
       audio ??= createAudio();
       audioOk = true;
       setPhase('playing');
       trackStellaTour('started', TOUR_STEPS[0].id, true);
-      playStep(0);
+      showStep(0);
     },
-    offer() {
-      if (phase === 'idle') setPhase('ready');
+    pause() {
+      if (phase !== 'playing') return;
+      silence();
+      setPhase('paused');
+    },
+    resume() {
+      if (phase !== 'paused') return;
+      setPhase('playing');
+      speak();
+    },
+    next() {
+      if (stepIndex + 1 < TOUR_STEPS.length) {
+        if (phase === 'done') setPhase('playing');
+        showStep(stepIndex + 1);
+      } else {
+        silence();
+        if (phase !== 'done') { setPhase('done'); trackStellaTour('completed', stepId(), audioOk); }
+      }
+    },
+    back() {
+      if (phase === 'done') setPhase('playing');
+      showStep(Math.max(0, stepIndex - 1));
     },
     stop() {
       silence();
-      if (phase === 'playing') trackStellaTour('stopped', stepId(), audioOk);
+      if (phase === 'playing' || phase === 'paused') trackStellaTour('stopped', stepId(), audioOk);
       setPhase('idle');
     },
     /** The visitor chose to talk to Stella from the tour card. */
@@ -112,7 +151,10 @@ export function useStellaTour() {
     stepIndex,
     total: TOUR_STEPS.length,
     start: player.start,
-    offer: player.offer,
+    pause: player.pause,
+    resume: player.resume,
+    next: player.next,
+    back: player.back,
     stop: player.stop,
     talk: player.talk,
   };

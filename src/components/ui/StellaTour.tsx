@@ -6,10 +6,10 @@ import './StellaTour.css';
 const STAR_PATH = 'M12 1C12 1 14 8 16 10C18 12 23 12 23 12C23 12 18 12 16 14C14 16 12 23 12 23C12 23 10 16 8 14C6 12 1 12 1 12C1 12 6 12 8 10C10 8 12 1 12 1Z';
 
 /**
- * Caption card for Stella's narrated tour. Playing it needs no microphone; the
- * last line hands off to a real conversation for anyone who wants one.
+ * Caption card for Stella's narrated tour of the Rubin finds. Playing it needs
+ * no microphone; the last line hands off to a real conversation.
  */
-export function StellaTour({ phase, step, stepIndex, total, canTalk, onStart, onStop, onTalk }: {
+export function StellaTour({ phase, step, stepIndex, total, canTalk, onStart, onPause, onResume, onBack, onNext, onStop, onTalk }: {
   phase: TourPhase;
   step: TourStep;
   stepIndex: number;
@@ -17,22 +17,30 @@ export function StellaTour({ phase, step, stepIndex, total, canTalk, onStart, on
   /** Stella's conversation is configured and has credit. */
   canTalk: boolean;
   onStart: () => void;
+  onPause: () => void;
+  onResume: () => void;
+  onBack: () => void;
+  onNext: () => void;
   onStop: () => void;
   onTalk: () => void;
 }) {
   useEffect(() => {
     if (phase === 'idle') return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onStop(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onStop();
+      else if (phase !== 'ready' && e.key === 'ArrowRight') onNext();
+      else if (phase !== 'ready' && e.key === 'ArrowLeft') onBack();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [phase, onStop]);
+  }, [phase, onStop, onNext, onBack]);
 
   if (phase === 'idle') return null;
 
-  const inviting = phase === 'done' || step.id === 'invite';
+  const last = stepIndex === total - 1;
 
   return (
-    <section className="stella-tour" aria-label="Tour with Stella">
+    <section className="stella-tour" aria-label="Tour of the Rubin finds with Stella">
       <header className="stella-tour__header">
         <svg className="stella-tour__star" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
           <path d={STAR_PATH} />
@@ -46,20 +54,20 @@ export function StellaTour({ phase, step, stepIndex, total, canTalk, onStart, on
           </span>
         )}
         <button type="button" className="stella-tour__close" onClick={onStop}
-          aria-label={phase === 'playing' ? 'Stop the tour' : 'Close'}>
+          aria-label={phase === 'done' || phase === 'ready' ? 'Close' : 'Stop the tour'}>
           <span aria-hidden="true">×</span>
         </button>
       </header>
 
       {phase === 'ready' ? (
         <>
-          <p className="stella-tour__title">Take a 1-minute tour with Stella</p>
+          <p className="stella-tour__title">Tour Rubin's new asteroids with Stella</p>
           <p className="stella-tour__text">
-            She'll fly you past Earth, Jupiter and Saturn to a mountain-sized asteroid. Turn your sound on!
+            A giant new telescope is finding thousands of space rocks. Stella will fly you to a few of the coolest. Turn your sound on!
           </p>
           <div className="stella-tour__actions">
             <button type="button" className="stella-tour__btn stella-tour__btn--primary" onClick={onStart}>
-              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor" /></svg>
+              <PlayIcon />
               Start the tour
             </button>
             <button type="button" className="stella-tour__btn" onClick={onStop}>No thanks</button>
@@ -68,10 +76,10 @@ export function StellaTour({ phase, step, stepIndex, total, canTalk, onStart, on
       ) : (
         <>
           <p className="stella-tour__text stella-tour__caption" aria-live="polite">{step.text}</p>
-          {step.target.kind === 'rubin' && (
-            <p className="stella-tour__note">Artist's impression: nobody knows this asteroid's real shape yet.</p>
+          {step.target.findId && (
+            <p className="stella-tour__note">Artist's impression: nobody knows their real shapes yet.</p>
           )}
-          {inviting && (
+          {last ? (
             <div className="stella-tour__actions">
               {canTalk && (
                 <button type="button" className="stella-tour__btn stella-tour__btn--primary" onClick={onTalk}>
@@ -79,14 +87,40 @@ export function StellaTour({ phase, step, stepIndex, total, canTalk, onStart, on
                   Talk to Stella
                 </button>
               )}
-              <button type="button" className="stella-tour__btn" onClick={onStop}>Keep exploring</button>
+              <button type="button" className="stella-tour__btn" onClick={onStop}>Explore the finds</button>
+              <button type="button" className="stella-tour__icon-btn" onClick={onBack} aria-label="Previous">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+            </div>
+          ) : (
+            <div className="stella-tour__controls">
+              <button type="button" className="stella-tour__icon-btn" onClick={onBack} disabled={stepIndex === 0} aria-label="Previous">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+              {phase === 'paused' ? (
+                <button type="button" className="stella-tour__icon-btn" onClick={onResume} aria-label="Play">
+                  <PlayIcon size={18} />
+                </button>
+              ) : (
+                <button type="button" className="stella-tour__icon-btn" onClick={onPause} aria-label="Pause">
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" /></svg>
+                </button>
+              )}
+              <button type="button" className="stella-tour__btn stella-tour__btn--next" onClick={onNext}>
+                Next
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
             </div>
           )}
-          {canTalk && inviting && (
+          {canTalk && last && (
             <p className="stella-tour__note">Talking uses your microphone. Ask a grown-up first!</p>
           )}
         </>
       )}
     </section>
   );
+}
+
+function PlayIcon({ size = 14 }: { size?: number }) {
+  return <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor" /></svg>;
 }

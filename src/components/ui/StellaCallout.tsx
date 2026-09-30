@@ -146,10 +146,10 @@ export function StellaCallout({ available, suppressed, toolbarOpen, onVisibleCha
       role="status"
     >
       <div className="stella-callout__body">
-        <p className="stella-callout__title">New here? Let Stella show you around</p>
+        <p className="stella-callout__title">Meet the asteroids a giant new telescope just found</p>
         <button type="button" className="stella-callout__tour" onClick={takeTour}>
           <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor" /></svg>
-          Take the 1-minute tour
+          Tour them with Stella
         </button>
         <p className="stella-callout__text">
           Got a question? {shown.target === 'menu' ? 'Open the menu and tap the ' : `${touch ? 'Tap' : 'Click'} the `}

@@ -148,6 +148,49 @@
   outline-offset: 2px;
 }
 
+.stella-tour__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.stella-tour__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  background: transparent;
+  color: #f3f5fa;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.stella-tour__icon-btn:hover,
+.stella-tour__icon-btn:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.stella-tour__icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  background: transparent;
+}
+
+.stella-tour__icon-btn:focus-visible {
+  outline: 2px solid #ffb547;
+  outline-offset: 2px;
+}
+
+.stella-tour__btn--next {
+  margin-left: auto;
+  border-color: rgba(255, 181, 71, 0.6);
+  color: #ffb547;
+}
+
 @media (max-width: 899px) {
   .stella-tour {
     bottom: 72px;

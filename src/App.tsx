@@ -85,22 +85,14 @@ function App() {
   useEffect(() => { tourSceneRef.current = { navLevel: nav.level, rubinSelectedId }; });
   const applyTourTarget = useCallback((target: TourTarget) => {
     closeTides(false);
-    if (target.kind === 'planet') {
-      goToPlanet(target.planetId);
-      return;
-    }
     if (tourSceneRef.current.navLevel !== 'system') goToSystem();
-    if (target.kind === 'rubin') {
-      setShowRubin(true);
-      if (tourSceneRef.current.rubinSelectedId !== target.findId) selectRubin(target.findId, 'tour');
-    } else {
-      setShowRubin(false);
-      selectRubin(null);
-    }
-  }, [closeTides, goToPlanet, goToSystem, selectRubin]);
+    setShowRubin(true);
+    if (tourSceneRef.current.rubinSelectedId !== target.findId) selectRubin(target.findId, target.findId ? 'tour' : undefined);
+    setRubinView(target.view ?? 'follow');
+  }, [closeTides, goToSystem, selectRubin]);
   const tour = useStellaTour();
-  const tourPlaying = tour.phase === 'playing';
-  const { start: beginTour, offer: offerTour } = tour;
+  const tourActive = tour.phase === 'playing' || tour.phase === 'paused' || tour.phase === 'done';
+  const { start: beginTour } = tour;
 
   // "Their real spots, right now" is only true in the Orrery at the present
   // moment and in real time; the visitor's own speed comes back afterwards.
@@ -115,16 +107,17 @@ function App() {
     beginTour(applyTourTarget);
   }, [setMode, setDate, setRate, rate, beginTour, applyTourTarget]);
   useEffect(() => {
-    if (tour.phase === 'playing' || rateBeforeTourRef.current === null) return;
+    if (tour.phase !== 'idle' || rateBeforeTourRef.current === null) return;
     setRate(rateBeforeTourRef.current);
     rateBeforeTourRef.current = null;
   }, [tour.phase, setRate]);
 
-  // Share links: /rubin[/find] opens the finds layer on a find; /tour offers the tour.
+  // Share links: /rubin[/find] opens the finds layer on a find; /tour starts
+  // the tour (or shows its start card if the browser blocks sound until a tap).
   useEffect(() => {
     if (!landingIntent) return;
     if (landingIntent.kind === 'tour') {
-      offerTour();
+      startTour();
     } else {
       setMode('orrery');
       setShowRubin(true);
@@ -133,7 +126,7 @@ function App() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hideDetails = cinemaMode || isMobile || tourPlaying;
+  const hideDetails = cinemaMode || isMobile || tourActive;
 
   // Reset the mission HUD dismissed state whenever the user (re-)enters
   // mission view, so the info card shows fresh on each visit.
@@ -393,7 +386,7 @@ function App() {
         rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubinFromScene } : null}
       />
 
-      {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && tour.phase !== 'playing' && tour.phase !== 'done' && (
+      {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && (tour.phase === 'idle' || tour.phase === 'ready') && (
         <RubinPanel
           asteroids={rubinAsteroids}
           selectedId={rubinSelectedId}
@@ -589,6 +582,10 @@ function App() {
         total={tour.total}
         canTalk={!!voice.agentId && stella.available}
         onStart={startTour}
+        onPause={tour.pause}
+        onResume={tour.resume}
+        onBack={tour.back}
+        onNext={tour.next}
         onStop={tour.stop}
         onTalk={() => {
           tour.talk();
@@ -624,7 +621,7 @@ function App() {
         </a>
       )}
 
-      {nav.level !== 'system' && !tourPlaying && (hideDetails || nav.level === 'mission' || !!tides.state) && (
+      {nav.level !== 'system' && !tourActive && (hideDetails || nav.level === 'mission' || !!tides.state) && (
         <div className="app__cinema-nav">
           <button
             className="app__cinema-nav-btn"

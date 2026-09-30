@@ -23,7 +23,7 @@ for (const step of steps) {
     method: 'POST',
     headers: { 'xi-api-key': key, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      text: step.text,
+      text: step.speech ?? step.text,
       model_id: 'eleven_multilingual_v2',
       voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.3, speed: 1.0 },
     }),

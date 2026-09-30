@@ -1,53 +1,67 @@
 /**
- * Stella's narrated tour: pre-recorded, so it needs no microphone and spends
- * no conversation credit. Audio lives in public/audio/tour/<id>.mp3 and is
- * regenerated from these lines by `node scripts/tour/generate-audio.mjs`.
+ * Stella's narrated tour of the Rubin Observatory finds: pre-recorded, so it
+ * needs no microphone and spends no conversation credit. Audio lives in
+ * public/audio/tour/<id>.mp3 and is regenerated from `speech` (or `text`) by
+ * `node scripts/tour/generate-audio.mjs`.
  *
- * Sources: Earth's orbital speed (29.8 km/s), Saturn's ring particles and
- * Jupiter's volume (1,300+ Earths) from NASA Science planet pages; 2025 MN45
- * (0.71 km, one turn in 1.88 minutes) from docs/rubin-asteroids-research-2026-09-28.md.
+ * Figures match src/data/rubinAsteroids.ts and the verified-facts table in
+ * docs/rubin-asteroids-research-2026-09-28.md (snapshot pairs about 33 minutes
+ * apart; 11,000+ new asteroids from about 6 weeks of 2025 testing).
  */
-export type TourTarget =
-  | { kind: 'system' }
-  | { kind: 'planet'; planetId: string }
-  | { kind: 'rubin'; findId: string };
+export interface TourTarget {
+  /** The find to fly to, or null for the whole solar system with the finds layer on. */
+  findId: string | null;
+  view?: 'follow' | 'orbit';
+}
 
 export interface TourStep {
   id: string;
   target: TourTarget;
+  /** The caption. */
   text: string;
+  /** What Stella says, when designations need spelling out for text-to-speech. */
+  speech?: string;
 }
 
 export const TOUR_STEPS: TourStep[] = [
   {
     id: 'hello',
-    target: { kind: 'system' },
-    text: "Hi, I'm Stella, your space guide! These are the planets in their real spots around the Sun, right now. I squished the distances so they all fit.",
+    target: { findId: null },
+    text: "Hi, I'm Stella! Let's go asteroid hunting. A giant new telescope, the Rubin Observatory, photographs each patch of sky twice, about half an hour apart. Stars stay put. Anything that moved is something new!",
   },
   {
-    id: 'earth',
-    target: { kind: 'planet', planetId: 'earth' },
-    text: "That's Earth, our home. Right now it's zooming around the Sun at about 30 kilometers every second!",
+    id: 'count',
+    target: { findId: null },
+    text: 'In just six weeks of testing, Rubin found more than 11,000 new asteroids. Every dot here is one of its finds. Let\'s visit a few!',
   },
   {
-    id: 'jupiter',
-    target: { kind: 'planet', planetId: 'jupiter' },
-    text: 'Here comes Jupiter, the biggest planet. More than 1,300 Earths could fit inside it.',
+    id: 'spinner',
+    target: { findId: '2025-mn45' },
+    text: "This is 2025 MN45, the speedy spinner. It's as big as a mountain, and it spins all the way around in under two minutes! It has to be solid rock. A pile of rubble would fly apart.",
+    speech: "This is twenty twenty-five M N forty-five, the speedy spinner. It's as big as a mountain, and it spins all the way around in under two minutes! It has to be solid rock. A pile of rubble would fly apart.",
   },
   {
-    id: 'saturn',
-    target: { kind: 'planet', planetId: 'saturn' },
-    text: "Saturn's rings look solid, but they're made of billions of pieces of ice. Some are as small as a grain of sand, and some are as big as a house.",
+    id: 'quasi-moon',
+    target: { findId: '2025-pn7' },
+    text: "See Earth right beside it? 2025 PN7 goes around the Sun in step with us, so it seems to stay nearby. It's called a quasi-moon. It isn't a real moon, because it orbits the Sun, not Earth.",
+    speech: "See Earth right beside it? Twenty twenty-five P N seven goes around the Sun in step with us, so it seems to stay nearby. It's called a quasi-moon. It isn't a real moon, because it orbits the Sun, not Earth.",
   },
   {
-    id: 'rubin',
-    target: { kind: 'rubin', findId: '2025-mn45' },
-    text: "And this rock was discovered just last year by a brand-new telescope, the Rubin Observatory. It's as big as a mountain, and it spins all the way around in under two minutes!",
+    id: 'far-traveler',
+    target: { findId: '2025-ls2', view: 'orbit' },
+    text: '2025 LS2 is a long-distance traveler. Its stretched-out orbit swings about 1,000 times farther from the Sun than Earth. One trip around takes about 12,000 years!',
+    speech: 'Twenty twenty-five L S two is a long-distance traveler. Its stretched-out orbit swings about one thousand times farther from the Sun than Earth. One trip around takes about twelve thousand years!',
+  },
+  {
+    id: 'interstellar',
+    target: { findId: 'c-2025-n1' },
+    text: "And this is 3I/ATLAS, a visitor from another star! It's only the third one ever found. Rubin photographed it by accident, 10 days before anyone knew it was there. It's just passing through, and it will never come back.",
+    speech: "And this is three-I Atlas, a visitor from another star! It's only the third one ever found. Rubin photographed it by accident, ten days before anyone knew it was there. It's just passing through, and it will never come back.",
   },
   {
     id: 'invite',
-    target: { kind: 'rubin', findId: '2025-mn45' },
-    text: "Want to know more? You can ask me anything, out loud! Or keep exploring on your own. There's a whole solar system out there!",
+    target: { findId: null },
+    text: 'Those are just a few of Rubin\'s finds. Tap any of them to explore, or ask me anything, out loud!',
   },
 ];
 
@@ -55,8 +69,8 @@ export function tourAudioSrc(step: TourStep): string {
   return `/audio/tour/${step.id}.mp3`;
 }
 
-/** Caption-reading pace for when audio can't play (muted, blocked, or failed to load). */
+/** Caption-reading pace for when audio can't play (missing file or no network). */
 export function fallbackDurationMs(text: string): number {
   const words = text.split(/\s+/).length;
-  return Math.max(3500, (words / 2.6) * 1000 + 1200);
+  return Math.max(3500, (words / 3) * 1000 + 1000);
 }
