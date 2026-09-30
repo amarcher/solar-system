@@ -4,6 +4,7 @@ import { TOUR_STEPS, type TourTarget } from './tourScript';
 import { getRubinAsteroidById } from '../data/rubinAsteroids';
 
 vi.mock('../utils/analytics', () => ({ trackStellaTour: vi.fn() }));
+const { trackStellaTour } = await import('../utils/analytics');
 
 class FakeAudio {
   src = '';
@@ -27,7 +28,7 @@ function setup(audio = new FakeAudio()) {
   return { player, audio, phases, targets, step: () => step, scene: (t: TourTarget) => targets.push(t) };
 }
 
-beforeEach(() => { vi.useFakeTimers(); });
+beforeEach(() => { vi.useFakeTimers(); vi.mocked(trackStellaTour).mockClear(); });
 afterEach(() => { vi.useRealTimers(); });
 
 describe('tour script', () => {
@@ -58,6 +59,17 @@ describe('createTourPlayer', () => {
     player.start(scene);
     await vi.advanceTimersByTimeAsync(60_000);
     expect(phases).toEqual(['playing', 'ready']);
+    expect(trackStellaTour).not.toHaveBeenCalled();
+  });
+
+  it('counts a start once Stella is heard', async () => {
+    const { player, scene } = setup();
+    player.start(scene);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(trackStellaTour).toHaveBeenCalledWith('started', 'hello', true);
+    player.next();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(vi.mocked(trackStellaTour).mock.calls.filter(([a]) => a === 'started')).toHaveLength(1);
   });
 
   it('falls back to captions when the audio files are missing, and still finishes', async () => {
