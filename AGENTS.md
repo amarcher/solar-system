@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Shared space-content workflow
+
+For creating, revising, capturing or publishing space content, read [docs/space-content-workflow.md](docs/space-content-workflow.md) and its canonical sister-project playbook. The completed tides campaign is a reference, not an unpublished queue. Keep later user decisions and verified publication receipts authoritative over older plans.
+
 ## Project Overview
 
 3D interactive solar system explorer for kids (ages 6-14), parents, and teachers. Forked from the [periodic table app](../periodic-table/) to validate the "AI voice guide + interactive educational content" platform pattern. Same stack, same UX patterns, different domain.

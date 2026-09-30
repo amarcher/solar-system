@@ -52,3 +52,8 @@ test_configs/
 .env*.local
 .vercel
 .env*
+
+# Local-only working files (the repo is public)
+output/
+docs/storyboards/
+docs/handoff-*.md
