@@ -7,7 +7,7 @@ import type { Mission } from '../../types/mission';
 import { CelestialBackdrop } from './CelestialBackdrop';
 import { SunMesh } from './Sun';
 import { PlanetOrbit } from './PlanetOrbit';
-import { AsteroidBelt } from './AsteroidBelt';
+import { DebrisBelts } from './DebrisBelts';
 import { CameraRig, type CinematicShot } from './CameraRig';
 import { RealisticScene } from './RealisticScene';
 import { rubinSceneExtent, rubinVisualRadius, type RubinAsteroid } from '../../data/rubinAsteroids';
@@ -71,6 +71,7 @@ interface SolarSystemSceneProps {
   onMoonClick: (planetId: string, moonId: string) => void;
   onSunClick: () => void;
   showLabels?: boolean;
+  showBelts?: boolean;
   showConstellations?: boolean;
   deviceOrientation?: boolean;
   deviceHeadingRef?: React.RefObject<number | null>;
@@ -82,7 +83,7 @@ interface SolarSystemSceneProps {
   cinematicShot?: CinematicShot | null;
 }
 
-export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, rubin = null, tides = null, cinematicShot = null }: SolarSystemSceneProps) {
+export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showBelts = false, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, orreryMission, rubin = null, tides = null, cinematicShot = null }: SolarSystemSceneProps) {
   const rubinSelection = rubin?.asteroids.find((a) => a.id === rubin.selectedId);
   const rubinFocus = rubinSelection && rubin
     ? { id: rubinSelection.id, view: rubin.view, fitRadius: rubinSceneExtent(rubinSelection) * 1.1, bodyRadius: rubinVisualRadius(rubinSelection.diameterKm) }
@@ -151,7 +152,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
               /></HeliocentricOrigin>
             </group>
             <group visible={!hidesSystemContext}>
-              <AsteroidBelt paused={paused} />
+              {showBelts && !hidesSystemContext && <DebrisBelts paused={paused} showLabels={showLabels && !isZoomedIn} />}
             </group>
 
             {planets.map((planet) => {
@@ -190,6 +191,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             onSunClick={onSunClick}
             showLabels={showLabels}
             showConstellations={showConstellations}
+            showBelts={showBelts}
             activeMission={orreryMission}
             rubin={rubin}
             paused={reducedMotion}

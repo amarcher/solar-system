@@ -20,6 +20,7 @@ export function AstronomyProvider({ children }: { children: ReactNode }) {
     benchmarkEnabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 86400
   ));
   const rateRef = useRef<number>(rate);
+  const [dateRevision, setDateRevision] = useState(0);
 
   // Throttled display-time sync (~1Hz)
   useEffect(() => {
@@ -47,6 +48,7 @@ export function AstronomyProvider({ children }: { children: ReactNode }) {
   const setDate = useCallback((d: Date) => {
     timeRef.current = d.getTime();
     setDisplayTime(d);
+    setDateRevision(v => v + 1);
   }, []);
 
   const setRate = useCallback((r: number) => {
@@ -80,6 +82,7 @@ export function AstronomyProvider({ children }: { children: ReactNode }) {
         displayTime,
         timeRef,
         rate,
+        dateRevision,
         setDate,
         setRate,
         observer,

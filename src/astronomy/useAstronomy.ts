@@ -11,6 +11,8 @@ export interface AstronomyContextValue {
   displayTime: Date;
   /** Ref to current epoch ms — read this in useFrame for zero-rerender position updates. */
   timeRef: React.RefObject<number>;
+  /** Changes only for an explicit date/Now request, not playback ticks. */
+  dateRevision: number;
   rate: number;
   setDate: (d: Date) => void;
   setRate: (r: number) => void;

@@ -52,3 +52,15 @@
   font-size: 10px;
   color: rgba(255, 255, 255, 0.65);
 }
+
+.scene-label--belt {
+  display: block;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  cursor: default;
+}
+.scene-label--belt small { display: block; font-size: 9px; font-weight: 400; opacity: 0.8; }
+.scene-label--belt-asteroid { color: #e9c581; }
+.scene-label--belt-kuiper { color: #90cbe0; }

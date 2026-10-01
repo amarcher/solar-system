@@ -10,6 +10,7 @@ export interface SceneVoiceState {
   mode: ViewMode;
   tides: boolean;
   constellations: boolean;
+  belts?: boolean;
   quality: QualityPreference;
   missionActive: boolean;
   detailsVisible: boolean;
@@ -76,6 +77,8 @@ export function buildSceneContext(state: SceneVoiceState): string {
   if (state.mode === 'artistic') lines.push('Explore uses illustrative motion and a star-rich artistic Milky Way panorama. It is not a dated sky chart. Constellation lines are unavailable here.');
   else lines.push(`The display-enhanced NASA/Gaia Milky Way background and catalog stars share the celestial frame. Brightness is enhanced, not a naked-eye visibility forecast. Western constellation guide lines are ${state.constellations ? 'on' : 'off'}; they are imagined patterns, not physical connections. No selectable nebula, galaxy tour, or aurora control is implemented.`);
   if (state.mode !== 'sky' && !state.missionActive && (state.nav.level === 'planet' || state.nav.level === 'moon')) lines.push('Focused view spreads heliocentric positions and orbit paths apart to keep the local moon system readable. Body sizes and local moon offsets stay unchanged. Distances and sizes are illustrative, not one physical scale; do not infer collisions or forces from screen spacing.');
+  const beltsVisible = state.belts && state.mode !== 'sky' && state.nav.level !== 'sun' && state.nav.level !== 'mission' && !state.missionActive;
+  lines.push(beltsVisible ? 'Asteroid and Kuiper belts are shown with enlarged illustrative markers. These are sparse, thick populations left over from planet formation, not dense Saturn-like rings or individually catalogued positions. The asteroid belt lies between Mars and Jupiter; the Kuiper Belt lies beyond Neptune. The menu has a show/hide belts toggle; no voice tool controls it yet.' : 'The illustrative asteroid and Kuiper belt layer is hidden in this view. A show/hide belts toggle is available in the Explore and Orrery menu.');
   if (state.nav.level === 'moon' && state.mode !== 'sky') {
     const asset = textureManifest.find(asset => asset.bodyId === (state.nav.level === 'moon' ? state.nav.moonId : '') && asset.kind === 'diffuse');
     lines.push(asset ? `Surface map: ${asset.coverage ?? 'A bundled surface map is available; do not assume complete observed coverage or exact current lighting.'} ${asset.illustration ? 'This surface is invented, not observed; never describe its craters or features as real.' : asset.provenance.status === 'verified' ? `Credit: ${asset.provenance.credit}.` : 'Individual source attribution remains under review.'} Texture loading or quality can limit visible detail.` : 'This moon has no mapped texture in the asset inventory; the rendered surface is an illustration. Do not describe visible photographic detail.');
