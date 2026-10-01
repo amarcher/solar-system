@@ -62,6 +62,7 @@ function App() {
   const graphics = useGraphicsQuality();
   const { close: closeTides, state: tidesState } = tides;
   const [showLabels, setShowLabels] = useState(true);
+  const [showBelts, setShowBelts] = useState(false);
   const [showConstellations, setShowConstellations] = useState(false);
   const [showRubin, setShowRubin] = useState(false);
   const [rubinSelectedId, setRubinSelectedId] = useState<string | null>(null);
@@ -255,7 +256,7 @@ function App() {
 
   const voice = useSolarConversation({
     currentRate: rate,
-    scene: { detailsVisible: !hideDetails && !tides.state, constellations: showConstellations, quality: graphics.preference, missionActive: orreryMissionActive || nav.level === 'mission', rubin: { visible: showRubin, selectedId: rubinSelectedId } },
+    scene: { belts: showBelts, detailsVisible: !hideDetails && !tides.state, constellations: showConstellations, quality: graphics.preference, missionActive: orreryMissionActive || nav.level === 'mission', rubin: { visible: showRubin, selectedId: rubinSelectedId } },
     onSetTides: (enabled) => {
       if (enabled) { goToPlanet('earth'); tides.open(); }
       else closeTides(false);
@@ -382,6 +383,7 @@ function App() {
         onMoonClick={handleSceneMoonClick}
         onSunClick={handleSunClick}
         showLabels={showLabels}
+        showBelts={showBelts}
         showConstellations={showConstellations}
         deviceOrientation={deviceOrientation.active}
         deviceHeadingRef={deviceOrientation.headingRef}
@@ -428,6 +430,18 @@ function App() {
         </button>
         <div className="app__toolbar-items">
           <GraphicsSettings />
+          {mode !== 'sky' && (
+            <button className={`app__toolbar-btn${showBelts ? ' app__toolbar-btn--active' : ''}`}
+              type="button" aria-label={showBelts ? 'Hide asteroid and Kuiper belts' : 'Show asteroid and Kuiper belts'}
+              title="Asteroid and Kuiper belts — enlarged markers" aria-pressed={showBelts}
+              onClick={() => { setShowBelts(v => !v); setToolbarOpen(false); }}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <ellipse cx="12" cy="12" rx="10" ry="6" strokeDasharray="1 2.5" transform="rotate(-25 12 12)" />
+                <ellipse cx="12" cy="12" rx="6" ry="3.5" strokeDasharray="1 2" transform="rotate(-25 12 12)" />
+                <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+              </svg>
+            </button>
+          )}
           {mode !== 'artistic' && (
             <button
               className="app__toolbar-btn"
