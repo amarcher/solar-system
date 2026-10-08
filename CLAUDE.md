@@ -69,7 +69,7 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 
 ### Data (accuracy is critical — verify against authoritative sources)
 - `src/data/planets.ts` — 10 planets (Mercury–Neptune + Pluto + Ceres) with scientific data + 3D scene values
-- `src/data/moons.ts` — ~27 curated notable moons with `getMoonsByPlanet()` and `getMoonById()`. Moon rotation: most are tidally locked (no `rotationPeriod` needed — defaults to `orbitalPeriod * 24`). Exceptions: `chaoticRotation: true` (Hyperion, Nix, Hydra) or explicit `rotationPeriod` in hours (Nereid).
+- `src/data/moons.ts` — ~34 curated notable moons with `getMoonsByPlanet()` and `getMoonById()`. Moon rotation: most are tidally locked (no `rotationPeriod` needed — defaults to `orbitalPeriod * 24`). Exceptions: `chaoticRotation: true` (Hyperion, Nix, Hydra), explicit `rotationPeriod` in hours (Nereid, Himalia), or `rotationUnknown: true` (shown as "Not known yet"). Captured moons (Himalia, Valetudo, Carme, Pasiphae) set `orbitEccentricity` and `orbitInclination`, which `src/astronomy/moonOrbitShape.ts` turns into a tilted, stretched path in Explore and Orrery; all other moons stay on flat circles.
 - `src/data/sun.ts` — Sun data with 6 peelable layers (corona → core)
 - `src/data/rubinAsteroids.ts` — hand-picked Rubin Observatory finds (names, kid blurbs, discovered-vs-seen). Orbits in `rubinAsteroidOrbits.json`, refreshed from JPL by `node scripts/rubin/fetch-orbits.mjs`
 - `src/data/videoManifest.ts` — keyed by string ID (not atomic number like periodic table)

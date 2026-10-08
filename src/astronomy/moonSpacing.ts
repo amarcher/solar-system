@@ -2,6 +2,7 @@ import { getMoonsByPlanet } from '../data/moons';
 import { planets, getPlanetById } from '../data/planets';
 import type { Moon } from '../types/celestialBody';
 import { planetDisplayExtent } from '../utils/planetExtent';
+import { MOON_LOG_SPREAD } from './moonOrbitShape';
 
 /** Apply one softened physical diameter ratio so tiny moons remain visible. */
 export function orreryMoonBodyRadius(moon: Pick<Moon, 'diameter' | 'parentPlanetId'>): number {
@@ -20,7 +21,7 @@ for (const planet of planets) {
   const system = getMoonsByPlanet(planet.id).sort((a, b) => a.distanceFromPlanet - b.distanceFromPlanet);
   const orbits: number[] = [];
   system.forEach((moon, index) => {
-    const spread = Math.log2(moon.distanceFromPlanet / system[0].distanceFromPlanet) * 0.6;
+    const spread = Math.log2(moon.distanceFromPlanet / system[0].distanceFromPlanet) * MOON_LOG_SPREAD;
     const desired = planetDisplayExtent(planet) + planet.visualRadius * (1.25 + spread);
     const clearance = index === 0 ? 0 : orbits[index - 1] + bodyExtent(system[index - 1]) + bodyExtent(moon) + planet.visualRadius * 0.1;
     orbits.push(Math.max(desired, clearance));

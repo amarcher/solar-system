@@ -40,7 +40,7 @@ function meanMotion(el: KeplerElements): number {
   return GAUSS_K / Math.sqrt(a * a * a);
 }
 
-function solveElliptic(meanAnomaly: number, e: number): number {
+export function solveElliptic(meanAnomaly: number, e: number): number {
   const twoPi = Math.PI * 2;
   const m = ((meanAnomaly % twoPi) + twoPi) % twoPi;
   let E = e < 0.8 ? m : Math.PI;

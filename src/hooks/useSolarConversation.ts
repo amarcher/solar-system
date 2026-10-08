@@ -88,6 +88,10 @@ function buildMoonContext(moon: Moon, planet: Planet, detailsVisible: boolean): 
     `Notable feature: ${moon.notableFeature}`,
     `Diameter: ${moon.diameter.toLocaleString()} km. Gravity: ${moon.gravity} m/s².`,
     `Temperature: ${moon.meanTemperature}°C. Orbital period: ${moon.orbitalPeriod} days.`,
+    moon.orbitInclination !== undefined
+      ? `Its orbit is drawn tilted ${moon.orbitInclination}° and stretched into an oval${moon.retrograde ? ', and it travels backwards compared with the big moons' : ''}. The direction the oval points is illustrative.`
+      : '',
+    moon.rotationUnknown ? 'Nobody has measured how fast it spins yet; the spin on screen is a guess.' : '',
     '',
     moon.summary,
     '',

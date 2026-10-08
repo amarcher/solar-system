@@ -12,6 +12,7 @@ import { setMoonPosition } from '../../utils/planetPositions';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 import { useLabelBelow } from './useLabelBelow';
 import { weldSeamNormals } from '../../utils/weldSeamNormals';
+import { moonOrbitPath, moonOrbitPoint, moonOrbitShape, moonSpinHours } from '../../astronomy/moonOrbitShape';
 import { LUNAR_ORRERY_RADIUS, LUNAR_PATH_SEGMENTS, lunarOrreryPosition, nextLunarPathSample, sampleLunarOrreryPath, type LunarPathSample } from '../../astronomy/lunarOrrery';
 
 const TWO_PI = Math.PI * 2;
@@ -21,6 +22,7 @@ const MOON_COLORS: Record<string, string> = {
   moon: '#c8c8c0',
   phobos: '#8a7d6b', deimos: '#9e9282',
   io: '#d4b84a', europa: '#c4b699', ganymede: '#8a8478', callisto: '#5a5650', amalthea: '#b84030',
+  himalia: '#8d8a86', valetudo: '#8a8782', carme: '#a3857a', pasiphae: '#88868a',
   titan: '#d4a850', enceladus: '#f0f0f0', mimas: '#d0d0d0', rhea: '#b8b4a8',
   dione: '#e0dcd0', tethys: '#e8e4d8', iapetus: '#6a4a30', hyperion: '#a89880',
   titania: '#a8b0b8', oberon: '#8a7e72', miranda: '#b0b8c0', ariel: '#c8d0d8', umbriel: '#606058',
@@ -115,6 +117,8 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
   // Positive angle = clockwise from above (+X toward +Z), so prograde moons
   // need a decreasing angle to match prograde planet spin (+rotation.y).
   const orbitDirection = moon.retrograde ? 1 : -1;
+  const shape = useMemo(() => moonOrbitShape(moon), [moon]);
+  const pathPoints = useMemo(() => shape && moonOrbitPath(shape, radius), [shape, radius]);
 
   const { settings } = useGraphicsQuality();
   const diffuseMap = usePlanetTexture(moon.id, { detail: selected, maxWidth: settings.bodyWidth });
@@ -170,7 +174,8 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
       const elapsedDays = (simTime - j2000Ms) / 86_400_000;
       const orbitsCompleted = elapsedDays / moon.orbitalPeriod;
       const angle = (orbitsCompleted * TWO_PI * orbitDirection) % TWO_PI;
-      groupRef.current.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+      if (shape) moonOrbitPoint(shape, radius, angle, groupRef.current.position);
+      else groupRef.current.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
     }
 
     groupRef.current.getWorldPosition(worldPos.current);
@@ -192,7 +197,7 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
         moonMeshRef.current.rotation.y += angle * r2 / norm;
         moonMeshRef.current.rotation.z += angle * r3 / norm;
       } else {
-        const periodHours = moon.rotationPeriod ?? (moon.orbitalPeriod * 24);
+        const periodHours = moonSpinHours(moon);
         const periodSec = Math.abs(periodHours) * 3600;
         const angularVel = periodSec > 0 ? TWO_PI / periodSec : 0;
         const direction =
@@ -211,6 +216,11 @@ export function RealisticMoonOrbit({ moon, showLabel = true, onClick, selected =
           <bufferAttribute attach="attributes-position" args={[lunarPathPositions, 3]} />
         </bufferGeometry>
         <lineBasicMaterial color="#ffffff" transparent opacity={0.06} depthWrite={false} />
+      </lineLoop> : pathPoints ? <lineLoop visible={!selected}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[pathPoints, 3]} />
+        </bufferGeometry>
+        <lineBasicMaterial color="#ffffff" transparent opacity={0.12} depthWrite={false} />
       </lineLoop> : <mesh rotation-x={Math.PI / 2} visible={!selected}>
         <ringGeometry args={[radius - 0.01, radius + 0.01, 64]} />
         <meshBasicMaterial

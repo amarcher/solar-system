@@ -177,6 +177,112 @@ export const moons: Moon[] = [
     orbitRadius: 1.5,
     shape: 'irregular',
   },
+  // Captured outer moons. Orbits are JPL mean elements (JUP347, ecliptic frame):
+  // https://ssd.jpl.nasa.gov/sats/elem/. Only Himalia has a measured mass; the
+  // other gravities assume a density near 1 g/cm³, and temperatures are the
+  // estimate for a dark body at Jupiter's distance.
+  {
+    id: 'himalia',
+    name: 'Himalia',
+    parentPlanetId: 'jupiter',
+    diameter: 170,
+    gravity: 0.02,
+    meanTemperature: -150,
+    orbitalPeriod: 249.91,
+    distanceFromPlanet: 11_439_000,
+    discoveredBy: 'Charles Dillon Perrine',
+    yearDiscovered: 1904,
+    notableFeature: "The biggest of Jupiter's captured moons",
+    summary:
+      "Himalia is the largest of Jupiter's outer moons — dark, lumpy worlds that did not form with Jupiter but were caught by its gravity long ago. It circles about sixty times farther out than Amalthea, on a tilted, stretched path that takes more than eight months to complete.",
+    funFacts: [
+      'Himalia leads a family of moons on similar orbits, including Leda, Lysithea and Elara. They are probably pieces knocked off one captured asteroid.',
+      'Himalia reflects only about 4% of the sunlight that hits it, which makes it about as dark as charcoal.',
+      'One trip around Jupiter takes Himalia about 250 days. Io gets around in less than two.',
+    ],
+    orbitRadius: 3.9,
+    rotationPeriod: 7.78, // Pilcher et al. 2012
+    orbitEccentricity: 0.16,
+    orbitInclination: 28.4,
+    shape: 'irregular',
+  },
+  {
+    id: 'valetudo',
+    name: 'Valetudo',
+    parentPlanetId: 'jupiter',
+    diameter: 1,
+    gravity: 0.0001,
+    meanTemperature: -150,
+    orbitalPeriod: 522.07,
+    distanceFromPlanet: 18_690_100,
+    discoveredBy: 'Scott Sheppard and team',
+    yearDiscovered: 2016,
+    notableFeature: 'The oddball that travels against the traffic',
+    summary:
+      "Valetudo is a tiny moon, only about a kilometre across, with an orbit like no other moon of Jupiter. It travels the same way Jupiter spins, but its path crosses the paths of outer moons that go the opposite way. Its discoverers called it the oddball.",
+    funFacts: [
+      'Valetudo is like a car driving the wrong way down a motorway. A head-on crash with one of the backwards moons would grind both to dust.',
+      "It may be the last leftover piece of a bigger moon that was smashed apart in crashes like that long ago.",
+      "Valetudo is named after a great-granddaughter of the Roman god Jupiter, the goddess of health and hygiene.",
+    ],
+    orbitRadius: 4.3,
+    rotationUnknown: true,
+    orbitEccentricity: 0.217,
+    orbitInclination: 34.5,
+    shape: 'irregular',
+  },
+  {
+    id: 'carme',
+    name: 'Carme',
+    parentPlanetId: 'jupiter',
+    diameter: 46,
+    gravity: 0.006,
+    meanTemperature: -150,
+    orbitalPeriod: 719.28,
+    distanceFromPlanet: 23_139_200,
+    discoveredBy: 'Seth Barnes Nicholson',
+    yearDiscovered: 1938,
+    notableFeature: 'Orbits Jupiter backwards',
+    summary:
+      "Carme circles Jupiter the opposite way to the planet's spin and to all of its big moons. Nothing that formed alongside Jupiter could end up going backwards, so Carme was almost certainly a wandering asteroid that Jupiter captured.",
+    funFacts: [
+      'Carme is the biggest piece of a whole family of backwards moons. The others are probably chips knocked off it in a collision, and Carme still holds about 99% of the family’s mass.',
+      'Carme and its family are all the same light red colour, a clue that they were once one object.',
+      'One lap of Jupiter takes Carme almost two Earth years.',
+    ],
+    orbitRadius: 4.7,
+    retrograde: true,
+    rotationUnknown: true, // published periods disagree (10.4 h and 6.5 h)
+    orbitEccentricity: 0.261,
+    orbitInclination: 164.6,
+    shape: 'irregular',
+  },
+  {
+    id: 'pasiphae',
+    name: 'Pasiphae',
+    parentPlanetId: 'jupiter',
+    diameter: 60,
+    gravity: 0.008,
+    meanTemperature: -150,
+    orbitalPeriod: 734.42,
+    distanceFromPlanet: 23_463_200,
+    discoveredBy: 'Philibert Jacques Melotte',
+    yearDiscovered: 1908,
+    notableFeature: "Jupiter's largest backwards moon, on a very stretched orbit",
+    summary:
+      "Pasiphae is the largest of the moons that orbit Jupiter backwards. Its path is so stretched that its distance from Jupiter swings between about 14 million and 33 million km, and the Sun's gravity keeps tugging that path into new shapes.",
+    funFacts: [
+      "Out here Jupiter's grip is weak enough that the Sun's pull slowly swings Pasiphae's whole orbit around, like a hula hoop wobbling.",
+      'Pasiphae was found in 1908 on photographs taken at the Royal Observatory in Greenwich, England.',
+      'For 67 years it had no name and was simply called Jupiter VIII. It was named Pasiphae in 1975.',
+    ],
+    orbitRadius: 5.1,
+    retrograde: true,
+    rotationUnknown: true,
+    orbitEccentricity: 0.412,
+    orbitInclination: 148.3,
+    shape: 'irregular',
+  },
 
   // ─── Saturn ───────────────────────────────────────────────────────────────
   {

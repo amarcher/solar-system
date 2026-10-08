@@ -84,7 +84,7 @@ To add videos:
 ## Data
 
 - **10 planets**: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto, Ceres
-- **~27 curated moons**: The notable ones (Titan, Europa, Io, Ganymede, Enceladus, Triton, Charon, our Moon, etc.)
+- **~34 curated moons**: The notable ones (Titan, Europa, Io, Ganymede, Enceladus, Triton, Charon, our Moon, etc.), plus four of Jupiter's captured outer moons on tilted, stretched orbits
 - **The Sun**: Special entity with 6 interactive layers (Corona → Chromosphere → Photosphere → Convective Zone → Radiative Zone → Core)
 
 All scientific data should be verified against NASA/JPL sources.
