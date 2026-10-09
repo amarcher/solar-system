@@ -18,6 +18,9 @@ import { useAstronomy } from './astronomy/useAstronomy';
 import { ModeToggle } from './components/ui/ModeToggle';
 import { TimeControls } from './components/ui/TimeControls';
 import { ObserverPicker } from './components/ui/ObserverPicker';
+import { SkyFinder } from './components/ui/SkyFinder';
+import type { SkyBody } from './astronomy/skyFinder';
+import type { SkyLookRequest } from './components/scene/TerrestrialRig';
 import { useDeviceOrientation } from './astronomy/useDeviceOrientation';
 import { trackModeSwitch, trackRubinFindView, trackRubinToggle, type RubinSource } from './utils/analytics';
 import './App.css';
@@ -64,6 +67,7 @@ function App() {
   const [showLabels, setShowLabels] = useState(true);
   const [showBelts, setShowBelts] = useState(false);
   const [showConstellations, setShowConstellations] = useState(false);
+  const [skyLook, setSkyLook] = useState<SkyLookRequest | null>(null);
   const [showRubin, setShowRubin] = useState(false);
   const [rubinSelectedId, setRubinSelectedId] = useState<string | null>(null);
   const [rubinView, setRubinView] = useState<'follow' | 'orbit'>('follow');
@@ -177,6 +181,12 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
+
+  // Compass tracking owns the camera, so a finder tap takes it back first.
+  const findInSky = useCallback((body: SkyBody) => {
+    if (deviceOrientation.active) deviceOrientation.stop();
+    setSkyLook((previous) => ({ azimuth: body.azimuth, altitude: body.altitude, key: (previous?.key ?? 0) + 1 }));
+  }, [deviceOrientation]);
 
   const handlePlanetClick = useCallback((planetId: string) => {
     closeTides(false);
@@ -388,6 +398,7 @@ function App() {
         deviceOrientation={deviceOrientation.active}
         deviceHeadingRef={deviceOrientation.headingRef}
         devicePitchRef={deviceOrientation.pitchRef}
+        skyLook={skyLook}
         orreryMission={orreryMissionActive ? getMissionById('artemis-2') : undefined}
         cinematicShot={tour.phase === 'idle' ? null : tourShot}
         rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubinFromScene } : null}
@@ -732,6 +743,7 @@ function App() {
       {mode === 'sky' && (
         <>
           <ObserverPicker />
+          {!cinemaMode && <SkyFinder planets={planets} onFind={findInSky} />}
           {deviceOrientation.supported && (
             <button
               className={`app__device-orient-btn${deviceOrientation.active ? ' app__device-orient-btn--active' : ''}`}
