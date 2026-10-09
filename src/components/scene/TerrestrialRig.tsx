@@ -1,9 +1,21 @@
-import { useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { CameraControls } from '@react-three/drei';
 import type CameraControlsImpl from 'camera-controls';
+import { useAstronomy } from '../../astronomy/useAstronomy';
+import * as AstronomyService from '../../astronomy/AstronomyService';
+import { lookAtBody, openingLook, shortestTurn, type SkyBody, type SkyLook } from '../../astronomy/skyFinder';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 const DEG2RAD = Math.PI / 180;
+
+/** Bodies the opening view may face; see openingLook. */
+const OPENING_BODIES = ['venus', 'jupiter', 'mars', 'saturn', 'moon', 'mercury'];
+
+/** A request to turn the view toward a point in the sky. `key` changes per request. */
+export interface SkyLookRequest extends SkyLook {
+  key: number;
+}
 
 interface TerrestrialRigProps {
   /** When true, camera follows device orientation instead of manual drag */
@@ -12,14 +24,30 @@ interface TerrestrialRigProps {
   headingRef?: React.RefObject<number | null>;
   /** Ref to phone pitch (beta) in degrees (0=flat, 90=upright). Read per-frame. */
   pitchRef?: React.RefObject<number | null>;
+  /** Turn toward this point (the finder's "show me Saturn"). */
+  look?: SkyLookRequest | null;
 }
 
 /**
  * Camera fixed at the origin (observer on Earth), looking up/around
  * in altitude-azimuth style. Supports device orientation for mobile.
  */
-export function TerrestrialRig({ deviceOrientation, headingRef, pitchRef }: TerrestrialRigProps) {
+export function TerrestrialRig({ deviceOrientation, headingRef, pitchRef, look }: TerrestrialRigProps) {
   const controlsRef = useRef<CameraControlsImpl>(null);
+  const { engineReady, observer, timeRef } = useAstronomy();
+  const reducedMotion = useReducedMotion();
+  // Once the user has steered (drag or finder), the opening view stops re-aiming.
+  const steered = useRef(false);
+  const opened = useRef(false);
+
+  // The camera orbits a target 0.01 away, looking through it: a look
+  // direction of (azimuth, altitude) is orbit angles (-azimuth, 90° + altitude).
+  const turnTo = useCallback((target: SkyLook, animate: boolean) => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    const azimuth = controls.azimuthAngle + shortestTurn(controls.azimuthAngle, -target.azimuth * DEG2RAD);
+    controls.rotateTo(azimuth, Math.PI / 2 + target.altitude * DEG2RAD, animate);
+  }, []);
 
   useEffect(() => {
     const controls = controlsRef.current;
@@ -30,7 +58,34 @@ export function TerrestrialRig({ deviceOrientation, headingRef, pitchRef }: Terr
     // the observer 50 units above the ground when it clamps the distance.
     controls.setLookAt(0, 0, 0, 0, 0.01, 0, false);
     controls.smoothTime = 0.25;
+
+    const onSteer = () => { steered.current = true; };
+    controls.addEventListener('controlstart', onSteer);
+    return () => controls.removeEventListener('controlstart', onSteer);
   }, []);
+
+  // Open facing the planets rather than the (usually empty) zenith. Re-aim
+  // when geolocation lands a moment later, unless the user has already steered.
+  useEffect(() => {
+    if (!engineReady || steered.current || deviceOrientation) return;
+    const date = new Date(timeRef.current);
+    const bodies: SkyBody[] = [];
+    for (const id of OPENING_BODIES) {
+      try {
+        bodies.push({ id, name: id, ...AstronomyService.getHorizontalPosition(id, date, observer) });
+      } catch { /* skip a body the engine cannot place */ }
+    }
+    turnTo(openingLook(bodies, observer.latitude), opened.current && !reducedMotion);
+    opened.current = true;
+  }, [engineReady, observer, deviceOrientation, timeRef, turnTo, reducedMotion]);
+
+  useEffect(() => {
+    if (!look) return;
+    steered.current = true;
+    turnTo(lookAtBody(look), !reducedMotion);
+    // A request is identified by its key; the angles ride along with it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [look?.key]);
 
   // When device orientation is active, disable manual controls and drive
   // the camera from gyroscope/compass.

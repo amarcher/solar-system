@@ -9,6 +9,8 @@ import * as AstronomyService from '../../astronomy/AstronomyService';
 import { CelestialLayers } from './CelestialLayers';
 import { HorizonPlane } from './HorizonPlane';
 import { setPlanetPosition } from '../../utils/planetPositions';
+import { skyBodyColor } from '../../astronomy/skyFinder';
+import './SceneLabels.css';
 
 const DEG2RAD = Math.PI / 180;
 const SKY_RADIUS = 150;
@@ -67,16 +69,6 @@ function magToSize(name: string): number {
     mercury: 0.6, uranus: 0.4, neptune: 0.3,
   };
   return sizes[name] ?? 0.5;
-}
-
-function planetColor(id: string): string {
-  const colors: Record<string, string> = {
-    mercury: '#b0b0b0', venus: '#ffffc0', earth: '#4488ff',
-    mars: '#ff6644', jupiter: '#ffcc88', saturn: '#ffddaa',
-    uranus: '#88ddff', neptune: '#4466ff', pluto: '#ccbbaa',
-    ceres: '#999999',
-  };
-  return colors[id] ?? '#ffffff';
 }
 
 const labelStyle = (color: string): React.CSSProperties => ({
@@ -218,8 +210,11 @@ export function SkyScene({ planets, onPlanetClick, onMoonClick, showLabels, show
           <meshBasicMaterial color="#d8d8d0" />
         </mesh>
         {showLabels && aboveHorizon.has('moon') && (
-          <Html center position={[0, -(magToSize('moon') + 1.5), 0]} style={labelStyle('rgba(255,255,255,0.75)')}>
-            The Moon
+          <Html center style={{ pointerEvents: 'none' }}>
+            <button type="button" className="scene-label sky-marker" aria-label="Explore the Moon"
+              onClick={(e) => { e.stopPropagation(); onMoonClick?.('earth', 'moon'); }}>
+              <span className="sky-marker__name">The Moon</span>
+            </button>
           </Html>
         )}
       </group>
@@ -229,11 +224,17 @@ export function SkyScene({ planets, onPlanetClick, onMoonClick, showLabels, show
         <group key={planet.id} ref={setBodyRef(planet.id)}>
           <mesh onClick={(e) => { e.stopPropagation(); onPlanetClick(planet.id); }}>
             <sphereGeometry args={[magToSize(planet.id), 12, 12]} />
-            <meshBasicMaterial color={planetColor(planet.id)} />
+            <meshBasicMaterial color={skyBodyColor(planet.id)} />
           </mesh>
+          {/* A ring and a real <button>: a planet is a few pixels wide among
+              thousands of stars, so the marker is what makes it findable and tappable. */}
           {showLabels && aboveHorizon.has(planet.id) && (
-            <Html center position={[0, -(magToSize(planet.id) + 1.5), 0]} style={labelStyle('rgba(255,255,255,0.7)')}>
-              {planet.name}
+            <Html center style={{ pointerEvents: 'none' }}>
+              <button type="button" className="scene-label sky-marker sky-marker--ring" aria-label={`Explore ${planet.name}`}
+                style={{ '--sky-marker-color': skyBodyColor(planet.id) } as React.CSSProperties}
+                onClick={(e) => { e.stopPropagation(); onPlanetClick(planet.id); }}>
+                <span className="sky-marker__name">{planet.name}</span>
+              </button>
             </Html>
           )}
         </group>
