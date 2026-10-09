@@ -7,6 +7,7 @@ import { SunMesh } from './Sun';
 import { RealisticPlanet } from './RealisticPlanet';
 import { CelestialLayers } from './CelestialLayers';
 import { RealisticMissionTrajectory } from './RealisticMissionTrajectory';
+import { DebrisBelts } from './DebrisBelts';
 import { RubinAsteroids } from './RubinAsteroids';
 import type { RubinAsteroid } from '../../data/rubinAsteroids';
 import { useAstronomy } from '../../astronomy/useAstronomy';
@@ -26,6 +27,7 @@ interface RealisticSceneProps {
   onMoonClick: (planetId: string, moonId: string) => void;
   onSunClick: () => void;
   showLabels: boolean;
+  showBelts?: boolean;
   showConstellations: boolean;
   activeMission?: Mission;
   paused?: boolean;
@@ -142,6 +144,7 @@ export function RealisticScene({
   onSunClick,
   showLabels,
   showConstellations,
+  showBelts = false,
   activeMission,
   paused = false,
   rubin = null,
@@ -164,6 +167,8 @@ export function RealisticScene({
           paused={paused}
         />
       </HeliocentricOrigin>
+
+      {showBelts && !hidesSystemContext && !activeMission && <DebrisBelts paused={paused} showLabels={showLabels && !isZoomedIn} />}
 
       {/* Orbit paths preserve spatial context around a focused planet/moon. */}
       <group visible={!hidesSystemContext}>

@@ -18,6 +18,9 @@ import { useAstronomy } from './astronomy/useAstronomy';
 import { ModeToggle } from './components/ui/ModeToggle';
 import { TimeControls } from './components/ui/TimeControls';
 import { ObserverPicker } from './components/ui/ObserverPicker';
+import { SkyFinder } from './components/ui/SkyFinder';
+import type { SkyBody } from './astronomy/skyFinder';
+import type { SkyLookRequest } from './components/scene/TerrestrialRig';
 import { useDeviceOrientation } from './astronomy/useDeviceOrientation';
 import { trackModeSwitch, trackRubinFindView, trackRubinToggle, type RubinSource } from './utils/analytics';
 import './App.css';
@@ -62,7 +65,9 @@ function App() {
   const graphics = useGraphicsQuality();
   const { close: closeTides, state: tidesState } = tides;
   const [showLabels, setShowLabels] = useState(true);
+  const [showBelts, setShowBelts] = useState(false);
   const [showConstellations, setShowConstellations] = useState(false);
+  const [skyLook, setSkyLook] = useState<SkyLookRequest | null>(null);
   const [showRubin, setShowRubin] = useState(false);
   const [rubinSelectedId, setRubinSelectedId] = useState<string | null>(null);
   const [rubinView, setRubinView] = useState<'follow' | 'orbit'>('follow');
@@ -177,6 +182,12 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
+  // Compass tracking owns the camera, so a finder tap takes it back first.
+  const findInSky = useCallback((body: SkyBody) => {
+    if (deviceOrientation.active) deviceOrientation.stop();
+    setSkyLook((previous) => ({ azimuth: body.azimuth, altitude: body.altitude, key: (previous?.key ?? 0) + 1 }));
+  }, [deviceOrientation]);
+
   const handlePlanetClick = useCallback((planetId: string) => {
     closeTides(false);
     viewTransition(() => goToPlanet(planetId), ['detail-open']);
@@ -255,7 +266,7 @@ function App() {
 
   const voice = useSolarConversation({
     currentRate: rate,
-    scene: { detailsVisible: !hideDetails && !tides.state, constellations: showConstellations, quality: graphics.preference, missionActive: orreryMissionActive || nav.level === 'mission', rubin: { visible: showRubin, selectedId: rubinSelectedId } },
+    scene: { belts: showBelts, detailsVisible: !hideDetails && !tides.state, constellations: showConstellations, quality: graphics.preference, missionActive: orreryMissionActive || nav.level === 'mission', rubin: { visible: showRubin, selectedId: rubinSelectedId } },
     onSetTides: (enabled) => {
       if (enabled) { goToPlanet('earth'); tides.open(); }
       else closeTides(false);
@@ -382,10 +393,12 @@ function App() {
         onMoonClick={handleSceneMoonClick}
         onSunClick={handleSunClick}
         showLabels={showLabels}
+        showBelts={showBelts}
         showConstellations={showConstellations}
         deviceOrientation={deviceOrientation.active}
         deviceHeadingRef={deviceOrientation.headingRef}
         devicePitchRef={deviceOrientation.pitchRef}
+        skyLook={skyLook}
         orreryMission={orreryMissionActive ? getMissionById('artemis-2') : undefined}
         cinematicShot={tour.phase === 'idle' ? null : tourShot}
         rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubinFromScene } : null}
@@ -428,6 +441,18 @@ function App() {
         </button>
         <div className="app__toolbar-items">
           <GraphicsSettings />
+          {mode !== 'sky' && (
+            <button className={`app__toolbar-btn${showBelts ? ' app__toolbar-btn--active' : ''}`}
+              type="button" aria-label={showBelts ? 'Hide asteroid and Kuiper belts' : 'Show asteroid and Kuiper belts'}
+              title="Asteroid and Kuiper belts — enlarged markers" aria-pressed={showBelts}
+              onClick={() => { setShowBelts(v => !v); setToolbarOpen(false); }}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <ellipse cx="12" cy="12" rx="10" ry="6" strokeDasharray="1 2.5" transform="rotate(-25 12 12)" />
+                <ellipse cx="12" cy="12" rx="6" ry="3.5" strokeDasharray="1 2" transform="rotate(-25 12 12)" />
+                <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+              </svg>
+            </button>
+          )}
           {mode !== 'artistic' && (
             <button
               className="app__toolbar-btn"
@@ -718,6 +743,7 @@ function App() {
       {mode === 'sky' && (
         <>
           <ObserverPicker />
+          {!cinemaMode && <SkyFinder planets={planets} onFind={findInSky} />}
           {deviceOrientation.supported && (
             <button
               className={`app__device-orient-btn${deviceOrientation.active ? ' app__device-orient-btn--active' : ''}`}
