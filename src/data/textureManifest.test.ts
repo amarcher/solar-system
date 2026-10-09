@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { estimateTextureBytes, getBodyTexture, getBodyTextureAsset, selectTextureVariant, textureManifest } from './textureManifest';
 import type { TextureAsset } from './textureManifest';
+import { planets } from './planets';
+import { moons } from './moons';
 
 const publicRoot = fileURLToPath(new URL('../../public/', import.meta.url));
 function images(directory: string): string[] {
@@ -112,14 +114,18 @@ describe('texture inventory', () => {
   });
 
   it('labels invented surfaces', () => {
-    for (const id of ['proteus', 'nereid', 'styx', 'kerberos']) {
+    for (const id of ['proteus', 'nereid', 'styx', 'kerberos', 'himalia', 'valetudo', 'carme', 'pasiphae']) {
       const asset = getBodyTextureAsset(id);
       expect(asset?.illustration).toBe(true);
       expect(asset?.coverage).toMatch(/^Artist's illustration\./);
       expect(getBodyTexture(id)?.width).toBe(1024);
       expect(getBodyTexture(id, { detail: true })?.width).toBe(2048);
     }
-    expect(textureManifest.filter((asset) => asset.illustration)).toHaveLength(4);
+    expect(textureManifest.filter((asset) => asset.illustration)).toHaveLength(8);
+  });
+
+  it('gives every planet and moon a surface, observed or imagined', () => {
+    for (const body of [...planets, ...moons]) expect(getBodyTexture(body.id), body.name).not.toBeNull();
   });
 
   it('credits and hash-locks the verified small-moon maps', () => {

@@ -88,8 +88,6 @@ export function MoonDetail({ moon, onClose, onBack }: MoonDetailProps) {
 
           <p className="moon-detail__summary">{moon.summary}</p>
 
-          <MoonTextureInfo moon={moon} />
-
           <div className="moon-detail__properties">
             <div className="moon-detail__prop">
               <span className="moon-detail__prop-label">Diameter</span>
@@ -148,6 +146,8 @@ export function MoonDetail({ moon, onClose, onBack }: MoonDetailProps) {
               Discovered by {moon.discoveredBy} ({moon.yearDiscovered})
             </div>
           )}
+
+          <MoonTextureInfo moon={moon} />
         </div>
       </div>
     </div>

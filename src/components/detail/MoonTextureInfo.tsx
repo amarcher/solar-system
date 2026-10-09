@@ -16,7 +16,6 @@ export function MoonTextureInfo({ moon, compact = false }: MoonTextureInfoProps)
       className={`moon-texture-info${compact ? ' moon-texture-info--compact' : ''}`}
       aria-label={`Surface image for ${moon.name}`}
     >
-      {asset?.coverage && <p className="moon-texture-info__coverage">{asset.coverage}</p>}
       <details
         key={moon.id}
         className="moon-texture-info__disclosure"
@@ -28,8 +27,9 @@ export function MoonTextureInfo({ moon, compact = false }: MoonTextureInfoProps)
           }
         }}
       >
-        <summary className="moon-texture-info__summary">About this image</summary>
+        <summary className="moon-texture-info__summary">{!asset || asset.illustration ? 'Imagined surface' : 'Image credit'}</summary>
         <div className="moon-texture-info__content">
+          {asset?.coverage && <p>{asset.coverage}</p>}
           {!asset ? (
             <p>Illustration: this app does not have a photographic surface map for {moon.name}.</p>
           ) : !verified ? (

@@ -133,6 +133,130 @@
           "sha256": "73a5df1cd82fd7723e466d8897e663610ee29e9816e0a8545b569552116373a1"
         }
       ]
+    },
+    {
+      "id": "himalia",
+      "parameters": {
+        "seed": 11,
+        "base": 0.36,
+        "contrast": 0.18,
+        "tint": [
+          1.0,
+          0.98,
+          0.95
+        ],
+        "craters": 200,
+        "max_radius": 0.42
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/himalia_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 50285,
+          "sha256": "eb1197ea14deddab7badc3c0912b86a3a6c57285a0279244246a5d2ccf43f386"
+        },
+        {
+          "path": "public/textures/2k/himalia_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 132278,
+          "sha256": "5342f2f437ae8a61fa46bc6b2b943d6bf23637e02731af047adf628f64347186"
+        }
+      ]
+    },
+    {
+      "id": "valetudo",
+      "parameters": {
+        "seed": 12,
+        "base": 0.38,
+        "contrast": 0.2,
+        "tint": [
+          1.0,
+          0.97,
+          0.93
+        ],
+        "craters": 60,
+        "max_radius": 0.55
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/valetudo_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 43796,
+          "sha256": "887eb5fd9fdd8b9d77f8bf3e19ed38a614c1698e040c72e1b9e384d7def234af"
+        },
+        {
+          "path": "public/textures/2k/valetudo_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 114784,
+          "sha256": "a92bb8ea9adc7c47462352a5e92e419df7d36da414dfdd88583577a460024972"
+        }
+      ]
+    },
+    {
+      "id": "carme",
+      "parameters": {
+        "seed": 13,
+        "base": 0.38,
+        "contrast": 0.17,
+        "tint": [
+          1.0,
+          0.84,
+          0.74
+        ],
+        "craters": 130,
+        "max_radius": 0.45
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/carme_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 46881,
+          "sha256": "4073ef3869b74ea395f8b302ae27b0dfeffcc4d148a844033b29314de23aa6d4"
+        },
+        {
+          "path": "public/textures/2k/carme_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 121867,
+          "sha256": "6b58693acd022a6cc8f96e186eb814e214ff5a3410cb7b8cf858cbc359667b2b"
+        }
+      ]
+    },
+    {
+      "id": "pasiphae",
+      "parameters": {
+        "seed": 14,
+        "base": 0.35,
+        "contrast": 0.17,
+        "tint": [
+          0.98,
+          0.98,
+          1.0
+        ],
+        "craters": 150,
+        "max_radius": 0.45
+      },
+      "outputs": [
+        {
+          "path": "public/textures/1k/pasiphae_diffuse.jpg",
+          "width": 1024,
+          "height": 512,
+          "bytes": 47055,
+          "sha256": "42fb87cf6c43cea474e8e14b04a9168e63b9334f4ef66458654d5a4d4ece98d0"
+        },
+        {
+          "path": "public/textures/2k/pasiphae_diffuse.jpg",
+          "width": 2048,
+          "height": 1024,
+          "bytes": 123101,
+          "sha256": "df595a013d76c32c29a8eb86982e82ce49171b802a08c1588c0d66cccdf138cd"
+        }
+      ]
     }
   ]
 }
