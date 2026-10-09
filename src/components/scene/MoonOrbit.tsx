@@ -11,6 +11,7 @@ import { setMoonPosition } from '../../utils/planetPositions';
 import { useGraphicsQuality } from '../../performance/useGraphicsQuality';
 import { useLabelBelow } from './useLabelBelow';
 import { weldSeamNormals } from '../../utils/weldSeamNormals';
+import { moonOrbitPath, moonOrbitPoint, moonOrbitShape, moonSpinHours } from '../../astronomy/moonOrbitShape';
 
 // Fallback colors for moons without textures, based on real surface appearance
 const MOON_COLORS: Record<string, string> = {
@@ -20,6 +21,7 @@ const MOON_COLORS: Record<string, string> = {
   phobos: '#8a7d6b', deimos: '#9e9282',
   // Jupiter
   io: '#d4b84a', europa: '#c4b699', ganymede: '#8a8478', callisto: '#5a5650', amalthea: '#b84030',
+  himalia: '#8d8a86', valetudo: '#8a8782', carme: '#a3857a', pasiphae: '#88868a',
   // Saturn
   titan: '#d4a850', enceladus: '#f0f0f0', mimas: '#d0d0d0', rhea: '#b8b4a8',
   dione: '#e0dcd0', tethys: '#e8e4d8', iapetus: '#6a4a30', hyperion: '#a89880',
@@ -30,6 +32,9 @@ const MOON_COLORS: Record<string, string> = {
   // Pluto
   charon: '#9a9088', nix: '#e0dcd8', hydra: '#d8d4d0',
 };
+
+/** Slowest Explore orbit, radians per second: about nine minutes a lap. */
+const MIN_ORBIT_SPEED = 0.012;
 
 /** Seeded pseudo-random number generator (mulberry32) for deterministic shapes. */
 function seededRandom(seed: number) {
@@ -153,9 +158,13 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false, sel
   );
   const labelRef = useLabelBelow(visualRadius, { irregularMesh: irregularGeo ? moonMeshRef : undefined });
 
-  // Orbit speed inversely proportional to orbital period
-  const orbitSpeed = moon.orbitalPeriod > 0 ? 0.5 / moon.orbitalPeriod : 0.3;
+  // Orbit speed inversely proportional to orbital period, with a floor so
+  // far-out moons still visibly travel (and visibly travel backwards).
+  const orbitSpeed = moon.orbitalPeriod > 0 ? Math.max(0.5 / moon.orbitalPeriod, MIN_ORBIT_SPEED) : 0.3;
   const orbitDirection = moon.retrograde ? 1 : -1;
+
+  const shape = useMemo(() => moonOrbitShape(moon), [moon]);
+  const pathPoints = useMemo(() => shape && moonOrbitPath(shape, moon.orbitRadius), [shape, moon.orbitRadius]);
 
   const worldPos = useRef(new Vector3());
 
@@ -164,8 +173,12 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false, sel
       angleRef.current += delta * orbitSpeed * orbitDirection;
     }
     if (groupRef.current) {
-      groupRef.current.position.x = Math.cos(angleRef.current) * moon.orbitRadius;
-      groupRef.current.position.z = Math.sin(angleRef.current) * moon.orbitRadius;
+      if (shape) {
+        moonOrbitPoint(shape, moon.orbitRadius, angleRef.current, groupRef.current.position);
+      } else {
+        groupRef.current.position.x = Math.cos(angleRef.current) * moon.orbitRadius;
+        groupRef.current.position.z = Math.sin(angleRef.current) * moon.orbitRadius;
+      }
       // Broadcast world position (includes parent planet's position)
       groupRef.current.getWorldPosition(worldPos.current);
       setMoonPosition(moon.id, worldPos.current.x, worldPos.current.y, worldPos.current.z);
@@ -183,7 +196,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false, sel
         moonMeshRef.current.rotation.z += delta * r3;
       } else {
         // Synchronous (tidally locked) or explicit rotation period
-        const periodHours = moon.rotationPeriod ?? (moon.orbitalPeriod * 24);
+        const periodHours = moonSpinHours(moon);
         const speed = periodHours !== 0 ? 0.3 / Math.abs(periodHours / 24) : 0.1;
         const direction =
           (moon.rotationPeriod !== undefined && moon.rotationPeriod < 0)
@@ -197,7 +210,12 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false, sel
   return (
     <>
       {/* Orbit ring */}
-      <mesh rotation-x={Math.PI / 2} visible={!selected}>
+      {pathPoints ? <lineLoop visible={!selected}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[pathPoints, 3]} />
+        </bufferGeometry>
+        <lineBasicMaterial color="#ffffff" transparent opacity={0.12} depthWrite={false} />
+      </lineLoop> : <mesh rotation-x={Math.PI / 2} visible={!selected}>
         <ringGeometry args={[moon.orbitRadius - 0.01, moon.orbitRadius + 0.01, 64]} />
         <meshBasicMaterial
           color="#ffffff"
@@ -205,7 +223,7 @@ export function MoonOrbit({ moon, onClick, showLabel = true, paused = false, sel
           opacity={0.04}
           depthWrite={false}
         />
-      </mesh>
+      </mesh>}
 
       <group ref={groupRef}>
         <mesh

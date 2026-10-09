@@ -84,7 +84,7 @@ To add videos:
 ## Data
 
 - **10 planets**: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto, Ceres
-- **~27 curated moons**: The notable ones (Titan, Europa, Io, Ganymede, Enceladus, Triton, Charon, our Moon, etc.)
+- **~34 curated moons**: The notable ones (Titan, Europa, Io, Ganymede, Enceladus, Triton, Charon, our Moon, etc.), plus four of Jupiter's captured outer moons on tilted, stretched orbits
 - **The Sun**: Special entity with 6 interactive layers (Corona → Chromosphere → Photosphere → Convective Zone → Radiative Zone → Core)
 
 All scientific data should be verified against NASA/JPL sources.
@@ -109,7 +109,7 @@ Orrery mode uses true `astronomy-engine` heliocentric ephemeris vectors, then ma
 
 **Nix and Hydra textures** — [Askaniy](https://www.deviantart.com/askaniy), from NASA/JHUAPL/SwRI New Horizons images · [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Gray-calibrated variants, resized and re-encoded. Partial, low-resolution coverage. [Sources and hashes](docs/assets/small-moons.md).
 
-**Proteus, Nereid, Styx, and Kerberos textures** — Procedurally generated artist's illustrations; no observed surface maps exist. Labeled as imagined in the app. [How they are made](docs/assets/illustrated-moons.md).
+**Proteus, Nereid, Styx, Kerberos, Himalia, Valetudo, Carme, and Pasiphae textures** — Procedurally generated artist's illustrations; no observed surface maps exist. Labeled as imagined in the app. [How they are made](docs/assets/illustrated-moons.md).
 
 
 **Milky Way starfield backdrop** — Solar System Scope · CC BY 4.0. The bundled 8K source was verified byte-for-byte against the publisher. Automatic/Smoother use 2K; More detail uses a 4K derivative. See `docs/assets/sky-quality.md` for the conversion and source hash.

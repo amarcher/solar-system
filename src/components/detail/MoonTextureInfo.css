@@ -1,30 +1,32 @@
 .moon-texture-info {
-  border: 1px solid #ffffff29;
-  border-radius: 12px;
-  background: #111725eb;
   color: #e3e9f3;
   font-size: 0.75rem;
   line-height: 1.5;
   pointer-events: auto;
 }
 
-.moon-texture-info__coverage {
-  padding: 12px 14px 0;
+/* A quiet one-line footnote until opened; padding keeps a 44px touch target. */
+.moon-texture-info__summary {
+  width: fit-content;
+  padding: 13px 0;
+  cursor: pointer;
+  color: #ffffff8c;
+  font-size: 0.7rem;
+  line-height: 18px;
 }
 
-.moon-texture-info__summary {
-  min-height: 44px;
-  padding: 12px 14px;
-  cursor: pointer;
+.moon-texture-info__disclosure[open] > .moon-texture-info__summary {
   color: #c5dcff;
-  font-weight: 600;
 }
 
 .moon-texture-info__content {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 0 14px 12px;
+  padding: 12px 14px;
+  border: 1px solid #ffffff29;
+  border-radius: 12px;
+  background: #111725eb;
   max-height: 35dvh;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -55,9 +57,14 @@
   position: fixed;
   top: calc(110px + env(safe-area-inset-top, 0px));
   left: max(12px, env(safe-area-inset-left, 0px));
-  width: min(320px, calc(100vw - 24px));
+  max-width: min(320px, calc(100vw - 24px));
   z-index: 135;
-  box-shadow: 0 6px 24px #00000040;
+}
+
+.moon-texture-info--compact .moon-texture-info__summary {
+  padding: 13px 12px;
+  border-radius: 22px;
+  background: #11172599;
 }
 
 .moon-texture-info__sr-only {
@@ -73,7 +80,7 @@
 
 @media (max-height: 500px) {
   .moon-texture-info--compact {
-    width: min(280px, calc(100vw - 24px));
+    max-width: min(280px, calc(100vw - 24px));
   }
 
   .moon-texture-info__content {

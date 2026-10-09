@@ -2,6 +2,7 @@ import { Vector3 } from 'three';
 import type { Moon, Planet, NavigationState } from '../types/celestialBody';
 import type { ViewMode } from '../astronomy/types';
 import { orreryMoonOrbitRadius } from '../astronomy/moonSpacing';
+import { moonOrbitReach } from '../astronomy/moonOrbitShape';
 import { moonVisualRadius } from '../utils/moonFraming';
 import { planetDisplayExtent } from '../utils/planetExtent';
 
@@ -24,7 +25,7 @@ export function localSystemExtent(planet: Planet, moons: readonly Moon[], mode: 
   for (const moon of moons) {
     const radius = moonVisualRadius(moon.diameter, moon.id, mode) * (moon.shape === 'irregular' ? 2.6 : 1);
     const orbit = mode === 'orrery' ? orreryMoonOrbitRadius(moon) : moon.orbitRadius;
-    extent = Math.max(extent, orbit + radius);
+    extent = Math.max(extent, orbit + moonOrbitReach(moon) + radius);
   }
   return extent;
 }

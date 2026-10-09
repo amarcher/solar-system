@@ -31,6 +31,16 @@ MOONS = {
              'craters': 90, 'max_radius': 0.45},
     'kerberos': {'seed': 4, 'base': 0.66, 'contrast': 0.13, 'tint': (0.99, 0.99, 1.00),
                  'craters': 110, 'max_radius': 0.45},
+    # Jupiter's captured moons: dark grey (Himalia, Pasiphae) or light red (Carme)
+    # from telescope colours; Valetudo's colour is unmeasured.
+    'himalia': {'seed': 11, 'base': 0.36, 'contrast': 0.18, 'tint': (1.00, 0.98, 0.95),
+                'craters': 200, 'max_radius': 0.42},
+    'valetudo': {'seed': 12, 'base': 0.38, 'contrast': 0.20, 'tint': (1.00, 0.97, 0.93),
+                 'craters': 60, 'max_radius': 0.55},
+    'carme': {'seed': 13, 'base': 0.38, 'contrast': 0.17, 'tint': (1.00, 0.84, 0.74),
+              'craters': 130, 'max_radius': 0.45},
+    'pasiphae': {'seed': 14, 'base': 0.35, 'contrast': 0.17, 'tint': (0.98, 0.98, 1.00),
+                 'craters': 150, 'max_radius': 0.45},
 }
 
 

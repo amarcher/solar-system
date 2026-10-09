@@ -46,6 +46,9 @@ export interface Moon {
   chaoticRotation?: boolean;     // true for moons with unpredictable tumbling (e.g. Hyperion)
   tumblePeriod?: number;         // hours; measured mean spin period of a chaotic tumbler
   retrograde?: boolean;          // true if moon orbits opposite to planet rotation
+  orbitEccentricity?: number;    // omit for near-circular orbits
+  orbitInclination?: number;     // degrees to the planet's orbital plane (above 90 = retrograde); omit for flat orbits
+  rotationUnknown?: boolean;     // true when the spin has not been pinned down (not tidally locked)
   shape?: 'irregular';           // omit for spherical; 'irregular' = potato-shaped
 }
 

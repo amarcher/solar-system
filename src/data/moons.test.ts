@@ -82,3 +82,28 @@ describe('getMoonById', () => {
     expect(getMoonById('death-star')).toBeUndefined();
   });
 });
+
+describe('captured moon orbits', () => {
+  const shaped = moons.filter(m => m.orbitInclination !== undefined || m.orbitEccentricity !== undefined);
+
+  it("includes Jupiter's captured moons, ordered by real distance in both layouts", () => {
+    expect(shaped.map(m => m.id)).toEqual(['himalia', 'valetudo', 'carme', 'pasiphae']);
+    const jupiter = getMoonsByPlanet('jupiter').sort((a, b) => a.distanceFromPlanet - b.distanceFromPlanet);
+    for (let i = 1; i < jupiter.length; i++) expect(jupiter[i].orbitRadius).toBeGreaterThan(jupiter[i - 1].orbitRadius);
+  });
+
+  it('marks a moon retrograde exactly when its orbit is tilted past 90°', () => {
+    for (const moon of shaped) {
+      expect(moon.orbitEccentricity, moon.name).toBeGreaterThan(0);
+      expect(moon.orbitEccentricity, moon.name).toBeLessThan(1);
+      expect(!!moon.retrograde, moon.name).toBe(moon.orbitInclination! > 90);
+    }
+  });
+
+  it('never claims a spin for a moon whose rotation is unknown', () => {
+    for (const moon of moons.filter(m => m.rotationUnknown)) {
+      expect(moon.rotationPeriod, moon.name).toBeUndefined();
+      expect(moon.chaoticRotation, moon.name).toBeUndefined();
+    }
+  });
+});

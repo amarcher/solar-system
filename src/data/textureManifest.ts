@@ -24,6 +24,14 @@ export interface TextureAsset {
   illustration?: boolean;
 }
 
+/** What, if anything, the imagined look of a captured moon borrows from telescopes. */
+const ILLUSTRATION_NOTES: Record<string, string> = {
+  himalia: 'Made up to show what a small, cratered moon might look like. Its dark grey colour follows telescope measurements.',
+  carme: 'Made up to show what a small, cratered moon might look like. Its light red colour follows telescope measurements.',
+  pasiphae: 'Made up to show what a small, cratered moon might look like. Its grey colour follows telescope measurements.',
+  valetudo: 'Made up to show what a tiny, battered moon might look like. Nobody has measured its colour yet, so that is a guess too.',
+};
+
 export interface TextureSelection {
   detail?: boolean;
   maxWidth?: number;
@@ -209,7 +217,7 @@ export const textureManifest: readonly TextureAsset[] = [
     coverage: 'New Horizons saw one side of this tiny moon from far away. Smooth, blurry areas were barely seen.',
     displayNote: 'Resized for display from the creator\'s map; no terrain was added.',
   })),
-  ...(['proteus', 'nereid', 'styx', 'kerberos'] as const).map((bodyId): TextureAsset => ({
+  ...(['proteus', 'nereid', 'styx', 'kerberos', 'himalia', 'valetudo', 'carme', 'pasiphae'] as const).map((bodyId): TextureAsset => ({
     id: `${bodyId}-diffuse`, bodyId, kind: 'diffuse',
     variants: [
       { path: `/textures/1k/${bodyId}_diffuse.jpg`, width: 1024, height: 512 },
@@ -221,8 +229,10 @@ export const textureManifest: readonly TextureAsset[] = [
     },
     coverage: bodyId === 'proteus'
       ? 'Artist\'s illustration. Voyager 2 took only blurry pictures of Proteus, so these craters are imagined.'
-      : `Artist's illustration. No spacecraft has seen ${bodyId[0].toUpperCase()}${bodyId.slice(1)} up close, so this surface is imagined.`,
-    displayNote: 'Made up to show what a small, cratered moon might look like. Its brightness matches measurements.',
+      : bodyId === 'himalia'
+        ? 'Artist\'s illustration. Passing spacecraft saw Himalia as only a few pixels, so this surface is imagined.'
+        : `Artist's illustration. No spacecraft has seen ${bodyId[0].toUpperCase()}${bodyId.slice(1)} up close, so this surface is imagined.`,
+    displayNote: ILLUSTRATION_NOTES[bodyId] ?? 'Made up to show what a small, cratered moon might look like. Its brightness matches measurements.',
     illustration: true,
   })),
   {
