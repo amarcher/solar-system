@@ -1,90 +1,65 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Html, Line, OrbitControls } from '@react-three/drei';
-import { BufferAttribute, BufferGeometry, Line as ThreeLine, LineBasicMaterial, Vector3 } from 'three';
-import type { Group, Mesh } from 'three';
-import { usePlanetTexture } from '../../utils/textures';
-import { heliocentric, earthFrame, sceneVector, earthPath, solarPath, relativePath } from './model';
-import { REPLAY_DAYS, REPLAY_SECONDS, type QuasiMoonPlayback } from './types';
+import { Html, Line } from '@react-three/drei';
+import { PerspectiveCamera, Vector3, type Group } from 'three';
+import { useAstronomy } from '../../astronomy/useAstronomy';
+import { scaleAUVector } from '../../astronomy/realisticScale';
+import { useFocusedSpace } from '../../sceneLayout/useFocusedSpace';
+import { applyFocusSpace } from '../../sceneLayout/focusedSpace';
+import { setSmallBodyPosition } from '../../utils/planetPositions';
+import { heliocentric, solarPath, sceneVector } from './model';
+import { REPLAY_START, REPLAY_DAYS, REPLAY_SECONDS, type QuasiMoonPlayback } from './types';
 
-function updateTrail(trail: ThreeLine<BufferGeometry, LineBasicMaterial>, day: number, p: [number, number, number]) {
-  const positions = trail.geometry.attributes.position as BufferAttribute;
-  const count = Math.floor(day);
-  for (let i = 0; i <= count; i++) positions.setXYZ(i, ...relativePath[i]);
-  positions.setXYZ(count + 1, ...p);
-  positions.needsUpdate = true;
-  trail.geometry.setDrawRange(0, count + 2);
-  trail.geometry.computeBoundingSphere();
-}
+const path = solarPath.map(([x, y, z]) => {
+  const p = scaleAUVector(x, y, z);
+  return [p.x, p.y, p.z] as [number, number, number];
+});
 
-export default function QuasiMoonScene({ dayRef, view, playing, onComplete }: QuasiMoonPlayback) {
+/** An additive Orrery layer: uses its existing planets, lights, camera and scale. */
+export default function QuasiMoonScene({ dayRef, playing, onComplete, overview }: QuasiMoonPlayback & { overview: boolean }) {
   const { camera, size } = useThree();
-  const earth = useRef<Group>(null);
-  const asteroid = useRef<Group>(null);
-  const rock = useRef<Mesh>(null);
-  const texture = usePlanetTexture('earth', { maxWidth: 1024 });
-  const isEarth = view === 'earth';
-  const trail = useMemo(() => {
-    const geometry = new BufferGeometry();
-    geometry.setAttribute('position', new BufferAttribute(new Float32Array(367 * 3), 3));
-    return new ThreeLine(geometry, new LineBasicMaterial({ color: '#ffd18d' }));
-  }, []);
-  useEffect(() => () => { trail.geometry.dispose(); trail.material.dispose(); }, [trail]);
-
   useEffect(() => {
-    const portrait = size.width < size.height;
-    camera.position.set(...(isEarth ? [0.035, .78, .76] : [0, 4.5, 4.9]) as [number, number, number]);
-    if (portrait) camera.position.multiplyScalar(1.17);
-    camera.lookAt(0, portrait ? (isEarth ? -.2 : -1) : 0, isEarth ? .065 : 0);
-    camera.updateProjectionMatrix();
-  }, [camera, isEarth, size.width, size.height]);
+    if (!(camera instanceof PerspectiveCamera)) return;
+    if (overview && size.width < 900) camera.setViewOffset(size.width, size.height, 0, size.height * .17, size.width, size.height);
+    else camera.clearViewOffset();
+    return () => { camera.clearViewOffset(); };
+  }, [camera, size.width, size.height, overview]);
+  const body = useRef<Group>(null);
+  const orbit = useRef<Group>(null);
+  const raw = useRef(new Vector3());
+  const space = useFocusedSpace();
+  const { timeRef, engineReady } = useAstronomy();
 
+  // Set the shared epoch before the ordinary planet callbacks (priority -4).
   useFrame((_, delta) => {
-    if (playing) {
-      // Hidden-tab time must not skip the entire replay on return.
+    if (playing && engineReady) {
       dayRef.current = Math.min(REPLAY_DAYS, dayRef.current + Math.min(delta, .1) * REPLAY_DAYS / REPLAY_SECONDS);
       if (dayRef.current === REPLAY_DAYS) onComplete();
     }
-    const h = heliocentric(dayRef.current);
-    const p = sceneVector(isEarth ? earthFrame(h.earth, h.asteroid) : h.asteroid);
-    const ep = isEarth ? [0, 0, 0] : sceneVector(h.earth);
-    earth.current?.position.set(ep[0], ep[1], ep[2]);
-    asteroid.current?.position.set(...p);
-    if (rock.current) rock.current.rotation.set(.4, .7, .2);
-    updateTrail(trail, dayRef.current, p);
-  });
+    timeRef.current = REPLAY_START + dayRef.current * 86400000;
+  }, -5);
 
-  const target = useMemo(() => new Vector3(0, size.width < size.height ? (isEarth ? -.2 : -1) : 0, isEarth ? .065 : 0), [isEarth, size.width, size.height]);
+  useFrame(() => {
+    if (!body.current || !orbit.current) return;
+    const [x, y, z] = sceneVector(heliocentric(dayRef.current).asteroid);
+    const p = scaleAUVector(x, y, z);
+    raw.current.set(p.x, p.y, p.z);
+    applyFocusSpace(space, raw.current, body.current.position);
+    setSmallBodyPosition('kamo-oalewa', body.current.position);
+    orbit.current.position.copy(space.offset);
+    orbit.current.scale.setScalar(space.scale);
+  }, -3);
+
   return <>
-    <color attach="background" args={['#070b14']} />
-    <ambientLight intensity={.4} />
-    {isEarth ? <directionalLight position={[-2, .2, .1]} intensity={3} /> : <pointLight position={[0, 0, 0]} intensity={3} decay={0} />}
-    <group ref={earth}>
-      <mesh>
-        <sphereGeometry args={[isEarth ? .021 : .045, 48, 32]} />
-        <meshStandardMaterial key={texture?.uuid ?? 'loading-earth'} map={texture} color={texture ? '#ffffff' : '#4f88ae'} roughness={.95} />
+    <group ref={orbit}><Line points={path} color="#f3cf97" lineWidth={1.5} transparent opacity={.65} /></group>
+    <group ref={body}>
+      <mesh scale={[1, .7, .85]}>
+        <icosahedronGeometry args={[.035, 1]} />
+        <meshStandardMaterial color="#ba986b" emissive="#a76621" emissiveIntensity={.4} roughness={1} flatShading />
       </mesh>
-      <Html center position={[0, isEarth ? -.036 : -.075, 0]}><span className="quasi-label quasi-label--earth">Earth</span></Html>
+      <Html center position={[0, .12, 0]} style={{ pointerEvents: 'none' }}>
+        <span className="quasi-marker" data-quasi-marker>Kamoʻoalewa</span>
+      </Html>
     </group>
-    <group ref={asteroid}>
-      <mesh ref={rock}>
-        <icosahedronGeometry args={[isEarth ? .0045 : .012, 1]} />
-        <meshStandardMaterial color="#e0b679" emissive="#a76621" emissiveIntensity={.5} flatShading />
-      </mesh>
-      <Html center position={[0, isEarth ? .018 : .045, 0]}><span className="quasi-label">Kamoʻoalewa</span></Html>
-    </group>
-    {isEarth ? <>
-      <Line points={relativePath} color="#f8c98b" transparent opacity={.16} lineWidth={1} />
-      <primitive object={trail} />
-      <Line points={[[-.16, 0, 0], [-.045, 0, 0]]} color="#8292a6" lineWidth={1} />
-      <Line points={[[-.145, 0, -.008], [-.16, 0, 0], [-.145, 0, .008]]} color="#8292a6" lineWidth={1} />
-      <Html center position={[-.12, .018, 0]}><span className="quasi-label quasi-label--sun">Toward the Sun</span></Html>
-    </> : <>
-      <mesh><sphereGeometry args={[.075, 32, 24]} /><meshBasicMaterial color="#ffe7ac" /></mesh>
-      <Html center position={[0, -.12, 0]}><span className="quasi-label quasi-label--sun">Sun</span></Html>
-      <Line points={earthPath} color="#6cb6df" lineWidth={1} />
-      <Line points={solarPath} color="#ffd18d" lineWidth={1.5} />
-    </>}
-    <OrbitControls key={view} target={target} enablePan={false} minDistance={isEarth ? .6 : 3} maxDistance={isEarth ? 2 : 12} enableDamping={false} />
   </>;
 }

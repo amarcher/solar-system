@@ -133,8 +133,6 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         {benchmarkEnabled && <SceneBenchmark key={`${mode}:${JSON.stringify(nav)}:${benchmarkRun}`} scenario={`${mode}:${JSON.stringify(nav)}`} onReport={setBenchmarkReport} />}
         {/* No shadow maps: the only shadow in the scene (planet → rings) is
             computed analytically in the ring shader. See PlanetMesh.tsx. */}
-        <Suspense fallback={null}>
-        {quasiMoon ? <QuasiMoonScene {...quasiMoon} /> : <>
         <group>
         {mode !== 'sky' && (
           <>
@@ -217,6 +215,7 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         )}
 
         </group>
+        {quasiMoon && mode === 'orrery' && <Suspense fallback={null}><QuasiMoonScene {...quasiMoon} overview={nav.level === 'system'} /></Suspense>}
         {tides && <InlineTidesOverlay />}
 
         {mode === 'sky' ? (
@@ -227,12 +226,10 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
             look={skyLook}
           />
         ) : (
-          <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} rubinFocus={rubinFocus} cinematicShot={cinematicShot} />
+          <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} rubinFocus={quasiMoon ? { id: 'kamo-oalewa', view: quasiMoon.view === 'earth' ? 'follow' : 'orbit', fitRadius: 14, bodyRadius: .4 } : rubinFocus} cinematicShot={cinematicShot} />
         )}
 
-        </>}
-        </Suspense>
-        {!quasiMoon && !reducedMotion && settings.bloom && (
+        {!reducedMotion && settings.bloom && (
           <EffectComposer>
             <Bloom
               intensity={1.2}
