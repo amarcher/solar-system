@@ -8,10 +8,11 @@ import './PlanetDetail.css';
 interface PlanetDetailProps {
   planet: Planet;
   onClose: () => void;
+  onDiscoverCompanion?: () => void;
   onMoonClick: (moonId: string) => void;
 }
 
-export function PlanetDetail({ planet, onClose, onMoonClick }: PlanetDetailProps) {
+export function PlanetDetail({ planet, onClose, onMoonClick, onDiscoverCompanion }: PlanetDetailProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -87,6 +88,7 @@ export function PlanetDetail({ planet, onClose, onMoonClick }: PlanetDetailProps
             <span className="detail__order">#{planet.orderFromSun} from the Sun</span>
             <span className="detail__name">{planet.name}</span>
             <span className="detail__category">{categoryLabels[planet.category]}</span>
+            {onDiscoverCompanion && <button type="button" className="earth-companion" data-earth-companion onClick={onDiscoverCompanion}>Earth has company…</button>}
           </div>
 
           <div className="detail__summary detail__content">

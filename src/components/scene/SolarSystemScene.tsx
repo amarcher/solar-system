@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { ACESFilmicToneMapping, DirectionalLight } from 'three';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
@@ -24,6 +24,9 @@ import { SceneBenchmark } from '../../performance/SceneBenchmark';
 import { FocusedSpaceProvider } from '../../sceneLayout/FocusedSpaceProvider';
 import { HeliocentricOrigin } from '../../sceneLayout/HeliocentricOrigin';
 import { getMoonPosition, getPlanetPosition } from '../../utils/planetPositions';
+
+import type { QuasiMoonPlayback } from '../../features/quasiMoon/types';
+const QuasiMoonScene = lazy(() => import('../../features/quasiMoon/QuasiMoonScene'));
 
 /**
  * Camera-relative fill light that activates when zoomed into a planet/moon.
@@ -81,11 +84,12 @@ interface SolarSystemSceneProps {
   orreryMission?: Mission;
   /** Rubin Observatory finds shown in the orrery; null hides the layer. */
   rubin?: { asteroids: RubinAsteroid[]; selectedId: string | null; view: 'follow' | 'orbit'; onSelect: (id: string) => void } | null;
+  quasiMoon?: QuasiMoonPlayback | null;
   tides?: TidesState | null;
   cinematicShot?: CinematicShot | null;
 }
 
-export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showBelts = false, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, skyLook = null, orreryMission, rubin = null, tides = null, cinematicShot = null }: SolarSystemSceneProps) {
+export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, onPlanetClick, onMoonClick, onSunClick, showLabels = true, showBelts = false, showConstellations = false, deviceOrientation, deviceHeadingRef, devicePitchRef, skyLook = null, orreryMission, rubin = null, tides = null, cinematicShot = null, quasiMoon = null }: SolarSystemSceneProps) {
   const rubinSelection = rubin?.asteroids.find((a) => a.id === rubin.selectedId);
   const rubinFocus = rubinSelection && rubin
     ? { id: rubinSelection.id, view: rubin.view, fitRadius: rubinSceneExtent(rubinSelection) * 1.1, bodyRadius: rubinVisualRadius(rubinSelection.diameterKm) }
@@ -129,6 +133,8 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
         {benchmarkEnabled && <SceneBenchmark key={`${mode}:${JSON.stringify(nav)}:${benchmarkRun}`} scenario={`${mode}:${JSON.stringify(nav)}`} onReport={setBenchmarkReport} />}
         {/* No shadow maps: the only shadow in the scene (planet → rings) is
             computed analytically in the ring shader. See PlanetMesh.tsx. */}
+        <Suspense fallback={null}>
+        {quasiMoon ? <QuasiMoonScene {...quasiMoon} /> : <>
         <group>
         {mode !== 'sky' && (
           <>
@@ -224,7 +230,9 @@ export function SolarSystemScene({ planets, moonsByPlanet, missions = [], nav, o
           <CameraRig nav={nav} planets={planets} orreryMissionId={orreryMission?.id} rubinFocus={rubinFocus} cinematicShot={cinematicShot} />
         )}
 
-        {!reducedMotion && settings.bloom && (
+        </>}
+        </Suspense>
+        {!quasiMoon && !reducedMotion && settings.bloom && (
           <EffectComposer>
             <Bloom
               intensity={1.2}

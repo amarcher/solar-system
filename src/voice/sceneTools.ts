@@ -6,6 +6,7 @@ import { tidesVoiceContext, TIDES_OVERLAY_STATE } from '../lessons/tides/model';
 import { aphelionAu, COMPOSITION_NOTES, getRubinAsteroidById, RUBIN_KIND_LABELS, rubinAsteroids } from '../data/rubinAsteroids';
 
 export interface SceneVoiceState {
+  quasiMoon?: 'earth' | 'sun' | null;
   nav: NavigationState;
   mode: ViewMode;
   tides: boolean;
@@ -72,6 +73,7 @@ export function createSceneTools(read: () => SceneVoiceState, handlers: () => Sc
 }
 
 export function buildSceneContext(state: SceneVoiceState): string {
+  if (state.quasiMoon) return `[CURRENT SCENE FEATURES] The visitor found Kamoʻoalewa, Earth's hidden quasi-moon. The main canvas shows a dated JPL replay from 8 Nov 2026 to 8 Nov 2027, with enlarged bodies. View: ${state.quasiMoon === 'earth' ? "Earth-centered, rotating with Earth's solar orbit; the Sun stays in one direction and the asteroid traces a loop" : 'Sun-centered; both Earth and the asteroid orbit the Sun'}. It is a solar-orbiting asteroid, not an Earth-captured moon or a visible Moon in the sky. Mean diameter estimated at 18 ± 2 metres; discovered 27 Apr 2016. The visitor can switch viewpoints, drag the date slider, pause, replay, or close with Return to Earth. Normal date/mode controls and planet detail cards are hidden. This replay has its own clock; voice set_time/set_time_speed do not control it. Do not claim a voice tool can operate the replay. To leave, ask the visitor to use Return to Earth.`;
   const lines = ['[CURRENT SCENE FEATURES]', `View: ${state.mode === 'artistic' ? 'Explore' : state.mode === 'orrery' ? 'Orrery' : 'Sky'}. Display preference: ${state.quality}.`];
   lines.push(state.detailsVisible ? 'Desktop detail panels are available.' : 'Compact or cinema view: detail panels and Sun peeling controls are hidden. Do not claim property cards or peelable layers are visible.');
   if (state.mode === 'artistic') lines.push('Explore uses illustrative motion and a star-rich artistic Milky Way panorama. It is not a dated sky chart. Constellation lines are unavailable here.');

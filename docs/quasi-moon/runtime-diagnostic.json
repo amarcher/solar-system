@@ -1,0 +1,145 @@
+{
+  "before": 1,
+  "errors": [
+    {
+      "timestamp": 1794167920279.23,
+      "exceptionDetails": {
+        "exceptionId": 1,
+        "text": "Uncaught",
+        "lineNumber": 323,
+        "columnNumber": 294,
+        "scriptId": "140",
+        "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+        "stackTrace": {
+          "callFrames": [
+            {
+              "functionName": "su",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 323,
+              "columnNumber": 294
+            },
+            {
+              "functionName": "hu",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 318,
+              "columnNumber": 2
+            },
+            {
+              "functionName": "",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 309,
+              "columnNumber": 52
+            },
+            {
+              "functionName": "r.ja",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 148,
+              "columnNumber": 875
+            },
+            {
+              "functionName": "Sl",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 149,
+              "columnNumber": 1120
+            },
+            {
+              "functionName": "cu",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 309,
+              "columnNumber": 34
+            },
+            {
+              "functionName": "bu",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 306,
+              "columnNumber": 141
+            },
+            {
+              "functionName": "",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 334,
+              "columnNumber": 68
+            },
+            {
+              "functionName": "r.ja",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 148,
+              "columnNumber": 875
+            },
+            {
+              "functionName": "Sl",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 149,
+              "columnNumber": 1120
+            },
+            {
+              "functionName": "",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 330,
+              "columnNumber": 895
+            },
+            {
+              "functionName": "",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 334,
+              "columnNumber": 129
+            },
+            {
+              "functionName": "",
+              "scriptId": "140",
+              "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897728874858477",
+              "lineNumber": 335,
+              "columnNumber": 3
+            }
+          ]
+        },
+        "exception": {
+          "type": "object",
+          "className": "W",
+          "description": "W",
+          "objectId": "-6474074877381437237.3.1",
+          "preview": {
+            "type": "object",
+            "description": "W",
+            "overflow": false,
+            "properties": [
+              {
+                "name": "message",
+                "type": "string",
+                "value": "adsbygoogle.push() error: All 'ins' elements in th… with class=adsbygoogle already have ads in them."
+              },
+              {
+                "name": "name",
+                "type": "string",
+                "value": "TagError"
+              },
+              {
+                "name": "pbr",
+                "type": "boolean",
+                "value": "true"
+              },
+              {
+                "name": "stack",
+                "type": "string",
+                "value": "TagError: adsbygoogle.push() error: All 'ins' elem…oogle.js?client=ca-pub-0897728874858477:150:1121)"
+              }
+            ]
+          }
+        },
+        "executionContextId": 3
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "name": "desktop",
+    "errors": [
+      "TagError: W"
+    ],
+    "pausedInitially": false,
+    "sameCanvas": true,
+    "focusRestored": true,
+    "overflow": false
+  },
+  {
+    "name": "mobile",
+    "errors": [
+      "TagError: Vl"
+    ],
+    "pausedInitially": false,
+    "sameCanvas": true,
+    "focusRestored": true,
+    "overflow": false
+  },
+  {
+    "name": "reduced",
+    "errors": [
+      "TagError: Vl"
+    ],
+    "pausedInitially": true,
+    "sameCanvas": true,
+    "focusRestored": true,
+    "overflow": false
+  },
+  {
+    "name": "small",
+    "errors": [
+      "TagError: W"
+    ],
+    "pausedInitially": false,
+    "sameCanvas": true,
+    "focusRestored": true,
+    "overflow": false
+  }
+]
