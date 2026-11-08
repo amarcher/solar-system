@@ -40,7 +40,7 @@ import type { TourTarget } from './tour/tourScript';
 import type { CinematicShot } from './components/scene/CameraRig';
 import { pathToLandingIntent } from './utils/routes';
 
-import type { QuasiMoonView } from './features/quasiMoon/types';
+import { REPLAY_START, type QuasiMoonView } from './features/quasiMoon/types';
 import './features/quasiMoon/quasiMoon.css';
 const QuasiMoonPanel = lazy(() => import('./features/quasiMoon/QuasiMoonPanel'));
 
@@ -64,7 +64,7 @@ function getIsMobile() { return mobileQuery.matches; }
 
 function App() {
   const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
-  const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady, rate } = useAstronomy();
+  const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady, rate, timeRef } = useAstronomy();
   const tides = useTidesLesson(nav);
   const graphics = useGraphicsQuality();
   const [quasiOpen, setQuasiOpen] = useState(false);
@@ -72,6 +72,7 @@ function App() {
   const [quasiPlaying, setQuasiPlaying] = useState(false);
   const quasiDay = useRef(0);
   const beforeQuasiRate = useRef(rate);
+  const beforeQuasiDate = useRef(0);
   const { close: closeTides, state: tidesState } = tides;
   const [showLabels, setShowLabels] = useState(true);
   const [showBelts, setShowBelts] = useState(false);
@@ -149,21 +150,28 @@ function App() {
     stopTour();
     closeTides(false);
     beforeQuasiRate.current = rate;
+    beforeQuasiDate.current = timeRef.current;
     setRate(0);
+    setDate(new Date(REPLAY_START));
+    setMode('orrery');
+    selectRubin(null);
+    setShowRubin(false);
+    goToSystem();
     quasiDay.current = 0;
-    setQuasiView('earth');
+    setQuasiView('sun');
     setQuasiPlaying(!reducedMotion);
     setToolbarOpen(false);
     setQuasiOpen(true);
-  }, [stopTour, closeTides, rate, setRate, reducedMotion]);
+  }, [stopTour, closeTides, rate, setRate, setDate, setMode, timeRef, selectRubin, goToSystem, reducedMotion]);
   const closeQuasi = useCallback(() => {
     setQuasiOpen(false);
     setQuasiPlaying(false);
+    setDate(new Date(beforeQuasiDate.current));
     setRate(beforeQuasiRate.current);
-    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-earth-companion]')?.focus());
-  }, [setRate]);
+    requestAnimationFrame(() => (document.querySelector<HTMLButtonElement>('[data-earth-companion]') ?? document.querySelector<HTMLButtonElement>('.mode-toggle [aria-checked=true]'))?.focus());
+  }, [setRate, setDate]);
   useEffect(() => {
-    if (quasiOpen && (mode === 'sky' || nav.level !== 'planet' || nav.planetId !== 'earth')) closeQuasi();
+    if (quasiOpen && (mode !== 'orrery' || nav.level === 'mission')) closeQuasi();
   }, [quasiOpen, mode, nav, closeQuasi]);
   useEffect(() => { if (reducedMotion) setQuasiPlaying(false); }, [reducedMotion]);
   const quasiPlayback = { dayRef: quasiDay, view: quasiView, playing: quasiPlaying, onComplete: () => setQuasiPlaying(false) };
@@ -436,14 +444,13 @@ function App() {
         rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubinFromScene } : null}
       />
 
-      {quasiOpen && <Suspense fallback={<div className="app__scene-loading" role="status">Finding Earth’s companion…</div>}>
+      {quasiOpen && nav.level === 'system' && <Suspense fallback={<div className="app__scene-loading" role="status">Finding Earth’s companion…</div>}>
         <QuasiMoonPanel {...quasiPlayback} onView={setQuasiView} onClose={closeQuasi} onPlay={() => {
           if (quasiDay.current >= 365) quasiDay.current = 0;
           setQuasiPlaying(value => !value);
         }} />
       </Suspense>}
-      {!quasiOpen && <>
-      {hideDetails && !cinemaMode && !tides.state && !orreryMissionActive && mode !== 'sky' && nav.level === 'planet' && nav.planetId === 'earth' && <button type="button" data-earth-companion className="earth-companion earth-companion--compact" onClick={openQuasi}>Earth has company…</button>}
+      {!quasiOpen && hideDetails && !cinemaMode && !tides.state && !orreryMissionActive && mode !== 'sky' && nav.level === 'planet' && nav.planetId === 'earth' && <button type="button" data-earth-companion className="earth-companion earth-companion--compact" onClick={openQuasi}>Earth has company…</button>}
       {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && (
         <RubinPanel
           asteroids={rubinAsteroids}
@@ -640,7 +647,7 @@ function App() {
 
       <StellaCallout
         available={!!voice.agentId && stella.available}
-        suppressed={cinemaMode || voice.status !== 'off' || tour.phase !== 'idle'}
+        suppressed={quasiOpen || cinemaMode || voice.status !== 'off' || tour.phase !== 'idle'}
         toolbarOpen={toolbarOpen}
         onVisibleChange={setStellaBeckon}
         onTour={startTour}
@@ -761,7 +768,7 @@ function App() {
       {!tides.state && !hideDetails && nav.level === 'planet' && currentPlanet && (
         <PlanetDetail
           planet={currentPlanet}
-          onDiscoverCompanion={currentPlanet.id === 'earth' && mode !== 'sky' && !orreryMissionActive ? openQuasi : undefined}
+          onDiscoverCompanion={!quasiOpen && currentPlanet.id === 'earth' && mode !== 'sky' && !orreryMissionActive ? openQuasi : undefined}
           onClose={handleClose}
           onMoonClick={handleMoonClick}
         />
@@ -775,7 +782,7 @@ function App() {
         />
       )}
 
-      {mode !== 'artistic' && (
+      {!quasiOpen && mode !== 'artistic' && (
         <TimeControls
           missionActive={orreryMissionActive}
           onReplayMission={startOrreryMission}
@@ -809,7 +816,6 @@ function App() {
       )}
       <ModeToggle />
 
-      </>}
       <Analytics />
       <SpeedInsights />
     </div>

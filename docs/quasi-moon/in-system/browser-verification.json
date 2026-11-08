@@ -1,0 +1,83 @@
+[
+  {
+    "name": "desktop",
+    "errors": [
+      "TagError: W"
+    ],
+    "systemLabels": [
+      "Sun",
+      "Jupiter",
+      "Saturn",
+      "Uranus",
+      "Neptune",
+      "Pluto",
+      "Earth",
+      "Venus"
+    ],
+    "planetsFollowReplay": true,
+    "normalPlanetNavigation": true,
+    "sameCanvas": true,
+    "overflow": false,
+    "reducedMotionPaused": null
+  },
+  {
+    "name": "mobile",
+    "errors": [
+      "TagError: W"
+    ],
+    "systemLabels": [
+      "Sun",
+      "Jupiter",
+      "Saturn",
+      "Uranus",
+      "Pluto",
+      "Venus",
+      "Earth"
+    ],
+    "planetsFollowReplay": true,
+    "normalPlanetNavigation": true,
+    "sameCanvas": true,
+    "overflow": false,
+    "reducedMotionPaused": null
+  },
+  {
+    "name": "small",
+    "errors": [
+      "TagError: Vl"
+    ],
+    "systemLabels": [
+      "Sun",
+      "Jupiter",
+      "Saturn",
+      "Uranus",
+      "Pluto",
+      "Venus",
+      "Earth"
+    ],
+    "planetsFollowReplay": true,
+    "normalPlanetNavigation": true,
+    "sameCanvas": true,
+    "overflow": false,
+    "reducedMotionPaused": null
+  },
+  {
+    "name": "reduced",
+    "errors": [
+      "TagError: Vl"
+    ],
+    "systemLabels": [
+      "Sun",
+      "Jupiter",
+      "Saturn",
+      "Uranus",
+      "Pluto",
+      "Venus",
+      "Earth"
+    ],
+    "planetsFollowReplay": true,
+    "normalPlanetNavigation": true,
+    "sameCanvas": true,
+    "overflow": false,
+    "reducedMotionPaused": true
+  }
+]

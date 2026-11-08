@@ -1,3 +1,19 @@
+# Integrated solar-system revision
+
+The isolated replay has been replaced with an additive Orrery layer. Earth’s clue opens the whole solar system with Kamoʻoalewa’s gold heliocentric trajectory. All normal planet components, star field, lighting and camera remain mounted. The compact replay card is non-modal; ordinary planet selection still works. The card returns in the system overview. “Follow companion” uses the existing small-body camera tracking with the rest of the system present.
+
+The asteroid uses the saved JPL positions, mapped through the same radial distance compression and focused-space transform as the planets. The replay writes the shared epoch before the normal planets calculate their positions each frame. Closing restores the prior simulation date and speed. Switching out of Orrery ends the replay. This is no longer an Earth-centered rotating-frame diagram; the film retains that scientific explanation separately.
+
+Phone composition offsets the camera projection upward while the overview card is present; removing the card or navigating to a planet clears the offset. No fake planet background or second canvas. Stellar voice context describes the integrated scene. No new dependencies or live voice-tool configuration.
+
+Local checks passed: build, scoped ESLint, 275 tests, and desktop/390px/375px/reduced-motion browser scenarios. The pre-existing AdSense TagError remains.
+
+Current verification: `node scripts/quasi-moon/verify.cjs` (or `verify-in-system.cjs`). It supports `QUASI_BASE` and `QUASI_OUT` for preview/production evidence, and origin-scoped existing Vercel OIDC authentication. Tests cover actual movement of Jupiter when scrubbing the replay, unchanged day on camera switch, ordinary Jupiter navigation with the companion still present, return to replay, canvas retention, reduced motion and no horizontal overflow. Evidence: `in-system/`.
+
+## Historical initial release
+
+The following notes and screenshots describe the initial isolated replay shipped in PR #101, superseded by the integrated revision above.
+
 # Earth’s hidden companion: Kamoʻoalewa
 
 Implemented on `codex/quasi-moon` from `origin/main` commit `77dd604`. Local review only; no push, deployment or live-agent change.

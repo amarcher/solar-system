@@ -1,0 +1,43 @@
+const {chromium}=require('/Users/archer/Programs/storybook-studio/node_modules/playwright');
+const fs=require('node:fs'),path=require('node:path');
+const BASE=process.env.QUASI_BASE || 'http://127.0.0.1:5178';
+const OUT=path.resolve(process.env.QUASI_OUT || 'docs/quasi-moon/in-system');fs.mkdirSync(OUT,{recursive:true});
+(async()=>{
+ const b=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',args:['--use-angle=metal','--enable-gpu']}); const results=[];
+ for(const [name,width,height,motion] of [['desktop',1280,900,'no-preference'],['mobile',390,844,'no-preference'],['small',375,667,'no-preference'],['reduced',390,844,'reduce']]) {
+  const p=await b.newPage({viewport:{width,height},reducedMotion:motion});const errors=[];p.on('pageerror',e=>errors.push(String(e)));
+  if(process.env.VERCEL_OIDC_TOKEN)await p.route(BASE+'/**',r=>r.continue({headers:{...r.request().headers(),'x-vercel-trusted-oidc-idp-token':process.env.VERCEL_OIDC_TOKEN}}));
+  await p.goto(BASE+'/planets/earth');await p.getByRole('button',{name:'Earth has company…',exact:true}).waitFor();
+  const canvas=await p.locator('canvas').elementHandle();
+  await p.getByRole('button',{name:'Earth has company…',exact:true}).click();
+  await p.getByRole('complementary',{name:'Kamoʻoalewa replay'}).waitFor();await p.waitForTimeout(4000);
+  if(await p.locator('.stella-callout').count())throw Error('Stella prompt covers replay');
+  const paused=await p.getByRole('button',{name:'Play year replay',exact:true}).count();
+  if(motion==='reduce'&&!paused)throw Error('Reduced motion autoplayed');
+  if(!paused)await p.getByRole('button',{name:'Pause year replay'}).click();
+  const slider=p.getByRole('slider',{name:'Day of the one-year replay'});
+  await slider.fill('0');await p.waitForTimeout(400);
+  const jupiter=p.locator('.scene-label').filter({hasText:/^Jupiter$/});await jupiter.waitFor();
+  const before=await jupiter.boundingBox();
+  await slider.fill('180');await p.waitForTimeout(600);const after=await jupiter.boundingBox();
+  if(Math.hypot(after.x-before.x,after.y-before.y)<2)throw Error('Planet did not move with shared replay date');
+  const labels=await p.locator('.scene-label').allTextContents();if(labels.length<4)throw Error('Missing system context');
+  await p.screenshot({path:path.join(OUT,name+'-system.png')});
+  await p.getByRole('button',{name:'Follow companion',exact:true}).click();await p.waitForTimeout(3500);
+  if(await slider.inputValue()!=='180')throw Error('Camera changed replay date');
+  await p.screenshot({path:path.join(OUT,name+'-follow.png')});
+  await p.getByRole('button',{name:'Solar system',exact:true}).click();await p.waitForTimeout(3500);
+  await jupiter.click();await p.waitForTimeout(3000);if(!p.url().endsWith('/planets/jupiter'))throw Error('Planet navigation unavailable');
+  if(await p.locator('[data-quasi-marker]').count()!==1)throw Error('Companion disappeared during normal planet navigation');
+  await p.goBack();await p.getByRole('complementary',{name:'Kamoʻoalewa replay'}).waitFor();await p.waitForTimeout(2000);
+  await slider.fill('365');await p.waitForTimeout(200);await p.getByRole('button',{name:'Replay the year'}).click();await p.waitForTimeout(400);
+  if(Number(await slider.inputValue())>=365)throw Error('Replay failed');
+  await p.getByRole('button',{name:'Close companion replay'}).click();
+  await p.locator('[data-quasi-marker]').waitFor({state:'detached',timeout:3000});
+  const sameCanvas=await p.evaluate(el=>el===document.querySelector('canvas'),canvas);
+  if(!sameCanvas)throw Error('Canvas was replaced');
+  const overflow=await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth);if(overflow)throw Error('Horizontal overflow');
+  results.push({name,errors,systemLabels:labels,planetsFollowReplay:true,normalPlanetNavigation:true,sameCanvas,overflow,reducedMotionPaused:motion==='reduce'?!!paused:null});await p.close();
+ }
+ fs.writeFileSync(path.join(OUT,'browser-verification.json'),JSON.stringify(results,null,2));console.log(JSON.stringify(results));await b.close();
+})().catch(e=>{console.error(e);process.exit(1)});
