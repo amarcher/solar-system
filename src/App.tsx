@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useNavigation } from './hooks/useNavigation';
@@ -40,6 +40,10 @@ import type { TourTarget } from './tour/tourScript';
 import type { CinematicShot } from './components/scene/CameraRig';
 import { pathToLandingIntent } from './utils/routes';
 
+import type { QuasiMoonView } from './features/quasiMoon/types';
+import './features/quasiMoon/quasiMoon.css';
+const QuasiMoonPanel = lazy(() => import('./features/quasiMoon/QuasiMoonPanel'));
+
 // Read before useNavigation normalizes the URL to /.
 const landingIntent = pathToLandingIntent(window.location.pathname);
 
@@ -63,6 +67,11 @@ function App() {
   const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady, rate } = useAstronomy();
   const tides = useTidesLesson(nav);
   const graphics = useGraphicsQuality();
+  const [quasiOpen, setQuasiOpen] = useState(false);
+  const [quasiView, setQuasiView] = useState<QuasiMoonView>('earth');
+  const [quasiPlaying, setQuasiPlaying] = useState(false);
+  const quasiDay = useRef(0);
+  const beforeQuasiRate = useRef(rate);
   const { close: closeTides, state: tidesState } = tides;
   const [showLabels, setShowLabels] = useState(true);
   const [showBelts, setShowBelts] = useState(false);
@@ -136,6 +145,28 @@ function App() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hideDetails = cinemaMode || isMobile;
+  const openQuasi = useCallback(() => {
+    stopTour();
+    closeTides(false);
+    beforeQuasiRate.current = rate;
+    setRate(0);
+    quasiDay.current = 0;
+    setQuasiView('earth');
+    setQuasiPlaying(!reducedMotion);
+    setToolbarOpen(false);
+    setQuasiOpen(true);
+  }, [stopTour, closeTides, rate, setRate, reducedMotion]);
+  const closeQuasi = useCallback(() => {
+    setQuasiOpen(false);
+    setQuasiPlaying(false);
+    setRate(beforeQuasiRate.current);
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-earth-companion]')?.focus());
+  }, [setRate]);
+  useEffect(() => {
+    if (quasiOpen && (mode === 'sky' || nav.level !== 'planet' || nav.planetId !== 'earth')) closeQuasi();
+  }, [quasiOpen, mode, nav, closeQuasi]);
+  useEffect(() => { if (reducedMotion) setQuasiPlaying(false); }, [reducedMotion]);
+  const quasiPlayback = { dayRef: quasiDay, view: quasiView, playing: quasiPlaying, onComplete: () => setQuasiPlaying(false) };
 
   // Reset the mission HUD dismissed state whenever the user (re-)enters
   // mission view, so the info card shows fresh on each visit.
@@ -266,7 +297,7 @@ function App() {
 
   const voice = useSolarConversation({
     currentRate: rate,
-    scene: { belts: showBelts, detailsVisible: !hideDetails && !tides.state, constellations: showConstellations, quality: graphics.preference, missionActive: orreryMissionActive || nav.level === 'mission', rubin: { visible: showRubin, selectedId: rubinSelectedId } },
+    scene: { quasiMoon: quasiOpen ? quasiView : null, belts: showBelts, detailsVisible: !hideDetails && !tides.state, constellations: showConstellations, quality: graphics.preference, missionActive: orreryMissionActive || nav.level === 'mission', rubin: { visible: showRubin, selectedId: rubinSelectedId } },
     onSetTides: (enabled) => {
       if (enabled) { goToPlanet('earth'); tides.open(); }
       else closeTides(false);
@@ -363,7 +394,7 @@ function App() {
 
   return (
     <div className={`app${cinemaMode ? ' app--cinema' : ''}`} data-nav-level={nav.level}>
-      {!cinemaMode && mode === 'artistic' && (
+      {!quasiOpen && !cinemaMode && mode === 'artistic' && (
         <header className="app-header">
           <p className="app-subtitle">
             {nav.level === 'planet' ? 'Click any moon to explore' :
@@ -376,7 +407,7 @@ function App() {
 
       {/* Orrery/Sky positions come from the lazy-loaded astronomy engine —
           without this the first paint is a black void with no explanation. */}
-      {mode !== 'artistic' && !engineReady && (
+      {!quasiOpen && mode !== 'artistic' && !engineReady && (
         <div className="app__scene-loading" role="status">
           <span className="app__scene-loading-spinner" aria-hidden="true" />
           Calculating planet positions…
@@ -384,6 +415,7 @@ function App() {
       )}
 
       <SolarSystemScene
+        quasiMoon={quasiOpen ? quasiPlayback : null}
         tides={tides.state}
         planets={planets}
         moonsByPlanet={moonsByPlanet}
@@ -404,6 +436,14 @@ function App() {
         rubin={showRubin ? { asteroids: rubinAsteroids, selectedId: rubinSelectedId, view: rubinView, onSelect: selectRubinFromScene } : null}
       />
 
+      {quasiOpen && <Suspense fallback={<div className="app__scene-loading" role="status">Finding Earth’s companion…</div>}>
+        <QuasiMoonPanel {...quasiPlayback} onView={setQuasiView} onClose={closeQuasi} onPlay={() => {
+          if (quasiDay.current >= 365) quasiDay.current = 0;
+          setQuasiPlaying(value => !value);
+        }} />
+      </Suspense>}
+      {!quasiOpen && <>
+      {hideDetails && !cinemaMode && !tides.state && !orreryMissionActive && mode !== 'sky' && nav.level === 'planet' && nav.planetId === 'earth' && <button type="button" data-earth-companion className="earth-companion earth-companion--compact" onClick={openQuasi}>Earth has company…</button>}
       {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && (
         <RubinPanel
           asteroids={rubinAsteroids}
@@ -721,6 +761,7 @@ function App() {
       {!tides.state && !hideDetails && nav.level === 'planet' && currentPlanet && (
         <PlanetDetail
           planet={currentPlanet}
+          onDiscoverCompanion={currentPlanet.id === 'earth' && mode !== 'sky' && !orreryMissionActive ? openQuasi : undefined}
           onClose={handleClose}
           onMoonClick={handleMoonClick}
         />
@@ -768,6 +809,7 @@ function App() {
       )}
       <ModeToggle />
 
+      </>}
       <Analytics />
       <SpeedInsights />
     </div>

@@ -1,0 +1,34 @@
+.earth-companion { color:#f3cf97; border:1px solid #f3cf9740; border-radius:24px; background:#111a2de8; padding:12px 18px; font:inherit; cursor:pointer; min-height:44px; }
+.earth-companion--compact { position:fixed; z-index:120; left:16px; bottom:210px; font:13px 'Space Grotesk',sans-serif; }
+.earth-companion:hover { background:#24304a; }
+.quasi { position:fixed; inset:0; z-index:180; pointer-events:none; color:#eff5ff; font-family:'Space Grotesk',sans-serif; }
+.quasi__header { position:absolute; top:24px; left:28px; right:28px; display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+.quasi__header h1 { margin:6px 0; font-size:clamp(26px,4vw,42px); font-weight:500; }
+.quasi__eyebrow { margin:0; color:#f3cf97; font-size:12px; letter-spacing:.035em; }
+.quasi__size { margin:0; color:#b3c4da; font-size:13px; }
+.quasi button,.quasi input,.quasi a,.quasi details { pointer-events:auto; }
+.quasi button { min-height:44px; border:1px solid #a8caff40; border-radius:12px; background:#142037eb; color:inherit; font:inherit; cursor:pointer; padding:8px 15px; }
+.quasi .quasi__close { width:44px; padding:0; font-size:28px; }
+.quasi__controls { position:absolute; left:28px; bottom:24px; width:min(380px,calc(100vw - 56px)); padding:18px; box-sizing:border-box; border:1px solid #a8caff30; background:#0a1324ed; border-radius:18px; pointer-events:auto; max-height:46dvh; overflow:auto; }
+.quasi__explanation { margin:0 0 14px; line-height:1.5; font-size:14px; }
+.quasi__views { display:flex; gap:8px; }
+.quasi__views button { flex:1; font-size:12px; }
+.quasi__views button[aria-pressed=true] { color:#1b140b; background:#f3cf97; border-color:#f3cf97; }
+.quasi__playback { display:flex; align-items:center; justify-content:space-between; margin-top:12px; font-size:13px; }
+.quasi__playback button { min-width:84px; }
+.quasi input[type=range] { width:100%; height:30px; accent-color:#f3cf97; cursor:pointer; }
+.quasi__note { color:#acbbce; font-size:11px; line-height:1.5; margin:4px 0 10px; }
+.quasi details { font-size:12px; line-height:1.5; color:#c3d0e3; }
+.quasi summary { cursor:pointer; padding:4px 0; }
+.quasi a { color:#f3cf97; }
+.quasi :focus-visible,.earth-companion:focus-visible { outline:2px solid #f3cf97; outline-offset:3px; }
+.quasi-label { white-space:nowrap; color:#ffd18d; font:12px 'Space Grotesk',sans-serif; text-shadow:0 1px 5px #000; pointer-events:none; }
+.quasi-label--earth { color:#98d4ff; }
+.quasi-label--sun { color:#adbcd0; font-size:11px; }
+@media(max-width:899px) {
+ .quasi__header { top:18px; left:18px; right:18px; }
+ .quasi__eyebrow { font-size:10px; }
+ .quasi__size { font-size:11px; }
+ .quasi__controls { left:12px; bottom:max(12px,env(safe-area-inset-bottom)); width:calc(100vw - 24px); padding:14px; max-height:39dvh; }
+ .quasi__explanation { font-size:13px; margin-bottom:10px; }
+}

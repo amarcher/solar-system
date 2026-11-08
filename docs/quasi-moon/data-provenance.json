@@ -1,0 +1,11 @@
+{
+  "source_file": "/Users/archer/Programs/space-race/marketing/campaigns/2026-11-quasi-moons/v4/data/orbits.json",
+  "source_sha256": "01cce0ee324ff8831ab64be83079a76a352451d408c3a94f2656c01acf403c03",
+  "derived_file": "src/features/quasiMoon/ephemeris.json",
+  "derived_sha256": "d0319ca68b18804c63ae2f9d6cf3fec5b113213c3a9949f57312ac4c67c3c2de",
+  "precision": "10 decimal places in AU",
+  "samples": 366,
+  "start": "2026-11-08",
+  "end": "2027-11-08",
+  "source": "NASA/JPL Horizons"
+}
