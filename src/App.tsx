@@ -647,7 +647,7 @@ function App() {
 
       <StellaCallout
         available={!!voice.agentId && stella.available}
-        suppressed={cinemaMode || voice.status !== 'off' || tour.phase !== 'idle'}
+        suppressed={quasiOpen || cinemaMode || voice.status !== 'off' || tour.phase !== 'idle'}
         toolbarOpen={toolbarOpen}
         onVisibleChange={setStellaBeckon}
         onTour={startTour}

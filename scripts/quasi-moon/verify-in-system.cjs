@@ -11,6 +11,7 @@ const OUT=path.resolve(process.env.QUASI_OUT || 'docs/quasi-moon/in-system');fs.
   const canvas=await p.locator('canvas').elementHandle();
   await p.getByRole('button',{name:'Earth has company…',exact:true}).click();
   await p.getByRole('complementary',{name:'Kamoʻoalewa replay'}).waitFor();await p.waitForTimeout(4000);
+  if(await p.locator('.stella-callout').count())throw Error('Stella prompt covers replay');
   const paused=await p.getByRole('button',{name:'Play year replay',exact:true}).count();
   if(motion==='reduce'&&!paused)throw Error('Reduced motion autoplayed');
   if(!paused)await p.getByRole('button',{name:'Pause year replay'}).click();
