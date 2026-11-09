@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { NavigationState } from '../types/celestialBody';
 import { trackPlanetView, trackMoonView, trackSunView, trackExplorationMilestone } from '../utils/analytics';
-import { navToPath, navToTitle, pathToNav } from '../utils/routes';
+import { navToPath, navToTitle, pathToLandingIntent, pathToNav } from '../utils/routes';
 
 /**
  * Read the initial nav state from the URL. Falls back to system view on
@@ -36,7 +36,11 @@ export function useNavigation() {
     const targetPath = navToPath(nav);
     const currentPath = window.location.pathname;
     if (currentPath !== targetPath) {
-      if (isFirstSync.current) {
+      const initialIntent = isFirstSync.current ? pathToLandingIntent(currentPath) : null;
+      if (initialIntent?.kind === 'quasiMoon') {
+        // The companion overview is parallel to NavigationState, so keep its
+        // canonical URL while App initializes that scene state.
+      } else if (isFirstSync.current) {
         // Landing URL didn't match canonical — normalize in place
         window.history.replaceState({}, '', targetPath);
       } else {

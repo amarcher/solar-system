@@ -19,6 +19,7 @@ export interface SceneVoiceState {
   rubin: { visible: boolean; selectedId: string | null };
 }
 export interface SceneToolHandlers {
+  onOpenQuasiMoon: (view: 'earth' | 'sun') => void;
   onSetRubin: (enabled: boolean) => void;
   onFocusRubin: (id: string, view: 'follow' | 'orbit') => void;
   onSetTides: (enabled: boolean) => void;
@@ -29,6 +30,16 @@ export interface SceneToolHandlers {
 /** Read current state at invocation, never the state when the session started. */
 export function createSceneTools(read: () => SceneVoiceState, handlers: () => SceneToolHandlers) {
   return {
+    show_earth_companion: ({ view }: { view?: unknown }) => {
+      const state = read();
+      if (state.missionActive) return 'Close the mission replay before opening Earth\'s companion illustration.';
+      const framing = view === 'solar-system' || view === 'sun' ? 'sun' : 'earth';
+      if (state.quasiMoon === framing) {
+        return `Kamoʻoalewa is already open in the ${framing === 'earth' ? 'Follow companion' : 'Solar system'} view.`;
+      }
+      handlers().onOpenQuasiMoon(framing);
+      return `Opened Kamoʻoalewa in the ${framing === 'earth' ? 'Follow companion' : 'Solar system'} view. The dated replay keeps moving forward until paused; the canonical link is /companions/kamo-oalewa.`;
+    },
     set_earth_tides: ({ enabled }: { enabled?: unknown }) => {
       if (typeof enabled !== 'boolean') return 'Please provide enabled as true or false.';
       const state = read();
@@ -73,8 +84,9 @@ export function createSceneTools(read: () => SceneVoiceState, handlers: () => Sc
 }
 
 export function buildSceneContext(state: SceneVoiceState): string {
-  if (state.quasiMoon) return `[CURRENT SCENE FEATURES] Kamoʻoalewa is highlighted in the ordinary Orrery alongside the Sun and all the planets, with a gold solar orbit and an enlarged marker. All bodies share a dated replay from 8 Nov 2026 to 8 Nov 2027; the asteroid uses JPL states and the planets use the Orrery ephemeris. Distances are compressed and body sizes exaggerated. ${state.nav.level === 'system' ? `Camera: ${state.quasiMoon === 'earth' ? 'following the companion, still in the solar system' : 'whole solar system'}. The compact replay card has Solar system, Follow companion, pause, date slider and close controls.` : 'The visitor is exploring another body with the normal navigation. The companion remains in the scene; return to the solar-system overview to see its replay card.'} There is no isolated Earth-centered rotating-frame diagram. It is a solar-orbiting asteroid, not an Earth-captured moon or a visible second Moon. Mean diameter estimated at 18 ± 2 metres; discovered 27 Apr 2016. The replay drives the shared date; voice set_time/set_time_speed do not control this replay. Normal planet navigation remains available. Do not claim a voice tool operates the replay.`;
+  if (state.quasiMoon) return `[CURRENT SCENE FEATURES] Kamoʻoalewa is highlighted in the ordinary Orrery alongside the Sun and all the planets, with a gold solar orbit and an enlarged marker. All bodies share a dated replay that starts 8 Nov 2026 and keeps moving forward until paused. The asteroid uses saved daily JPL states through 8 Nov 2027, then a continuous two-body orbit approximation; the planets use the Orrery ephemeris. Distances are compressed and body sizes exaggerated. ${state.nav.level === 'system' ? `Camera: ${state.quasiMoon === 'earth' ? 'following the companion, still in the solar system' : 'whole solar system'}. The compact replay card has Solar system, Follow companion, pause, date picker and close controls.` : 'The visitor is exploring another body with the normal navigation. The companion remains in the scene; return to the solar-system overview to see its replay card.'} There is no isolated Earth-centered rotating-frame diagram. It is a solar-orbiting asteroid, not an Earth-captured moon or a visible second Moon. Mean diameter estimated at 18 ± 2 metres; discovered 27 Apr 2016. The replay drives the shared date; voice set_time/set_time_speed do not control it. show_earth_companion can open or reframe the illustration, but pause and date remain manual controls. Canonical link: /companions/kamo-oalewa. Normal planet navigation remains available.`;
   const lines = ['[CURRENT SCENE FEATURES]', `View: ${state.mode === 'artistic' ? 'Explore' : state.mode === 'orrery' ? 'Orrery' : 'Sky'}. Display preference: ${state.quality}.`];
+  lines.push('Earth’s Kamoʻoalewa companion illustration is available through show_earth_companion (default Follow companion framing) and at /companions/kamo-oalewa. It is separate from the 2025 PN7 quasi-moon find.');
   lines.push(state.detailsVisible ? 'Desktop detail panels are available.' : 'Compact or cinema view: detail panels and Sun peeling controls are hidden. Do not claim property cards or peelable layers are visible.');
   if (state.mode === 'artistic') lines.push('Explore uses illustrative motion and a star-rich artistic Milky Way panorama. It is not a dated sky chart. Constellation lines are unavailable here.');
   else lines.push(`The display-enhanced NASA/Gaia Milky Way background and catalog stars share the celestial frame. Brightness is enhanced, not a naked-eye visibility forecast. Western constellation guide lines are ${state.constellations ? 'on' : 'off'}; they are imagined patterns, not physical connections. No selectable nebula, galaxy tour, or aurora control is implemented.`);

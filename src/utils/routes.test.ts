@@ -19,6 +19,12 @@ describe('pathToLandingIntent', () => {
     expect(pathToLandingIntent('/tour')).toEqual({ kind: 'tour' });
   });
 
+  it('opens the Kamoʻoalewa replay in follow view by default', () => {
+    expect(pathToLandingIntent('/companions/kamo-oalewa')).toEqual({ kind: 'quasiMoon', view: 'earth' });
+    expect(pathToLandingIntent('/companions/kamo-oalewa/solar-system')).toEqual({ kind: 'quasiMoon', view: 'sun' });
+    expect(pathToNav('/companions/kamo-oalewa')).toEqual({ level: 'system' });
+  });
+
   it('ignores ordinary routes', () => {
     expect(pathToLandingIntent('/')).toBeNull();
     expect(pathToLandingIntent('/planets/earth')).toBeNull();

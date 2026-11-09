@@ -226,7 +226,7 @@ function buildContextForNav(nav: NavigationState, detailsVisible: boolean): stri
   }
 }
 
-export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality, currentNav, currentTides = null, currentMode, currentObserver, displayTime, currentRate, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate, onUnavailable, onSessionRefused }: ConversationCallbacks) {
+export function useSolarConversation({ scene, onOpenQuasiMoon, onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality, currentNav, currentTides = null, currentMode, currentObserver, displayTime, currentRate, onNavigatePlanet, onNavigateMoon, onNavigateSun, onTrackMission, onGoBack, onPeelSunLayer, onSwitchMode, onSetDate, onSetRate, onUnavailable, onSessionRefused }: ConversationCallbacks) {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID as string | undefined;
 
   // Live Conversation instance from @elevenlabs/client. We hold this in
@@ -252,11 +252,11 @@ export function useSolarConversation({ scene, onSetRubin, onFocusRubin, onSetTid
   const latestNavRef = useRef<NavigationState>(currentNav);
   const tidesRef = useRef(currentTides);
   const sceneRef = useRef<SceneVoiceState>({ ...scene, nav: currentNav, mode: currentMode, tides: !!currentTides });
-  const sceneHandlersRef = useRef({ onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality });
+  const sceneHandlersRef = useRef({ onOpenQuasiMoon, onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality });
   useEffect(() => {
     sceneRef.current = { ...scene, nav: currentNav, mode: currentMode, tides: !!currentTides };
-    sceneHandlersRef.current = { onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality };
-  }, [scene, currentNav, currentMode, currentTides, onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality]);
+    sceneHandlersRef.current = { onOpenQuasiMoon, onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality };
+  }, [scene, currentNav, currentMode, currentTides, onOpenQuasiMoon, onSetRubin, onFocusRubin, onSetTides, onSetConstellations, onSetQuality]);
   const hadTidesContext = useRef(false);
 
   // Refs to navigation handlers so client tools always invoke the LATEST

@@ -19,10 +19,13 @@ import { getRubinAsteroidById } from '../data/rubinAsteroids';
  *   /artemis → /missions/artemis-2
  *
  * Landing links (share links for social posts; see pathToLandingIntent).
- * They land on the system view, so the URL normalizes to /:
+ * Rubin and tour links land on the system view and normalize to /. The
+ * companion link remains in the address bar while its overview is open:
  *   /rubin           → Orrery with Rubin finds on, following 2025 MN45
  *   /rubin/:findId   → the same, following that find
  *   /tour            → offer Stella's narrated tour
+ *   /companions/kamo-oalewa → Kamoʻoalewa replay, following the companion
+ *   /companions/kamo-oalewa/solar-system → the same replay, whole-system camera
  *
  * Unknown or invalid paths (e.g. /planets/nonexistent) fall back to the
  * system view. Vercel's catch-all rewrite in vercel.json serves index.html
@@ -110,10 +113,16 @@ export function navToTitle(nav: NavigationState): string {
 
 export type LandingIntent =
   | { kind: 'rubin'; findId: string | null }
-  | { kind: 'tour' };
+  | { kind: 'tour' }
+  | { kind: 'quasiMoon'; view: 'earth' | 'sun' };
 
 /** The Rubin find a bare /rubin link shows: the one the social posts lead with. */
 export const DEFAULT_RUBIN_LINK_FIND = '2025-mn45';
+export const KAMO_OALEWA_PATH = '/companions/kamo-oalewa';
+
+export function quasiMoonPath(view: 'earth' | 'sun'): string {
+  return view === 'earth' ? KAMO_OALEWA_PATH : `${KAMO_OALEWA_PATH}/solar-system`;
+}
 
 /**
  * Scene setup a landing link asks for, beyond its nav state. Unknown find
@@ -122,6 +131,8 @@ export const DEFAULT_RUBIN_LINK_FIND = '2025-mn45';
 export function pathToLandingIntent(pathname: string): LandingIntent | null {
   const path = pathname.replace(/\/+$/, '').toLowerCase();
   if (path === '/tour') return { kind: 'tour' };
+  if (path === KAMO_OALEWA_PATH) return { kind: 'quasiMoon', view: 'earth' };
+  if (path === `${KAMO_OALEWA_PATH}/solar-system`) return { kind: 'quasiMoon', view: 'sun' };
   if (path === '/rubin') return { kind: 'rubin', findId: DEFAULT_RUBIN_LINK_FIND };
   const rubinMatch = path.match(/^\/rubin\/([^/]+)$/);
   if (rubinMatch) {

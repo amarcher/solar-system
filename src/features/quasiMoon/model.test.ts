@@ -1,14 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { earthFrame, heliocentric, relativePath, sceneVector } from './model';
-import { replayDate } from './types';
+import { companionPosition, earthFrame, heliocentric, relativePath, sceneVector } from './model';
+import { replayDate, replayDayFromDate } from './types';
 
-describe('Kamoʻoalewa fixed-year replay', () => {
-  it('covers the advertised year and clamps rather than extrapolating', () => {
+describe('Kamoʻoalewa replay', () => {
+  it('uses the saved first year, then continues into later dates', () => {
     expect(replayDate(0)).toBe('8 Nov 2026');
     expect(replayDate(365)).toBe('8 Nov 2027');
+    expect(replayDate(731)).toBe('8 Nov 2028');
+    expect(replayDayFromDate('2028-11-08')).toBe(731);
     expect(heliocentric(-5)).toEqual(heliocentric(0));
-    expect(heliocentric(900)).toEqual(heliocentric(365));
     expect(heliocentric(NaN)).toEqual(heliocentric(0));
+    expect(companionPosition(365)).toEqual(heliocentric(365).asteroid);
+    expect(Math.hypot(...companionPosition(365.001).map((value, axis) => value - companionPosition(365)[axis]))).toBeLessThan(0.0001);
+    expect(companionPosition(730)[0]).toBeCloseTo(0.6058445203, 9);
+    expect(companionPosition(730)[1]).toBeCloseTo(0.6881312299, 9);
+    expect(companionPosition(730)[2]).toBeCloseTo(-0.0363764257, 9);
   });
   it('keeps Earth at the origin and the Sun on the negative x axis throughout the year', () => {
     for (let day = 0; day <= 365; day += 7.3) {

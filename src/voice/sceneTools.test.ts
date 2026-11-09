@@ -2,10 +2,21 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildSceneContext, createSceneTools, findRubinAsteroid, parseTimeRate, type SceneVoiceState } from './sceneTools';
 function setup() {
   const state: SceneVoiceState = { nav: { level: 'system' }, mode: 'artistic', tides: false, constellations: false, quality: 'auto', missionActive: false, detailsVisible: true, rubin: { visible: false, selectedId: null } };
-  const handlers = { onSetRubin: vi.fn(), onFocusRubin: vi.fn(), onSetTides: vi.fn(), onSetConstellations: vi.fn(), onSetQuality: vi.fn() };
+  const handlers = { onOpenQuasiMoon: vi.fn(), onSetRubin: vi.fn(), onFocusRubin: vi.fn(), onSetTides: vi.fn(), onSetConstellations: vi.fn(), onSetQuality: vi.fn() };
   return { state, handlers, tools: createSceneTools(() => state, () => handlers) };
 }
 describe('Stella scene tools', () => {
+  it('opens the companion illustration in follow view by default and keeps it distinct from missions', () => {
+    const { state, handlers, tools } = setup();
+    expect(tools.show_earth_companion({})).toContain('/companions/kamo-oalewa');
+    expect(handlers.onOpenQuasiMoon).toHaveBeenLastCalledWith('earth');
+    expect(tools.show_earth_companion({ view: 'solar-system' })).toContain('Solar system');
+    expect(handlers.onOpenQuasiMoon).toHaveBeenLastCalledWith('sun');
+    state.missionActive = true;
+    expect(tools.show_earth_companion({})).toContain('Close the mission replay');
+    expect(handlers.onOpenQuasiMoon).toHaveBeenCalledTimes(2);
+  });
+
   it('matches Rubin finds by designation, nickname, or headline words', () => {
     expect(findRubinAsteroid('2025 mn45')?.id).toBe('2025-mn45');
     expect(findRubinAsteroid('the speedy spinner')?.id).toBe('2025-mn45');

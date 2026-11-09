@@ -1,0 +1,18 @@
+{
+    "name": "show_earth_companion",
+    "description": "Open the Kamoʻoalewa companion illustration in the Orrery. This is the dedicated Earth-companion replay, not Rubin's separate 2025 PN7 find. The default close framing follows Kamoʻoalewa; the solar-system framing shows its whole orbit. Playback continues forward until the visitor pauses it.",
+    "type": "client",
+    "expects_response": true,
+    "response_timeout_secs": 10,
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "view": {
+                "type": "string",
+                "enum": ["follow", "solar-system"],
+                "description": "follow (default) tracks Kamoʻoalewa closely; solar-system shows its whole path around the Sun."
+            }
+        },
+        "required": []
+    }
+}
