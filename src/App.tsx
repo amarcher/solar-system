@@ -63,12 +63,12 @@ function subscribeToMobile(cb: () => void) {
 function getIsMobile() { return mobileQuery.matches; }
 
 function App() {
-  const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
+  const [quasiOpen, setQuasiOpen] = useState(false);
+  const [quasiView, setQuasiView] = useState<QuasiMoonView>('earth');
+  const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation(quasiOpen ? quasiView : null);
   const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady, rate, timeRef } = useAstronomy();
   const tides = useTidesLesson(nav);
   const graphics = useGraphicsQuality();
-  const [quasiOpen, setQuasiOpen] = useState(false);
-  const [quasiView, setQuasiView] = useState<QuasiMoonView>('earth');
   const [quasiPlaying, setQuasiPlaying] = useState(false);
   const quasiDay = useRef(0);
   const beforeQuasiRate = useRef(rate);
@@ -131,22 +131,11 @@ function App() {
     if (tourRunning && (nav.level !== 'system' || mode !== 'orrery')) stopTour();
   }, [tourRunning, nav.level, mode, stopTour]);
 
-  // Share links: /rubin[/find] opens the finds layer on a find; /tour starts
-  // the tour (or shows its start card if the browser blocks sound until a tap).
-  useEffect(() => {
-    if (!landingIntent) return;
-    if (landingIntent.kind === 'tour') {
-      startTour();
-    } else {
-      setMode('orrery');
-      setShowRubin(true);
-      trackRubinToggle(true, 'link');
-      if (landingIntent.findId) selectRubin(landingIntent.findId, 'link');
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const hideDetails = cinemaMode || isMobile;
-  const openQuasi = useCallback(() => {
+  const openQuasi = useCallback((view: QuasiMoonView = 'earth', showOverview = true) => {
+    if (showOverview) goToSystem();
+    setQuasiView(view);
+    if (quasiOpen) return;
     stopTour();
     closeTides(false);
     beforeQuasiRate.current = rate;
@@ -156,13 +145,11 @@ function App() {
     setMode('orrery');
     selectRubin(null);
     setShowRubin(false);
-    goToSystem();
     quasiDay.current = 0;
-    setQuasiView('sun');
     setQuasiPlaying(!reducedMotion);
     setToolbarOpen(false);
     setQuasiOpen(true);
-  }, [stopTour, closeTides, rate, setRate, setDate, setMode, timeRef, selectRubin, goToSystem, reducedMotion]);
+  }, [stopTour, closeTides, rate, setRate, setDate, setMode, timeRef, selectRubin, goToSystem, reducedMotion, quasiOpen]);
   const closeQuasi = useCallback(() => {
     setQuasiOpen(false);
     setQuasiPlaying(false);
@@ -174,7 +161,34 @@ function App() {
     if (quasiOpen && (mode !== 'orrery' || nav.level === 'mission')) closeQuasi();
   }, [quasiOpen, mode, nav, closeQuasi]);
   useEffect(() => { if (reducedMotion) setQuasiPlaying(false); }, [reducedMotion]);
-  const quasiPlayback = { dayRef: quasiDay, view: quasiView, playing: quasiPlaying, onComplete: () => setQuasiPlaying(false) };
+  const quasiPlayback = { dayRef: quasiDay, view: quasiView, playing: quasiPlaying };
+
+  // Share links: /rubin[/find] opens the finds layer; /tour starts the tour;
+  // /companions/kamo-oalewa opens this replay in its requested framing.
+  useEffect(() => {
+    if (!landingIntent) return;
+    if (landingIntent.kind === 'tour') {
+      startTour();
+    } else if (landingIntent.kind === 'quasiMoon') {
+      openQuasi(landingIntent.view);
+    } else {
+      setMode('orrery');
+      setShowRubin(true);
+      trackRubinToggle(true, 'link');
+      if (landingIntent.findId) selectRubin(landingIntent.findId, 'link');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const intent = pathToLandingIntent(window.location.pathname);
+      const view = intent?.kind === 'quasiMoon' ? intent.view : event.state?.companionView;
+      if (view === 'earth' || view === 'sun') openQuasi(view, false);
+      else if (quasiOpen) closeQuasi();
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [quasiOpen, openQuasi, closeQuasi]);
 
   // Reset the mission HUD dismissed state whenever the user (re-)enters
   // mission view, so the info card shows fresh on each visit.
@@ -306,6 +320,7 @@ function App() {
   const voice = useSolarConversation({
     currentRate: rate,
     scene: { quasiMoon: quasiOpen ? quasiView : null, belts: showBelts, detailsVisible: !hideDetails && !tides.state, constellations: showConstellations, quality: graphics.preference, missionActive: orreryMissionActive || nav.level === 'mission', rubin: { visible: showRubin, selectedId: rubinSelectedId } },
+    onOpenQuasiMoon: openQuasi,
     onSetTides: (enabled) => {
       if (enabled) { goToPlanet('earth'); tides.open(); }
       else closeTides(false);
@@ -445,12 +460,9 @@ function App() {
       />
 
       {quasiOpen && nav.level === 'system' && <Suspense fallback={<div className="app__scene-loading" role="status">Finding Earth’s companion…</div>}>
-        <QuasiMoonPanel {...quasiPlayback} onView={setQuasiView} onClose={closeQuasi} onPlay={() => {
-          if (quasiDay.current >= 365) quasiDay.current = 0;
-          setQuasiPlaying(value => !value);
-        }} />
+        <QuasiMoonPanel {...quasiPlayback} onView={setQuasiView} onClose={closeQuasi} onPlay={() => setQuasiPlaying(value => !value)} />
       </Suspense>}
-      {!quasiOpen && hideDetails && !cinemaMode && !tides.state && !orreryMissionActive && mode !== 'sky' && nav.level === 'planet' && nav.planetId === 'earth' && <button type="button" data-earth-companion className="earth-companion earth-companion--compact" onClick={openQuasi}>Earth has company…</button>}
+      {!quasiOpen && hideDetails && !cinemaMode && !tides.state && !orreryMissionActive && mode !== 'sky' && nav.level === 'planet' && nav.planetId === 'earth' && <button type="button" data-earth-companion className="earth-companion earth-companion--compact" onClick={() => openQuasi()}>Earth has company…</button>}
       {mode === 'orrery' && showRubin && !cinemaMode && nav.level === 'system' && (
         <RubinPanel
           asteroids={rubinAsteroids}
@@ -768,7 +780,7 @@ function App() {
       {!tides.state && !hideDetails && nav.level === 'planet' && currentPlanet && (
         <PlanetDetail
           planet={currentPlanet}
-          onDiscoverCompanion={!quasiOpen && currentPlanet.id === 'earth' && mode !== 'sky' && !orreryMissionActive ? openQuasi : undefined}
+          onDiscoverCompanion={!quasiOpen && currentPlanet.id === 'earth' && mode !== 'sky' && !orreryMissionActive ? () => openQuasi() : undefined}
           onClose={handleClose}
           onMoonClick={handleMoonClick}
         />

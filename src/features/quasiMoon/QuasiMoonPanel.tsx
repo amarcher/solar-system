@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { replayDate, REPLAY_DAYS, type QuasiMoonPlayback, type QuasiMoonView } from './types';
+import { replayDate, replayDateInputValue, replayDayFromDate, type QuasiMoonPlayback, type QuasiMoonView } from './types';
 import './quasiMoon.css';
 
 interface Props extends QuasiMoonPlayback {
@@ -20,9 +20,9 @@ export default function QuasiMoonPanel({ dayRef, view, playing, onView, onPlay, 
       <button aria-pressed={view === 'sun'} onClick={() => onView('sun')}>Solar system</button>
       <button aria-pressed={view === 'earth'} onClick={() => onView('earth')}>Follow companion</button>
     </div>
-    <div className="quasi__playback"><button onClick={onPlay} aria-label={playing ? 'Pause year replay' : shownDay >= REPLAY_DAYS ? 'Replay the year' : 'Play year replay'}>{playing ? 'Pause' : shownDay >= REPLAY_DAYS ? 'Replay year' : 'Play'}</button><output aria-live="off">{replayDate(shownDay)}</output></div>
-    <input aria-label="Day of the one-year replay" type="range" min="0" max={REPLAY_DAYS} step="1" value={Math.floor(shownDay)} aria-valuetext={replayDate(shownDay)} onChange={e => { dayRef.current = Number(e.target.value); setShownDay(dayRef.current); }} />
-    <details><summary>Why “quasi-moon”?</summary><p>The gold path is its orbit around the Sun. It takes about a year, like Earth. From a viewpoint that follows Earth and turns with its solar orbit, it traces a loop around us. This Orrery shows its orbit around the Sun.</p><p>Discovered 27 April 2016. Mean diameter: 18 ± 2 m, estimated from JWST thermal measurements.</p><a href="https://www.jpl.nasa.gov/news/small-asteroid-is-earths-constant-companion/" target="_blank" rel="noreferrer">NASA/JPL: orbit</a> · <a href="https://arxiv.org/abs/2606.24017" target="_blank" rel="noreferrer">JWST: size</a></details>
-    <p className="quasi__note">Nov 2026–Nov 2027 replay. All planets share the date. Distances compressed; bodies enlarged.</p>
+    <div className="quasi__playback"><button onClick={onPlay} aria-label={playing ? 'Pause companion replay' : 'Play companion replay'}>{playing ? 'Pause' : 'Play'}</button><output aria-live="off">{replayDate(shownDay)}</output></div>
+    <label className="quasi__date">Replay date<input aria-label="Replay date" type="date" min="2026-11-08" value={replayDateInputValue(shownDay)} onChange={e => { dayRef.current = replayDayFromDate(e.target.value); setShownDay(dayRef.current); }} /></label>
+    <details><summary>Why “quasi-moon”?</summary><p>The gold path is its orbit around the Sun. It takes about a year, like Earth. From a viewpoint that follows Earth and turns with its solar orbit, it traces a loop around us. This Orrery shows its orbit around the Sun, and the replay keeps moving forward until you pause it.</p><p>Discovered 27 April 2016. Mean diameter: 18 ± 2 m, estimated from JWST thermal measurements.</p><a href="https://www.jpl.nasa.gov/news/small-asteroid-is-earths-constant-companion/" target="_blank" rel="noreferrer">NASA/JPL: orbit</a> · <a href="https://arxiv.org/abs/2606.24017" target="_blank" rel="noreferrer">JWST: size</a></details>
+    <p className="quasi__note">Daily JPL positions cover Nov 2026–Nov 2027; a two-body orbit model continues after that. All planets share the date. Distances compressed; bodies enlarged.</p>
   </aside>;
 }

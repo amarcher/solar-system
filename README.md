@@ -55,6 +55,8 @@ npm run dev
 2. Copy `.env.example` to `.env` and add your agent ID
 3. Push tool configs: `npx @elevenlabs/cli tools push`
 
+The Kamoʻoalewa teaching replay has a stable tool/browser entry point at `/companions/kamo-oalewa`; it opens in the close **Follow companion** framing by default.
+
 ### Video Setup
 
 Videos are optional. Without them, the app works fine — video slots are simply empty.

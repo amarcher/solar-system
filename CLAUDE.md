@@ -136,12 +136,13 @@ The R3F `<Canvas>` in `SolarSystemScene.tsx` **never unmounts**. It conditionall
 - `switch_view_mode({ mode })` — switches between Explore / Orrery / Sky view modes
 - `set_time({ date })` — jumps the simulation clock to a specific date
 - `set_time_speed({ speed })` — sets simulation playback speed (paused, real-time, 1hr/sec, etc.)
+- `show_earth_companion({ view })` — opens Kamoʻoalewa's continuing Orrery replay; `follow` is the default, `solar-system` shows the full orbit
 
 ### Narrated Tour (no mic)
 - `src/tour/tourScript.ts` — Stella's spoken tour of the Rubin finds: lines, spelled-out `speech`, scene targets; `useStellaTour.ts` plays them on one audio element with back/next/pause (start card if sound is blocked, caption timing if files are missing)
 - `src/components/ui/StellaTour.tsx/css` — caption card; ends by offering a real conversation
 - Audio: `public/audio/tour/<step>.mp3`, recorded in Stella's voice by `ELEVENLABS_API_KEY=… node scripts/tour/generate-audio.mjs` (needs a key with text-to-speech permission). Rerun after editing a line.
-- Share links (`pathToLandingIntent` in `src/utils/routes.ts`): `/tour` offers the tour; `/rubin` and `/rubin/<find-id>` open Rubin finds on a find (default 2025 MN45)
+- Share links (`pathToLandingIntent` in `src/utils/routes.ts`): `/tour` offers the tour; `/rubin` and `/rubin/<find-id>` open Rubin finds on a find (default 2025 MN45); `/companions/kamo-oalewa` opens the companion replay in its default follow view
 
 ### Context Updates
 Every navigation change sends a contextual update describing what the child sees on screen (3D scene state, property cards, moon list, fun facts). Built by `buildPlanetContext()`, `buildMoonContext()`, `buildSunContext()` in `useSolarConversation.ts`.

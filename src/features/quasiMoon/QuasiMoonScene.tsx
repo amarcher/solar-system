@@ -7,7 +7,7 @@ import { scaleAUVector } from '../../astronomy/realisticScale';
 import { useFocusedSpace } from '../../sceneLayout/useFocusedSpace';
 import { applyFocusSpace } from '../../sceneLayout/focusedSpace';
 import { setSmallBodyPosition } from '../../utils/planetPositions';
-import { heliocentric, solarPath, sceneVector } from './model';
+import { companionPosition, solarPath, sceneVector } from './model';
 import { REPLAY_START, REPLAY_DAYS, REPLAY_SECONDS, type QuasiMoonPlayback } from './types';
 
 const path = solarPath.map(([x, y, z]) => {
@@ -16,7 +16,7 @@ const path = solarPath.map(([x, y, z]) => {
 });
 
 /** An additive Orrery layer: uses its existing planets, lights, camera and scale. */
-export default function QuasiMoonScene({ dayRef, playing, onComplete, overview }: QuasiMoonPlayback & { overview: boolean }) {
+export default function QuasiMoonScene({ dayRef, playing, overview }: QuasiMoonPlayback & { overview: boolean }) {
   const { camera, size } = useThree();
   useEffect(() => {
     if (!(camera instanceof PerspectiveCamera)) return;
@@ -33,15 +33,14 @@ export default function QuasiMoonScene({ dayRef, playing, onComplete, overview }
   // Set the shared epoch before the ordinary planet callbacks (priority -4).
   useFrame((_, delta) => {
     if (playing && engineReady) {
-      dayRef.current = Math.min(REPLAY_DAYS, dayRef.current + Math.min(delta, .1) * REPLAY_DAYS / REPLAY_SECONDS);
-      if (dayRef.current === REPLAY_DAYS) onComplete();
+      dayRef.current += Math.min(delta, .1) * REPLAY_DAYS / REPLAY_SECONDS;
     }
     timeRef.current = REPLAY_START + dayRef.current * 86400000;
   }, -5);
 
   useFrame(() => {
     if (!body.current || !orbit.current) return;
-    const [x, y, z] = sceneVector(heliocentric(dayRef.current).asteroid);
+    const [x, y, z] = sceneVector(companionPosition(dayRef.current));
     const p = scaleAUVector(x, y, z);
     raw.current.set(p.x, p.y, p.z);
     applyFocusSpace(space, raw.current, body.current.position);

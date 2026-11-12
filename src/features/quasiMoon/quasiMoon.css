@@ -13,7 +13,8 @@
 .quasi__views button[aria-pressed=true] { color:#1b140b; background:#f3cf97; border-color:#f3cf97; }
 .quasi__playback { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
 .quasi__playback button { min-width:84px; }
-.quasi-panel input[type=range] { width:100%; height:30px; accent-color:#f3cf97; cursor:pointer; }
+.quasi__date { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:8px 0; color:#acbbce; font-size:11px; }
+.quasi__date input { min-height:36px; box-sizing:border-box; border:1px solid #a8caff40; border-radius:10px; padding:5px 8px; color:#eff5ff; background:#142037eb; font:inherit; color-scheme:dark; }
 .quasi__note { color:#acbbce; font-size:10px; line-height:1.5; margin:8px 0 0; }
 .quasi-panel details { font-size:12px; line-height:1.5; color:#c3d0e3; }
 .quasi-panel summary { cursor:pointer; padding:4px 0; }
