@@ -12,9 +12,13 @@ describe('Stella scene tools', () => {
     expect(handlers.onOpenQuasiMoon).toHaveBeenLastCalledWith('earth');
     expect(tools.show_earth_companion({ view: 'solar-system' })).toContain('Solar system');
     expect(handlers.onOpenQuasiMoon).toHaveBeenLastCalledWith('sun');
+    state.quasiMoon = 'sun';
+    expect(tools.show_earth_companion({ view: 'solar-system' })).toContain('already open');
+    state.nav = { level: 'planet', planetId: 'earth' };
+    expect(tools.show_earth_companion({ view: 'solar-system' })).toContain('Opened');
     state.missionActive = true;
     expect(tools.show_earth_companion({})).toContain('Close the mission replay');
-    expect(handlers.onOpenQuasiMoon).toHaveBeenCalledTimes(2);
+    expect(handlers.onOpenQuasiMoon).toHaveBeenCalledTimes(3);
   });
 
   it('matches Rubin finds by designation, nickname, or headline words', () => {

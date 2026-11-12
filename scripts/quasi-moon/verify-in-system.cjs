@@ -41,6 +41,22 @@ const OUT=path.resolve(process.env.QUASI_OUT || 'docs/quasi-moon/in-system');fs.
   const sameCanvas=await p.evaluate(el=>el===document.querySelector('canvas'),canvas);
   if(!sameCanvas)throw Error('Canvas was replaced');
   const overflow=await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth);if(overflow)throw Error('Horizontal overflow');
+  if(name==='desktop') {
+   await p.goto(BASE+'/planets/earth');
+   const clue=p.locator('[data-earth-companion]');
+   await clue.click();
+   await p.waitForURL('**/companions/kamo-oalewa');
+   await p.getByRole('button',{name:'Solar system',exact:true}).click();
+   await p.waitForURL('**/companions/kamo-oalewa/solar-system');
+   await p.goBack();
+   await p.waitForURL('**/planets/earth');
+   await clue.waitFor();
+   await p.locator('[data-quasi-marker]').waitFor({state:'detached'});
+   await p.goForward();
+   await p.getByRole('button',{name:'Solar system',pressed:true}).waitFor();
+   await p.reload();
+   await p.getByRole('button',{name:'Solar system',pressed:true}).waitFor();
+  }
   results.push({name,errors,systemLabels:labels,defaultFollow:true,deepLinkPreserved:true,continuedPastJplYear:true,planetsFollowReplay:true,normalPlanetNavigation:true,sameCanvas,overflow,reducedMotionPaused:motion==='reduce'?!!paused:null});await p.close();
  }
  fs.writeFileSync(path.join(OUT,'browser-verification.json'),JSON.stringify(results,null,2));console.log(JSON.stringify(results));await b.close();

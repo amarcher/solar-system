@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { NavigationState } from '../types/celestialBody';
 import { trackPlanetView, trackMoonView, trackSunView, trackExplorationMilestone } from '../utils/analytics';
-import { navToPath, navToTitle, pathToLandingIntent, pathToNav } from '../utils/routes';
+import { navToPath, navToTitle, pathToLandingIntent, pathToNav, quasiMoonPath } from '../utils/routes';
 
 /**
  * Read the initial nav state from the URL. Falls back to system view on
@@ -12,7 +12,7 @@ function initialNavFromUrl(): NavigationState {
   return pathToNav(window.location.pathname);
 }
 
-export function useNavigation() {
+export function useNavigation(companionView: 'earth' | 'sun' | null = null) {
   const [nav, setNav] = useState<NavigationState>(initialNavFromUrl);
 
   // True until we've processed the first nav → URL sync. Lets us
@@ -25,7 +25,8 @@ export function useNavigation() {
 
   // Sync URL + document title whenever nav state changes
   useEffect(() => {
-    document.title = navToTitle(nav);
+    const companionOverview = nav.level === 'system' && companionView;
+    document.title = companionOverview ? 'Kamoʻoalewa — Space Explorer' : navToTitle(nav);
 
     if (skipNextUrlSync.current) {
       skipNextUrlSync.current = false;
@@ -33,22 +34,18 @@ export function useNavigation() {
       return;
     }
 
-    const targetPath = navToPath(nav);
+    const targetPath = companionOverview ? quasiMoonPath(companionOverview) : navToPath(nav);
     const currentPath = window.location.pathname;
-    if (currentPath !== targetPath) {
-      const initialIntent = isFirstSync.current ? pathToLandingIntent(currentPath) : null;
-      if (initialIntent?.kind === 'quasiMoon') {
-        // The companion overview is parallel to NavigationState, so keep its
-        // canonical URL while App initializes that scene state.
-      } else if (isFirstSync.current) {
-        // Landing URL didn't match canonical — normalize in place
-        window.history.replaceState({}, '', targetPath);
-      } else {
-        window.history.pushState({}, '', targetPath);
-      }
+    const fromCompanion = pathToLandingIntent(currentPath)?.kind === 'quasiMoon';
+    const initializingCompanion = isFirstSync.current && fromCompanion && !companionView;
+    if (currentPath !== targetPath && !initializingCompanion) {
+      const replace = isFirstSync.current || (fromCompanion && nav.level === 'system');
+      const state = companionView ? { companionView } : {};
+      if (replace) window.history.replaceState(state, '', targetPath);
+      else window.history.pushState(state, '', targetPath);
     }
     isFirstSync.current = false;
-  }, [nav]);
+  }, [nav, companionView]);
 
   // Listen for browser back/forward
   useEffect(() => {

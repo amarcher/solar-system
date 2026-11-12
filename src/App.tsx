@@ -38,7 +38,7 @@ import { StellaTour } from './components/ui/StellaTour';
 import { useStellaTour } from './tour/useStellaTour';
 import type { TourTarget } from './tour/tourScript';
 import type { CinematicShot } from './components/scene/CameraRig';
-import { navToTitle, pathToLandingIntent, quasiMoonPath } from './utils/routes';
+import { pathToLandingIntent } from './utils/routes';
 
 import { REPLAY_START, type QuasiMoonView } from './features/quasiMoon/types';
 import './features/quasiMoon/quasiMoon.css';
@@ -63,12 +63,12 @@ function subscribeToMobile(cb: () => void) {
 function getIsMobile() { return mobileQuery.matches; }
 
 function App() {
-  const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation();
+  const [quasiOpen, setQuasiOpen] = useState(false);
+  const [quasiView, setQuasiView] = useState<QuasiMoonView>('earth');
+  const { nav, goToSystem, goToSun, goToPlanet, goToMoon, goToMission, goBack } = useNavigation(quasiOpen ? quasiView : null);
   const { mode, setMode, setDate, setRate, setObserver, displayTime, observer, engineReady, rate, timeRef } = useAstronomy();
   const tides = useTidesLesson(nav);
   const graphics = useGraphicsQuality();
-  const [quasiOpen, setQuasiOpen] = useState(false);
-  const [quasiView, setQuasiView] = useState<QuasiMoonView>('earth');
   const [quasiPlaying, setQuasiPlaying] = useState(false);
   const quasiDay = useRef(0);
   const beforeQuasiRate = useRef(rate);
@@ -132,7 +132,10 @@ function App() {
   }, [tourRunning, nav.level, mode, stopTour]);
 
   const hideDetails = cinemaMode || isMobile;
-  const openQuasi = useCallback((view: QuasiMoonView = 'earth') => {
+  const openQuasi = useCallback((view: QuasiMoonView = 'earth', showOverview = true) => {
+    if (showOverview) goToSystem();
+    setQuasiView(view);
+    if (quasiOpen) return;
     stopTour();
     closeTides(false);
     beforeQuasiRate.current = rate;
@@ -142,22 +145,16 @@ function App() {
     setMode('orrery');
     selectRubin(null);
     setShowRubin(false);
-    goToSystem();
     quasiDay.current = 0;
-    setQuasiView(view);
     setQuasiPlaying(!reducedMotion);
     setToolbarOpen(false);
     setQuasiOpen(true);
-  }, [stopTour, closeTides, rate, setRate, setDate, setMode, timeRef, selectRubin, goToSystem, reducedMotion]);
+  }, [stopTour, closeTides, rate, setRate, setDate, setMode, timeRef, selectRubin, goToSystem, reducedMotion, quasiOpen]);
   const closeQuasi = useCallback(() => {
     setQuasiOpen(false);
     setQuasiPlaying(false);
     setDate(new Date(beforeQuasiDate.current));
     setRate(beforeQuasiRate.current);
-    if (pathToLandingIntent(window.location.pathname)?.kind === 'quasiMoon') {
-      window.history.replaceState({}, '', '/');
-      document.title = navToTitle({ level: 'system' });
-    }
     requestAnimationFrame(() => (document.querySelector<HTMLButtonElement>('[data-earth-companion]') ?? document.querySelector<HTMLButtonElement>('.mode-toggle [aria-checked=true]'))?.focus());
   }, [setRate, setDate]);
   useEffect(() => {
@@ -165,15 +162,6 @@ function App() {
   }, [quasiOpen, mode, nav, closeQuasi]);
   useEffect(() => { if (reducedMotion) setQuasiPlaying(false); }, [reducedMotion]);
   const quasiPlayback = { dayRef: quasiDay, view: quasiView, playing: quasiPlaying };
-
-  // Keep the companion overview addressable for browser tools, sharing and
-  // refreshes. Planet routes still take precedence while a body is selected.
-  useEffect(() => {
-    if (!quasiOpen || nav.level !== 'system') return;
-    const targetPath = quasiMoonPath(quasiView);
-    if (window.location.pathname !== targetPath) window.history.replaceState({}, '', targetPath);
-    document.title = `Kamoʻoalewa — Space Explorer`;
-  }, [quasiOpen, quasiView, nav.level]);
 
   // Share links: /rubin[/find] opens the finds layer; /tour starts the tour;
   // /companions/kamo-oalewa opens this replay in its requested framing.
@@ -192,13 +180,15 @@ function App() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
       const intent = pathToLandingIntent(window.location.pathname);
-      if (intent?.kind === 'quasiMoon' && !quasiOpen) openQuasi(intent.view);
+      const view = intent?.kind === 'quasiMoon' ? intent.view : event.state?.companionView;
+      if (view === 'earth' || view === 'sun') openQuasi(view, false);
+      else if (quasiOpen) closeQuasi();
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [quasiOpen, openQuasi]);
+  }, [quasiOpen, openQuasi, closeQuasi]);
 
   // Reset the mission HUD dismissed state whenever the user (re-)enters
   // mission view, so the info card shows fresh on each visit.

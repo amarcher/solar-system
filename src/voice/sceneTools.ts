@@ -34,11 +34,11 @@ export function createSceneTools(read: () => SceneVoiceState, handlers: () => Sc
       const state = read();
       if (state.missionActive) return 'Close the mission replay before opening Earth\'s companion illustration.';
       const framing = view === 'solar-system' || view === 'sun' ? 'sun' : 'earth';
-      if (state.quasiMoon === framing) {
+      if (state.quasiMoon === framing && state.nav.level === 'system') {
         return `Kamoʻoalewa is already open in the ${framing === 'earth' ? 'Follow companion' : 'Solar system'} view.`;
       }
       handlers().onOpenQuasiMoon(framing);
-      return `Opened Kamoʻoalewa in the ${framing === 'earth' ? 'Follow companion' : 'Solar system'} view. The dated replay keeps moving forward until paused; the canonical link is /companions/kamo-oalewa.`;
+      return `Opened Kamoʻoalewa in the ${framing === 'earth' ? 'Follow companion' : 'Solar system'} view. The canonical link is /companions/kamo-oalewa.`;
     },
     set_earth_tides: ({ enabled }: { enabled?: unknown }) => {
       if (typeof enabled !== 'boolean') return 'Please provide enabled as true or false.';
