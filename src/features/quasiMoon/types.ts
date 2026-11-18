@@ -3,6 +3,8 @@ import type { RefObject } from 'react';
 export type QuasiMoonView = 'earth' | 'sun';
 export interface QuasiMoonPlayback {
   dayRef: RefObject<number>;
+  /** False once closing starts, so the replay stops writing the shared clock before it unmounts. */
+  ownsClockRef: RefObject<boolean>;
   view: QuasiMoonView;
   playing: boolean;
 }
