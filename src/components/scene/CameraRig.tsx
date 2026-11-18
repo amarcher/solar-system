@@ -60,6 +60,16 @@ function normalizeAzimuth(controls: CameraControlsImpl) {
   controls.azimuthAngle = ((controls.azimuthAngle % TWO_PI) + TWO_PI) % TWO_PI;
 }
 
+/**
+ * Fly to a pose the short way round. camera-controls eases azimuth as a plain
+ * number, so an end angle across the ±180° seam (or turns the visitor has
+ * spun up) would otherwise circle the long way while pulling back.
+ */
+function flyTo(controls: CameraControlsImpl, position: readonly [number, number, number], target: readonly [number, number, number], transition = true) {
+  void controls.setLookAt(...position, ...target, transition);
+  controls.normalizeRotations();
+}
+
 export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null, cinematicShot = null }: CameraRigProps) {
   const space = useFocusedSpace();
   const layoutScratch = useRef({ shift: new Vector3(), target: new Vector3(), end: new Vector3() });
@@ -112,24 +122,17 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null, ci
       trackingPlanetId.current = null;
       trackingMoonId.current = null;
       trackingMissionId.current = null;
-      // Normalize azimuth to prevent unwinding accumulated orbit rotations
-      normalizeAzimuth(controls);
       controls.smoothTime = flightSmoothTime;
       const systemPos = mode === 'orrery' ? SYSTEM_POSITION_ORRERY : SYSTEM_POSITION_ARTISTIC;
-      controls.setLookAt(
-        systemPos.x, systemPos.y, systemPos.z,
-        SYSTEM_TARGET.x, SYSTEM_TARGET.y, SYSTEM_TARGET.z,
-        true,
-      );
+      flyTo(controls, [systemPos.x, systemPos.y, systemPos.z], [SYSTEM_TARGET.x, SYSTEM_TARGET.y, SYSTEM_TARGET.z]);
       // System view settles immediately (no tracking needed)
       settled.current = true;
     } else if (nav.level === 'sun') {
       trackingPlanetId.current = null;
       trackingMoonId.current = null;
       trackingMissionId.current = null;
-      normalizeAzimuth(controls);
       controls.smoothTime = flightSmoothTime;
-      controls.setLookAt(0, 2, 6, 0, 0, 0, true);
+      flyTo(controls, [0, 2, 6], [0, 0, 0]);
       settled.current = true;
     } else if (nav.level === 'planet') {
       trackingPlanetId.current = nav.planetId;
@@ -192,9 +195,8 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null, ci
     shotDrift.current = 0;
     if (!controls || !activeShot) return;
     const shot = CINEMATIC_SHOTS[activeShot];
-    normalizeAzimuth(controls);
     controls.smoothTime = reducedMotion ? 0.05 : CINEMATIC_SMOOTH_TIME;
-    controls.setLookAt(...shot.position, ...shot.target, true);
+    flyTo(controls, shot.position, shot.target);
     if (reducedMotion) return;
     // Rotating the endpoint (with transition) layers the drift onto the flight.
     shotDrift.current = shot.drift;
@@ -272,8 +274,8 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null, ci
           if (trackingPlanetId.current === 'uranus') {
             // Voyager mapped the southern hemisphere. Move the camera to that
             // side; do not rotate the map or invent the unobserved north.
-            controls.setLookAt(moonPos.x, moonPos.y - dist * 0.8, moonPos.z + dist * 0.6,
-              moonPos.x, moonPos.y, moonPos.z, !reducedMotion);
+            flyTo(controls, [moonPos.x, moonPos.y - dist * 0.8, moonPos.z + dist * 0.6],
+              [moonPos.x, moonPos.y, moonPos.z], !reducedMotion);
           } else {
             controls.moveTo(moonPos.x, moonPos.y, moonPos.z, !reducedMotion);
             controls.dollyTo(dist, !reducedMotion);
@@ -319,8 +321,7 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null, ci
           const fov = camera instanceof PerspectiveCamera ? camera.fov : 50;
           const view = chooseFollowView(pos, sun, rubinBodyRadius * RUBIN_FOLLOW_RADII, bodies,
             halfDiagonalFov(fov, size.width / size.height), rubinScratch.view);
-          normalizeAzimuth(controls);
-          controls.setLookAt(view.x, view.y, view.z, pos.x, pos.y, pos.z, !reducedMotion);
+          flyTo(controls, [view.x, view.y, view.z], [pos.x, pos.y, pos.z], !reducedMotion);
           flyInDone.current = true;
           flyInTime.current = 0;
         } else {
@@ -349,6 +350,7 @@ export function CameraRig({ nav, planets, orreryMissionId, rubinFocus = null, ci
     clearOrbitOccluder(s.endPosition, s.endTarget, parentPosition, radius, s.correctedEnd);
     controls.setLookAt(...s.corrected.toArray(), ...s.target.toArray(), false);
     controls.setLookAt(...s.correctedEnd.toArray(), ...s.endTarget.toArray(), true);
+    controls.normalizeRotations();
     controls.update(0);
   }, -0.5);
 
