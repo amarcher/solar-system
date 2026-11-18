@@ -71,6 +71,7 @@ function App() {
   const graphics = useGraphicsQuality();
   const [quasiPlaying, setQuasiPlaying] = useState(false);
   const quasiDay = useRef(0);
+  const quasiOwnsClock = useRef(false);
   const beforeQuasiRate = useRef(rate);
   const beforeQuasiDate = useRef(0);
   const { close: closeTides, state: tidesState } = tides;
@@ -146,6 +147,7 @@ function App() {
     selectRubin(null);
     setShowRubin(false);
     quasiDay.current = 0;
+    quasiOwnsClock.current = true;
     setQuasiPlaying(!reducedMotion);
     setToolbarOpen(false);
     setQuasiOpen(true);
@@ -153,6 +155,9 @@ function App() {
   const closeQuasi = useCallback(() => {
     setQuasiOpen(false);
     setQuasiPlaying(false);
+    // The replay scene stays mounted for a frame or two; without this it writes
+    // the replay date back over the restored one.
+    quasiOwnsClock.current = false;
     setDate(new Date(beforeQuasiDate.current));
     setRate(beforeQuasiRate.current);
     requestAnimationFrame(() => (document.querySelector<HTMLButtonElement>('[data-earth-companion]') ?? document.querySelector<HTMLButtonElement>('.mode-toggle [aria-checked=true]'))?.focus());
@@ -161,7 +166,7 @@ function App() {
     if (quasiOpen && (mode !== 'orrery' || nav.level === 'mission')) closeQuasi();
   }, [quasiOpen, mode, nav, closeQuasi]);
   useEffect(() => { if (reducedMotion) setQuasiPlaying(false); }, [reducedMotion]);
-  const quasiPlayback = { dayRef: quasiDay, view: quasiView, playing: quasiPlaying };
+  const quasiPlayback = { dayRef: quasiDay, ownsClockRef: quasiOwnsClock, view: quasiView, playing: quasiPlaying };
 
   // Share links: /rubin[/find] opens the finds layer; /tour starts the tour;
   // /companions/kamo-oalewa opens this replay in its requested framing.

@@ -16,7 +16,7 @@ const path = solarPath.map(([x, y, z]) => {
 });
 
 /** An additive Orrery layer: uses its existing planets, lights, camera and scale. */
-export default function QuasiMoonScene({ dayRef, playing, overview }: QuasiMoonPlayback & { overview: boolean }) {
+export default function QuasiMoonScene({ dayRef, ownsClockRef, playing, overview }: QuasiMoonPlayback & { overview: boolean }) {
   const { camera, size } = useThree();
   useEffect(() => {
     if (!(camera instanceof PerspectiveCamera)) return;
@@ -32,6 +32,7 @@ export default function QuasiMoonScene({ dayRef, playing, overview }: QuasiMoonP
 
   // Set the shared epoch before the ordinary planet callbacks (priority -4).
   useFrame((_, delta) => {
+    if (!ownsClockRef.current) return;
     if (playing && engineReady) {
       dayRef.current += Math.min(delta, .1) * REPLAY_DAYS / REPLAY_SECONDS;
     }
