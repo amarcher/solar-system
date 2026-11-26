@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { execSync } from 'node:child_process'
 
 // Build-time identifier so we can verify which commit a deployed bundle
@@ -15,10 +16,13 @@ function resolveBuildSha(): string {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => ({
+  // `npm run dev:headset` serves over HTTPS on the local network. A headset
+  // only allows mixed reality on a secure page, so plain http://<this-mac> will
+  // not do; the certificate is self-signed and the headset asks once to accept it.
+  plugins: [react(), ...(mode === 'headset' ? [basicSsl()] : [])],
   define: {
     __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
-})
+}))

@@ -33,6 +33,7 @@ import { rubinAsteroids } from './data/rubinAsteroids';
 import { RubinPanel } from './components/ui/RubinPanel';
 import { StellaCallout } from './components/ui/StellaCallout';
 import { useStellaStatus } from './voice/useStellaStatus';
+import { useHeadsetRoom } from './hooks/useHeadsetRoom';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { StellaTour } from './components/ui/StellaTour';
 import { useStellaTour } from './tour/useStellaTour';
@@ -93,6 +94,7 @@ function App() {
   const [toolbarOpen, setToolbarOpen] = useState(false);
   const [stellaBeckon, setStellaBeckon] = useState<'button' | 'menu' | null>(null);
   const stella = useStellaStatus();
+  const headsetRoom = useHeadsetRoom();
   const [stellaRestingNotice, setStellaRestingNotice] = useState(false);
   const [orreryMissionActive, setOrreryMissionActive] = useState(false);
   const deviceOrientation = useDeviceOrientation();
@@ -701,6 +703,10 @@ function App() {
            voice.micError === 'no-input' ? 'No audio input detected. Check your mic in System Settings.' :
            "Couldn't access your microphone. Check that one is connected."}
         </button>
+      )}
+
+      {headsetRoom && !cinemaMode && !quasiOpen && nav.level === 'system' && (
+        <a className="app__room-link" href="/ar">See it in your room</a>
       )}
 
       {!cinemaMode && (

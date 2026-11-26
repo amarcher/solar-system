@@ -1,0 +1,84 @@
+.ar-page {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, #101a33 0%, #05070f 70%);
+  color: #fff;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.ar-page__panel {
+  position: absolute;
+  left: 50%;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(92vw, 520px);
+  box-sizing: border-box;
+  padding: 20px 24px 24px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 20px;
+  background: rgb(8 13 28 / 0.86);
+  text-align: center;
+}
+
+.ar-page__title {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.ar-page__text {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: #dfe5f5;
+}
+
+.ar-page__text:last-child {
+  margin-bottom: 0;
+}
+
+.ar-page__text--error {
+  margin-top: 12px;
+  color: #ffb4a8;
+}
+
+.ar-page__enter {
+  min-height: 52px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffb347;
+  color: #1a1204;
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ar-page__enter:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ar-page__enter:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.ar-page__secondary {
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 0 22px;
+  border: 2px solid #ffb347;
+  border-radius: 999px;
+  background: transparent;
+  color: #ffd9a0;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ar-page__secondary:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
