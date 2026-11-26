@@ -25,12 +25,14 @@ const SUN_RADIUS = 2;
 /** Text heights in real metres, kept the same however far the view is zoomed. */
 const LABEL_METERS = 0.035;
 const FOCUSED_LABEL_METERS = 0.07;
-const HINT_METERS = 0.06;
-const STELLA_METERS = 0.075;
+/** The row of buttons that floats below the view and follows the viewer round the room. */
+const BAR = { distance: 0.9, drop: 0.6, buttonHeight: 0.055, spacing: 0.24 };
+/** How far the viewer can turn, in radians, or stray, in metres, before the buttons come back in front of them. */
+const BAR_SLACK = { angle: 0.7, distance: 0.45 };
+/** The dot shown where a hand or controller is pointing, in real metres across. */
+const CURSOR_METERS = 0.03;
 /** The smallest tap area, in real metres across half its width. Mercury itself is half a centimetre. */
 const TAP_RADIUS_METERS = 0.045;
-/** Where Stella's button floats, in metres to the right of and above the Sun's resting place. */
-const STELLA_OFFSET = { right: 0.7, up: 0.2 };
 /** Tracking needs a moment after a session starts before the head pose is trustworthy. */
 const SETTLE_FRAMES = 20;
 /** Nearest and farthest distance drawn, in metres. Far planets seen from a small one are over 150 m away. */
@@ -69,6 +71,13 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 
 
 /** Scene units per metre right now. Written once a frame by the scene, read by every panel. */
 const live = { scale: UNITS_PER_METER };
+
+/** Where a hand or controller is pointing right now, in scene units. */
+const aim = { point: new Vector3(), target: null as object | null };
+const pointAt = (target: object) => ({
+  onPointerMove: (e: { point: Vector3 }) => { aim.point.copy(e.point); aim.target = target; },
+  onPointerOut: () => { if (aim.target === target) aim.target = null; },
+});
 
 const UNIT_PLANE = new PlaneGeometry(1, 1);
 const viewerPosition = new Vector3();
@@ -109,6 +118,7 @@ interface PanelProps {
  */
 function Panel({ texture, meters = 0, aspect = 1, size, place, additive = false, onClick }: PanelProps) {
   const ref = useRef<Mesh>(null);
+  const aiming = useMemo(() => pointAt({}), []);
   useEffect(() => () => texture.dispose(), [texture]);
   useFrame(({ camera }) => {
     const panel = ref.current;
@@ -126,6 +136,7 @@ function Panel({ texture, meters = 0, aspect = 1, size, place, additive = false,
       raycast={onClick ? undefined : ignoreRaycast}
       // Acting on the press, not the release: a hand wobbles off a small target before letting go.
       onPointerDown={onClick && ((e) => { e.stopPropagation(); onClick(); })}
+      {...(onClick ? aiming : null)}
     >
       <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} blending={additive ? AdditiveBlending : NormalBlending} />
     </mesh>
@@ -147,24 +158,6 @@ function BodyLabel({ body, large }: { body: Body; large: boolean }) {
   );
 }
 
-/** Shown under the body being visited; tapping it flies back to the room. */
-function HomeHint({ body, onClick }: { body: Body; onClick: () => void }) {
-  const texture = useMemo(() => createLabelTexture('Fly home', { button: true }), []);
-  return (
-    <Panel
-      texture={texture}
-      meters={HINT_METERS}
-      aspect={LABEL_ASPECT}
-      onClick={onClick}
-      place={(panel, height) => {
-        const position = bodyPosition(body.id);
-        const label = FOCUSED_LABEL_METERS * live.scale;
-        panel.position.set(position.x, position.y - body.radius - label * 1.3 - height * 0.8, position.z);
-      }}
-    />
-  );
-}
-
 const STELLA_TEXT: Record<StellaState, string> = {
   unavailable: '',
   off: 'Talk to Stella',
@@ -173,10 +166,26 @@ const STELLA_TEXT: Record<StellaState, string> = {
   error: 'Stella can’t talk now',
 };
 
-/** A button fixed in the room, beside the solar system. Sits under the viewer's origin, so it is sized in metres. */
-function StellaButton({ state, place, onClick }: { state: StellaState; place: (panel: Mesh) => void; onClick: () => void }) {
-  const texture = useMemo(() => createLabelTexture(STELLA_TEXT[state], { button: true }), [state]);
-  return <Panel texture={texture} size={STELLA_METERS} aspect={LABEL_ASPECT} onClick={onClick} place={place} />;
+/** One of the buttons in the row below the view. Sits under the viewer's origin, so it is sized in metres. */
+function BarButton({ text, place, onClick }: { text: string; place: (panel: Mesh) => void; onClick: () => void }) {
+  const texture = useMemo(() => createLabelTexture(text, { button: true }), [text]);
+  return <Panel texture={texture} size={BAR.buttonHeight} aspect={LABEL_ASPECT} onClick={onClick} place={place} />;
+}
+
+/** A glowing dot where the hand or controller is pointing, so it is clear what a pinch will choose. */
+function AimDot() {
+  const texture = useMemo(() => createGlowTexture(), []);
+  return (
+    <Panel
+      texture={texture}
+      meters={CURSOR_METERS}
+      additive
+      place={(panel) => {
+        panel.visible = aim.target != null;
+        panel.position.copy(aim.point);
+      }}
+    />
+  );
 }
 
 /**
@@ -185,6 +194,7 @@ function StellaButton({ state, place, onClick }: { state: StellaState; place: (p
  */
 function TapTarget({ body, onTap, onHover }: { body: Body; onTap: () => void; onHover: (over: boolean) => void }) {
   const ref = useRef<Mesh>(null);
+  const aiming = useMemo(() => pointAt({}), []);
   useFrame(() => {
     if (!ref.current) return;
     ref.current.position.copy(bodyPosition(body.id));
@@ -195,7 +205,8 @@ function TapTarget({ body, onTap, onHover }: { body: Body; onTap: () => void; on
       ref={ref}
       onPointerDown={(e) => { e.stopPropagation(); onTap(); }}
       onPointerOver={() => onHover(true)}
-      onPointerOut={() => onHover(false)}
+      onPointerMove={aiming.onPointerMove}
+      onPointerOut={() => { aiming.onPointerOut(); onHover(false); }}
     >
       <sphereGeometry args={[1, 16, 12]} />
       <meshBasicMaterial colorWrite={false} depthWrite={false} />
@@ -209,6 +220,8 @@ function SunGlow() {
 }
 
 const forward = new Vector3();
+const barIdeal = new Vector3();
+const toBar = new Vector3();
 
 /** Everything the per-frame flight animation keeps between frames. */
 const createFlight = () => ({
@@ -216,8 +229,10 @@ const createFlight = () => ({
   frames: 0,
   /** Where the Sun rests in the room view, in metres. */
   home: new Vector3(),
-  /** Where Stella's button floats, in metres. */
-  stella: new Vector3(),
+  /** The middle of the row of buttons, in metres, where it is heading, and which way the row runs. */
+  bar: new Vector3(),
+  barTarget: new Vector3(),
+  barRight: new Vector3(1, 0, 0),
   from: createView(),
   to: createView(),
   now: createView(),
@@ -241,9 +256,11 @@ interface ArSceneProps {
   onStellaTap: () => void;
   /** Called when a visit begins or ends, with the body visited or null. */
   onFocusChange: (id: string | null) => void;
+  /** Ends the headset session. */
+  onLeave: () => void;
 }
 
-export function ArScene({ controlsRef, stella, onStellaTap, onFocusChange }: ArSceneProps) {
+export function ArScene({ controlsRef, stella, onStellaTap, onFocusChange, onLeave }: ArSceneProps) {
   const origin = useRef<Group>(null);
   const system = useRef<Group>(null);
   const sky = useRef<MeshBasicMaterial>(null);
@@ -310,10 +327,7 @@ export function ArScene({ controlsRef, stella, onStellaTap, onFocusChange }: ArS
     if (!flight.placed) {
       if (session && (!gl.xr.isPresenting || ++flight.frames < SETTLE_FRAMES)) return;
       anchorInFront(viewer.position, heading(), session ? ROOM_PLACEMENT : PREVIEW_PLACEMENT, flight.home);
-      // To the viewer's right: for a level heading (x, 0, z) that is (-z, 0, x).
-      const ahead = flight.stella.copy(flight.home).sub(viewer.position).setY(0).normalize();
-      flight.stella.set(-ahead.z, 0, ahead.x).multiplyScalar(STELLA_OFFSET.right).add(flight.home);
-      flight.stella.y += STELLA_OFFSET.up;
+      flight.bar.copy(anchorInFront(viewer.position, heading(), BAR, flight.barTarget));
       flight.targetId = 'sun';
       flight.to.scale = UNITS_PER_METER;
       flight.to.anchor.copy(flight.home);
@@ -331,6 +345,20 @@ export function ArScene({ controlsRef, stella, onStellaTap, onFocusChange }: ArS
     originForView(view, origin.current.position);
     origin.current.scale.setScalar(view.scale);
     live.scale = view.scale;
+
+    // The buttons stay put while the viewer looks around, and drift back in
+    // front once the viewer has turned or walked away from them.
+    const ideal = anchorInFront(viewer.position, heading(), BAR, barIdeal);
+    // Looking steeply down, at the buttons themselves, gives no reliable heading; leave them be.
+    const level = forward.setY(0).lengthSq() > 0.1;
+    const turned = toBar.copy(flight.barTarget).sub(viewer.position).setY(0).angleTo(forward) > BAR_SLACK.angle;
+    if (level && (turned || ideal.distanceTo(flight.barTarget) > BAR.distance + BAR_SLACK.distance || Math.abs(ideal.y - flight.barTarget.y) > BAR_SLACK.distance / 2)) {
+      flight.barTarget.copy(ideal);
+    }
+    flight.bar.lerp(flight.barTarget, reducedMotion ? 1 : 1 - Math.exp(-delta * 5));
+    // To the viewer's right: for a level heading (x, 0, z) that is (-z, 0, x).
+    toBar.copy(flight.bar).sub(viewer.position).setY(0).normalize();
+    flight.barRight.set(-toBar.z, 0, toBar.x);
 
     flight.darkness = flight.fromDarkness + (flight.toDarkness - flight.fromDarkness) * progress;
     if (sky.current) sky.current.opacity = flight.darkness;
@@ -352,6 +380,14 @@ export function ArScene({ controlsRef, stella, onStellaTap, onFocusChange }: ArS
   const focused = focusId ? BODIES.find((b) => b.id === focusId) : undefined;
   // Tapping the body being visited flies home; tapping any other flies there.
   const tap = (id: string) => flyTo(id === focusId ? null : BODIES.find((b) => b.id === id) ?? null);
+
+  // Always within reach, wherever the viewer has flown or turned. Stella and leaving only make sense in a headset.
+  const buttons: Array<'home' | 'stella' | 'leave'> = [];
+  if (focused) buttons.push('home');
+  if (session && stella !== 'unavailable') buttons.push('stella');
+  if (session) buttons.push('leave');
+  const pressButton = { home: () => void flyTo(null), stella: onStellaTap, leave: onLeave };
+  const buttonText = { home: 'Fly home', stella: STELLA_TEXT[stella], leave: 'Leave' };
 
   // The voice guide flies the viewer with the same moves as a tap.
   useEffect(() => {
@@ -375,16 +411,18 @@ export function ArScene({ controlsRef, stella, onStellaTap, onFocusChange }: ArS
             <pointsMaterial ref={stars} color="#dfe6ff" size={2} sizeAttenuation={false} transparent opacity={0} depthWrite={false} toneMapped={false} />
           </points>
         </group>
-        {stella !== 'unavailable' && (
-          <StellaButton
-            state={stella}
-            onClick={onStellaTap}
+        {buttons.map((button, index) => (
+          <BarButton
+            key={button}
+            text={buttonText[button]}
+            onClick={pressButton[button]}
             place={(panel) => {
-              panel.visible = flightRef.current.placed;
-              panel.position.copy(flightRef.current.stella);
+              const flight = flightRef.current;
+              panel.visible = flight.placed;
+              panel.position.copy(flight.bar).addScaledVector(flight.barRight, (index - (buttons.length - 1) / 2) * BAR.spacing);
             }}
           />
-        )}
+        ))}
       </XROrigin>
       <group ref={system} visible={false}>
         {/* Brighter than the flat-screen app: in a lit room an unlit night side reads as a black hole. */}
@@ -400,7 +438,7 @@ export function ArScene({ controlsRef, stella, onStellaTap, onFocusChange }: ArS
         ))}
         {/* The name grows when pointed at, so it is clear what a tap will choose. */}
         {BODIES.map((body) => <BodyLabel key={body.id} body={body} large={body.id === focusId || body.id === hoveredId} />)}
-        {focused && <HomeHint body={focused} onClick={() => flyTo(null)} />}
+        <AimDot />
       </group>
     </GraphicsQualityContext.Provider>
   );

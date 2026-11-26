@@ -17,8 +17,17 @@ if (import.meta.env.DEV && !/OculusBrowser|Quest|VisionOS/i.test(navigator.userA
  * Only what the experience uses is requested. Room scanning features are left
  * off so the headset does not ask for access to the room layout.
  */
+// Pointing is a plain ray from the hand or controller, with the scene's own
+// aiming dot. The library's touch and grab pointers and its dot are measured
+// in scene units, so under a zoomed view they come out far too big or small,
+// and its minimum ray distance grows until nearby buttons stop responding.
+const ray = { minDistance: 0, cursorModel: false, rayModel: { maxLength: 1 } } as const;
+
 const store = createXRStore({
   offerSession: false,
+  // Passthrough already shows the viewer's real hands.
+  hand: { model: false, grabPointer: false, touchPointer: false, teleportPointer: false, rayPointer: ray },
+  controller: { grabPointer: false, teleportPointer: false, rayPointer: ray },
   anchors: false,
   hitTest: false,
   planeDetection: false,
@@ -62,7 +71,7 @@ export default function ArApp() {
         onCreated={({ gl }) => gl.domElement.setAttribute('aria-hidden', 'true')}
       >
         <XR store={store}>
-          <ArScene controlsRef={controls} stella={stella.state} onStellaTap={stella.toggle} onFocusChange={stella.describe} />
+          <ArScene controlsRef={controls} stella={stella.state} onStellaTap={stella.toggle} onFocusChange={stella.describe} onLeave={() => void store.getState().session?.end()} />
         </XR>
       </Canvas>
 
@@ -77,7 +86,8 @@ export default function ArApp() {
           ) : (
             <>
               <p className="ar-page__text">
-                Stand somewhere with a couple of steps of clear floor in front of you. Tap a planet to fly to it.
+                Stand somewhere with a couple of steps of clear floor in front of you. Point at a planet and pinch, or pull the trigger, to fly to it.
+                Look down for the buttons: fly home, talk to Stella, leave.
               </p>
               <button type="button" className="ar-page__enter" onClick={enter} disabled={supported !== true}>
                 Enter mixed reality

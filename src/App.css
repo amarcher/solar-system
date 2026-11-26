@@ -49,6 +49,35 @@ body {
   margin-top: 6px;
 }
 
+/* Only shown in a mixed-reality headset's browser */
+.app__room-link {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 110;
+  padding: 10px 22px;
+  border: 1px solid color-mix(in srgb, #ffbe5a 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, #0c122c 85%, transparent);
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.app__room-link:hover,
+.app__room-link:focus-visible {
+  background: color-mix(in srgb, #ffbe5a 25%, #0c122c);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app__room-link {
+    transition: none;
+  }
+}
+
 /* Scene loading indicator — shown while the astronomy engine lazy-loads */
 .app__scene-loading {
   position: fixed;
